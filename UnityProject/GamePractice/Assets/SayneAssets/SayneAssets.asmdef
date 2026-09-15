@@ -1,12 +1,8 @@
 {
-    "name": "Game",
+    "name": "SayneAssets",
     "rootNamespace": "Sayne",
     "references": [
-        "SayneAssets",
-        "UniTask",
-        "R3.Unity",
-        "DOTween.Runtime",
-        "Unity.InputSystem"
+        "R3.Unity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
