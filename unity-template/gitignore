@@ -1,0 +1,47 @@
+# macOS
+.DS_Store
+
+# Unity (프로젝트가 하위 폴더에 있으므로 **/ 패턴 사용)
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Oo]bj/
+**/[Bb]uild/
+**/[Bb]uilds/
+**/[Ll]ogs/
+**/[Uu]ser[Ss]ettings/
+**/[Mm]emoryCaptures/
+**/[Rr]ecordings/
+
+# Asset Store 임시 파일
+**/[Aa]ssets/AssetStoreTools*
+
+# JetBrains Rider / Visual Studio / VS Code
+.idea/
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity 크래시 리포트
+sysinfo.txt
+*.stackdump
+
+# 빌드 산출물
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics
+crashlytics-build.properties
