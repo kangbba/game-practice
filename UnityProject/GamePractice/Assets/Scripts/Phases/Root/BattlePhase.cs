@@ -7,7 +7,7 @@ namespace Sayne
         private readonly PhaseManager _subPhaseManager = new PhaseManager();
         private readonly GameContext _context;
 
-        public override string Key => PhaseID.Battle;
+        public override string Key => PhaseID.Root.Battle;
 
         public BattlePhase(GameContext context)
         {
@@ -20,7 +20,7 @@ namespace Sayne
             _context.HeroManager.SpawnHero(HeroID.Aldric, Vector3.zero);
 
             _subPhaseManager.Init();
-            _subPhaseManager.ChangePhase(new PreparePhase());
+            _subPhaseManager.ChangePhase(new BattlePreparePhase());
         }
 
         public override void OnExit()

@@ -1,8 +1,8 @@
 namespace Sayne
 {
-    public class PreparePhase : PhaseBase
+    public class BattlePausePhase : PhaseBase
     {
-        public override string Key => PhaseID.BattleSub.Prepare;
+        public override string Key => PhaseID.Battle.Pause;
 
         public override void OnEnter()
         {

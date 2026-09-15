@@ -37,20 +37,7 @@
 
 ### 1. 키 문서 만들기
 
-페이즈 키를 상수로 모은 문서를 프로젝트에 하나 둔다. 오타는 컴파일 에러로 잡힌다.
-
-```csharp
-public static class PhaseID
-{
-    public const string Battle = "Battle";
-
-    public static class BattleSub
-    {
-        public const string Prepare = "Battle/Prepare";
-        public const string Combat = "Battle/Combat";
-    }
-}
-```
+페이즈 키를 상수로 모은 `PhaseID` 문서를 프로젝트에 하나 둔다. 중첩 클래스 하나가 머신 하나이고, 값은 `"Battle/Prepare"` 경로 형태다. 상세 규칙과 전체 예시는 [PhaseSystem/PhaseID.sample.md](PhaseSystem/PhaseID.sample.md) 참고.
 
 ### 2. 페이즈 만들기
 
