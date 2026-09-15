@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Sayne
@@ -7,14 +8,51 @@ namespace Sayne
     {
         private readonly List<ManagerBase> _managers = new List<ManagerBase>();
 
+        private CameraManager _cameraManager;
+        private HeroInputManager _heroInputManager;
+        private EnemyAIManager _enemyAIManager;
+
         private void Start()
         {
-            var phaseManager = AddManager(new PhaseManager());
+            var phaseManager = AddManager(new PhaseManager("RootPhase", destroyCancellationToken));
             var mapManager = AddManager(new MapManager());
+
             var heroAssetManager = AddManager(new HeroAssetManager());
             var heroManager = AddManager(new HeroManager(heroAssetManager));
 
-            phaseManager.ChangePhase(new BattlePhase(new GameContext(mapManager, heroManager)));
+            var enemyAssetManager = AddManager(new EnemyAssetManager());
+            var enemyManager = AddManager(new EnemyManager(enemyAssetManager));
+
+            var particleAssetManager = AddManager(new ParticleAssetManager());
+            AddManager(new ParticleManager(particleAssetManager, heroManager, enemyManager));
+
+            _cameraManager = AddManager(new CameraManager(heroManager));
+            _heroInputManager = AddManager(new HeroInputManager(heroManager, enemyManager));
+            _enemyAIManager = AddManager(new EnemyAIManager(heroManager, enemyManager));
+
+            var worldUIManager = AddManager(new WorldUIManager(_cameraManager, heroManager, enemyManager));
+
+            var context = new GameContext(mapManager, heroManager, enemyManager, _cameraManager, worldUIManager);
+            RunBattleAsync(phaseManager, context).Forget();
+        }
+
+        private async UniTaskVoid RunBattleAsync(PhaseManager phaseManager, GameContext context)
+        {
+            await phaseManager.RunAsync(new PreparePhase(context.MapManager, context.HeroManager));
+            await phaseManager.RunAsync(new CombatPhase(context.EnemyManager));
+            await phaseManager.RunAsync(new ResultPhase(context.MapManager, context.HeroManager));
+        }
+
+        private void Update()
+        {
+            _heroInputManager.UpdateInput();
+            _enemyAIManager.UpdateAI();
+        }
+
+        private void LateUpdate()
+        {
+            _cameraManager.UpdateFollow();
+            _cameraManager.UpdateBillboardRotation();
         }
 
         private void OnDestroy()

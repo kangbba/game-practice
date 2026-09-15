@@ -28,6 +28,7 @@ python3 ~/Documents/GitHub/game-practice/unity-template/setup.py <유니티_프�
 - Active Input Handling → Input System (New)
 - Transparency Sort Mode → Custom Axis (0,0,1)
 - Sorting Layers → Ground / GroundEffect / Shadow / Default / Actor / Effect / WorldUI
+- `Assets/Resources/DOTweenSettings.asset` 배치 (DOTween Utility Panel의 Setup이 만드는 파일과 동일)
 
-재실행해도 안전하다(이미 적용된 항목은 skip). 적용 후 에디터를 열면 패키지 설치와
-NuGet 복원이 자동으로 진행되고, DOTween만 Utility Panel에서 Setup 한 번 눌러주면 된다.
+재실행해도 안전하다(이미 적용된 항목은 skip). 적용 후 에디터를 열면 패키지 설치가
+자동으로 진행된다. 남는 수동 작업은 없다.

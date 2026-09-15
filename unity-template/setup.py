@@ -249,8 +249,15 @@ def main():
         else:
             log("[!!]   TagManager.asset에서 m_SortingLayers를 못 찾음 — 수동 확인 필요")
 
-    print("완료. 에디터를 열면 UPM 패키지가 설치된다 (NuGet dll은 이미 배치됨).")
-    print("DOTween은 Tools > Demigiant > DOTween Utility Panel에서 Setup 한 번.")
+    # 9. DOTween 설정 파일 — Utility Panel의 Setup이 만드는 것과 같은 기본값.
+    #    미러 패키지는 모듈(Audio/Physics/Physics2D/Sprite/UI)이 이미 켜져 있어 이 파일만 있으면 된다.
+    copy_if_missing(
+        TEMPLATE_DIR / "DOTweenSettings.asset",
+        project / "Assets" / "Resources" / "DOTweenSettings.asset",
+        "Assets/Resources/DOTweenSettings.asset",
+    )
+
+    print("완료. 에디터를 열면 UPM 패키지가 설치된다 (NuGet dll은 이미 배치됨). 수동 작업 없음.")
 
 
 if __name__ == "__main__":

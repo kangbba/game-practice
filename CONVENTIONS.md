@@ -24,6 +24,7 @@
 - bool은 `is` / `has` / `can` 접두사 — `_isAlive`
 - 런타임에 변하는 현재값에는 `current`를 붙여 설정값과 구분한다 — `_currentHP` vs `_maxHP`
 - 초기화 메서드는 `Initialize`가 아니라 `Init`
+- 비동기 메서드는 `Async` 접미사 — `MainLogicAsync`
 - 두 글자 약어는 둘 다 대문자 — `HP`, `MaxHP`
 - 상수는 PascalCase. `UPPER_CASE` 안 씀
 - 헝가리안 표기 안 씀

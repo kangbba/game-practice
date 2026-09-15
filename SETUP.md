@@ -4,7 +4,7 @@
 
 > **빠른 적용**: 아래 내용 전부를 `unity-template/setup.py`가 자동 적용한다. 새 프로젝트를 만들고
 > **에디터를 닫은 뒤** `python3 ~/Documents/GitHub/game-practice/unity-template/setup.py <프로젝트경로>`.
-> 자세한 건 [unity-template/README.md](unity-template/README.md). 남는 수동 작업은 DOTween Utility Panel의 Setup 하나뿐.
+> 자세한 건 [unity-template/README.md](unity-template/README.md). 남는 수동 작업은 없다.
 
 ## 깃 세팅
 
@@ -20,7 +20,10 @@
 "com.github-glitchenzo.nugetforunity": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity"
 ```
 
-- DOTween 미러는 `DOTween.Runtime.asmdef`이 포함돼 있어 Utility Panel의 Create ASMDEF 불필요. 설치 후 Setup만 한 번.
+- DOTween 미러는 `DOTween.Runtime.asmdef`과 모듈(Audio/Physics/Physics2D/Sprite/UI)이 이미 포함·활성화돼 있어
+  Utility Panel의 Create ASMDEF·Setup 둘 다 불필요. Setup이 만드는 `Assets/Resources/DOTweenSettings.asset`은
+  `setup.py`가 템플릿에서 복사한다. **에셋스토어판 DOTween을 따로 임포트하면 안 된다** — `Assets/Plugins/Demigiant`에
+  같은 모듈 소스가 중복돼 `DOColor` 등에서 CS0121(ambiguous) 컴파일 에러가 난다.
 - R3 본체는 NuGet 배포라 UPM으로 안 온다. **NuGetForUnity 자동 복원에 의존하면 안 된다** —
   R3.Unity가 R3.dll을 못 찾아 컴파일 에러(`Observable<>` / `Subject<>` CS0246)가 먼저 나면
   도메인 리로드가 막혀 복원이 영영 안 도는 닭-달걀 문제가 생긴다.
