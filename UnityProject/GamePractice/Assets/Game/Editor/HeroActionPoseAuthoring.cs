@@ -102,6 +102,7 @@ namespace Sayne
                 var frontEnd = front.Transform.InverseTransformPoint(graphic.TransformPoint(frontSole));
                 var rearEnd = rear.Transform.InverseTransformPoint(graphic.TransformPoint(rearSole));
                 var poses = Poses(hero, action);
+                if (action >= 3) poses = poses.Select(Exaggerate).ToArray();
                 var times = action == 3
                     ? new[] { 0f, .08f, .18f, .29f, .32f, .40f, .51f, .64f, .67f, .76f, .87f, .95f, 1f }
                     : action == 4
@@ -131,8 +132,10 @@ namespace Sayne
                     Rotate(bones, TorsoPath + "/Head", (-torso.Lean * .72f + lag.Lean * .12f) * tail);
                     var drag = Sample(poses, times, Mathf.Max(0f, t - .105f));
                     var velocity = (pose.X - Sample(poses, times, Mathf.Max(0f, t - .03f)).X) / .03f;
-                    Rotate(bones, TorsoPath + "/Cape", Mathf.Clamp(-drag.Lean * .9f - velocity * 8f, -48f, 48f) * tail);
-                    Rotate(bones, TorsoPath + "/Scarf", Mathf.Clamp(-drag.Lean * 1.2f - velocity * 11f, -65f, 65f) * tail);
+                    var capeLimit = action >= 3 ? 72f : 48f;
+                    var scarfLimit = action >= 3 ? 90f : 65f;
+                    Rotate(bones, TorsoPath + "/Cape", Mathf.Clamp(-drag.Lean * .9f - velocity * 8f, -capeLimit, capeLimit) * tail);
+                    Rotate(bones, TorsoPath + "/Scarf", Mathf.Clamp(-drag.Lean * 1.2f - velocity * 11f, -scarfLimit, scarfLimit) * tail);
                     Rotate(bones, TorsoPath + "/Head/Hair", (-drag.Lean * .35f - velocity * 3f) * tail);
                     Plant(front, graphic, frontSole + new Vector3(pose.Step, pose.Lift, 0f), frontEnd);
                     Plant(rear, graphic, rearSole + new Vector3(pose.RearStep, pose.RearLift, 0f), rearEnd);
@@ -185,6 +188,21 @@ namespace Sayne
             }
             Split(0, keys.Count - 1);
             return keep.Select(i => keys[i]).ToArray();
+        }
+
+        private static Pose Exaggerate(Pose pose)
+        {
+            var x = pose.X * 3f;
+            var extraHeight = Mathf.Max(0f, pose.Y) * 2f;
+            // 전신 이동을 크게 하고 발도 함께 옮긴다. 보폭만 세 배 늘려 다리가 길어지지 않게 한다.
+            return new Pose(x, pose.Y >= 0f ? pose.Y * 3f : pose.Y * 1.3f,
+                Mathf.Clamp(pose.Lean * 1.5f, -65f, 65f),
+                Mathf.Clamp(pose.Arm * 1.2f, -180f, 180f),
+                Mathf.Clamp(pose.Elbow * 1.2f, -110f, 110f),
+                pose.Blade * 1.45f, pose.Reach * 1.4f,
+                x + (pose.Step - pose.X) * 1.35f,
+                x + (pose.RearStep - pose.X) * 1.35f,
+                pose.Lift * 1.2f + extraHeight, pose.RearLift * 1.2f + extraHeight);
         }
 
         private static Vector3 Sole(Transform leg, Transform graphic)

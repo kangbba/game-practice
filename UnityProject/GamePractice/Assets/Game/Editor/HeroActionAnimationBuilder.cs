@@ -152,6 +152,7 @@ namespace Sayne
                     camera.backgroundColor = new Color(.10f, .13f, .18f, 1);
                     camera.nearClipPlane = .1f;
                     camera.farClipPlane = 30;
+                    FitReviewCamera(graphic, camera, heroId);
                     for (var row = 0; row < Actions.Length; row++)
                     {
                         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{heroId}/{Actions[row]}.anim");
@@ -226,6 +227,29 @@ namespace Sayne
                 var visual = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/{part.Folder}/{part.Name}.prefab");
                 graphic.GetComponent<CharacterSkin>().Wear(part.Part, visual);
             }
+        }
+
+        private static void FitReviewCamera(GameObject graphic, Camera camera, string hero)
+        {
+            var bounds = new Bounds();
+            var hasBounds = false;
+            var renderers = graphic.GetComponentsInChildren<SpriteRenderer>();
+            foreach (var action in Actions)
+            {
+                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/{action}.anim");
+                for (var frame = 0; frame <= 60; frame++)
+                {
+                    clip.SampleAnimation(graphic, clip.length * frame / 60f);
+                    foreach (var renderer in renderers)
+                    {
+                        if (renderer.sprite == null || !renderer.enabled) continue;
+                        if (!hasBounds) { bounds = renderer.bounds; hasBounds = true; }
+                        else bounds.Encapsulate(renderer.bounds);
+                    }
+                }
+            }
+            camera.orthographicSize = Mathf.Max(bounds.extents.x, bounds.extents.y) * 1.12f;
+            camera.transform.position = new Vector3(bounds.center.x, bounds.center.y, -10f);
         }
 
     }

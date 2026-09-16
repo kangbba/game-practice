@@ -107,6 +107,9 @@ namespace Sayne
         private void LoadClip()
         {
             _clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationPath}/{Clips[_currentClip]}.anim");
+            var isLargeAction = Clips[_currentClip] == "Skill" || Clips[_currentClip] == "Ultimate";
+            _preview.camera.orthographicSize = isLargeAction ? 3.25f : 1.85f;
+            _preview.camera.transform.position = new Vector3(0f, isLargeAction ? 2f : 1.35f, -10f);
         }
 
         private void Sample()

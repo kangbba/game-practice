@@ -7,7 +7,8 @@ namespace Sayne
     {
         private const string RootName = "WorldUIRoot";
 
-        private static readonly Vector3 HPBarOffset = new Vector3(0f, 6.5f, 0f);
+        /// <summary>빌보드(=카메라) 기준 오프셋이라 y 가 화면상 '위'다. 머리 높이에 맞춰 눈으로 조정할 값.</summary>
+        private static readonly Vector3 HPBarOffset = new Vector3(0f, 2.2f, 0f);
 
         private readonly CameraManager _cameraManager;
         private readonly HeroManager _heroManager;
