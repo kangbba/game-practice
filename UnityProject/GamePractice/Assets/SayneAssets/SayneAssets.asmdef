@@ -3,7 +3,10 @@
     "rootNamespace": "Sayne",
     "references": [
         "R3.Unity",
-        "UniTask"
+        "UniTask",
+        "UniTask.Addressables",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

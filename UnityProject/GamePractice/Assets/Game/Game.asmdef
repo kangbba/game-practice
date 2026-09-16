@@ -1,0 +1,24 @@
+{
+    "name": "Game",
+    "rootNamespace": "Sayne",
+    "references": [
+        "SayneAssets",
+        "UniTask",
+        "R3.Unity",
+        "DOTween.Runtime",
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "UniTask.Addressables"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
