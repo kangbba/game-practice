@@ -9,6 +9,7 @@ namespace Sayne
         private const float EnemyAttackEffectScale = 5f;
         private const float HitEffectScale = 20f;
         private const float DeathEffectScale = 25f;
+        private const float UltimateEffectScale = 40f;
 
         private const float SwingForward = 2.5f;
         private const float SwingHeight = 1.3f;
@@ -57,30 +58,43 @@ namespace Sayne
         private void BindEffects(Character character)
         {
             var attackScale = character is Hero ? HeroAttackEffectScale : EnemyAttackEffectScale;
+            var graphic = character.GetComponentInChildren<CharacterMotion>();
 
-            character.Attacked
-                .Subscribe((self: this, character, attackScale), (_, state) =>
-                    state.self.Play(ParticleID.Slash, SwingPoint(state.character), state.attackScale,
-                        state.character.IsFacingRight.CurrentValue))
+            character.Combat.Attacked
+                .Subscribe((self: this, character, graphic, attackScale), (attack, state) =>
+                    state.self.PlayAttack(attack, state.character, state.graphic, state.attackScale))
                 .RegisterTo(LifeToken);
 
             character.Damaged
-                .Subscribe((self: this, character), (_, state) =>
+                .Subscribe((self: this, character, graphic), (_, state) =>
                     state.self.Play(ParticleID.HitSpark, ChestPoint(state.character), HitEffectScale,
-                        state.character.IsFacingRight.CurrentValue))
+                        state.graphic.IsFacingRight))
                 .RegisterTo(LifeToken);
 
             character.Died
-                .Subscribe(this, (died, self) =>
-                    self.Play(ParticleID.DeathSmoke, died.transform.position, DeathEffectScale,
-                        died.IsFacingRight.CurrentValue))
+                .Subscribe((self: this, graphic), (died, state) =>
+                    state.self.Play(ParticleID.DeathSmoke, died.transform.position, DeathEffectScale,
+                        state.graphic.IsFacingRight))
                 .RegisterTo(LifeToken);
         }
 
-        /// <summary>바라보는 쪽 가슴 높이 — 무기를 휘두르는 지점.</summary>
-        private static Vector3 SwingPoint(Character character)
+        /// <summary>궁극기는 캐릭터가 지정한 전용 연출이 있으면 그걸 쓰고, 없으면 평타와 같은 베기 연출을 쓴다.</summary>
+        private void PlayAttack(BasicAttack attack, Character character, CharacterMotion graphic, float attackScale)
         {
-            var forward = character.IsFacingRight.CurrentValue ? SwingForward : -SwingForward;
+            if (attack == character.Combat.Ultimate && character.Combat.UltimateParticleID != null)
+            {
+                Play(character.Combat.UltimateParticleID, character.transform.position, UltimateEffectScale,
+                    graphic.IsFacingRight);
+                return;
+            }
+
+            Play(ParticleID.Slash, SwingPoint(character, graphic), attackScale, graphic.IsFacingRight);
+        }
+
+        /// <summary>바라보는 쪽 가슴 높이 — 무기를 휘두르는 지점.</summary>
+        private static Vector3 SwingPoint(Character character, CharacterMotion graphic)
+        {
+            var forward = graphic.IsFacingRight ? SwingForward : -SwingForward;
             return character.transform.position + new Vector3(forward, SwingHeight, 0f);
         }
 

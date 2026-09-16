@@ -14,9 +14,7 @@ namespace Sayne
         private readonly EnemyManager _enemyManager;
         private readonly WorldHPBar _hpBarPrefab;
 
-        private Transform _currentRoot;
-
-        public Transform CurrentRoot => _currentRoot;
+        public Transform CurrentRoot { get; private set; }
 
         public WorldUIManager(CameraManager cameraManager, HeroManager heroManager, EnemyManager enemyManager,
             WorldHPBar hpBarPrefab)
@@ -29,7 +27,7 @@ namespace Sayne
 
         protected override void OnInit()
         {
-            _currentRoot = new GameObject(RootName).transform;
+            CurrentRoot = new GameObject(RootName).transform;
 
             _heroManager.Spawned
                 .Merge(_enemyManager.Spawned)
@@ -39,22 +37,22 @@ namespace Sayne
 
         protected override void OnRelease()
         {
-            if (_currentRoot != null)
+            if (CurrentRoot != null)
             {
-                Object.Destroy(_currentRoot.gameObject);
+                Object.Destroy(CurrentRoot.gameObject);
             }
 
-            _currentRoot = null;
+            CurrentRoot = null;
         }
 
         private void CreateHPBar(Character owner)
         {
-            var hpBar = Object.Instantiate(_hpBarPrefab, _currentRoot);
+            var hpBar = Object.Instantiate(_hpBarPrefab, CurrentRoot);
             var currentHP = owner.CurrentHP
                 .Select(hp => (float)hp)
                 .ToReadOnlyReactiveProperty();
 
-            hpBar.Attach(owner.transform, HPBarOffset, currentHP, owner.MaxHP);
+            hpBar.Attach(owner.transform, HPBarOffset, currentHP, owner.CurrentStats.CurrentValue.MaxHP);
 
             owner.Died
                 .Subscribe((hpBar, currentHP), (_, state) =>

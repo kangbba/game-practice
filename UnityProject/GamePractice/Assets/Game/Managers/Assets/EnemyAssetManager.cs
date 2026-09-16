@@ -1,4 +1,3 @@
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -6,9 +5,9 @@ namespace Sayne
 {
     public class EnemyAssetManager : AssetManagerBase<Enemy>
     {
-        protected override async UniTask OnLoadAsync(CancellationToken token)
+        protected override async UniTask OnLoadAsync()
         {
-            foreach (var go in await LoadAssetsByLabelAsync<GameObject>(AssetAddresses.EnemiesLabel, token))
+            foreach (var go in await LoadAssetsByLabelAsync<GameObject>(AssetAddresses.EnemiesLabel))
             {
                 if (!go.TryGetComponent<Enemy>(out var enemy))
                 {

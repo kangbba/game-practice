@@ -1,14 +1,13 @@
 using System;
 using R3;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Sayne
 {
     public sealed class HPBarCore : IDisposable
     {
-        private readonly Image _frontFill;
-        private readonly Image _backFill;
+        private readonly SlicedFillBar _frontFill;
+        private readonly SlicedFillBar _backFill;
 
         private HPBarStyle _style;
         private IDisposable _subscription;
@@ -17,7 +16,7 @@ namespace Sayne
         private float _chaseRatio = 1f;
         private float _chaseHoldTime;
 
-        public HPBarCore(Image frontFill, Image backFill, HPBarStyle style)
+        public HPBarCore(SlicedFillBar frontFill, SlicedFillBar backFill, HPBarStyle style)
         {
             _frontFill = frontFill;
             _backFill = backFill;
@@ -57,8 +56,8 @@ namespace Sayne
             else _chaseRatio = ratio;
 
             _currentRatio = ratio;
-            if (_frontFill != null) _frontFill.fillAmount = _currentRatio;
-            if (_backFill != null) _backFill.fillAmount = _chaseRatio;
+            if (_frontFill != null) _frontFill.FillAmount = _currentRatio;
+            if (_backFill != null) _backFill.FillAmount = _chaseRatio;
         }
 
         public void Tick(float deltaTime)
@@ -74,7 +73,7 @@ namespace Sayne
             _chaseRatio = Mathf.Lerp(_chaseRatio, _currentRatio, 1f - Mathf.Exp(-_style.ChaseSpeed * deltaTime));
             if (Mathf.Abs(_chaseRatio - _currentRatio) < 0.001f) _chaseRatio = _currentRatio;
 
-            _backFill.fillAmount = _chaseRatio;
+            _backFill.FillAmount = _chaseRatio;
         }
 
         public void Dispose()

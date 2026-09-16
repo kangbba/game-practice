@@ -9,12 +9,11 @@ namespace Sayne
 
         private readonly ReactiveProperty<Quaternion> _billboardRotation = new ReactiveProperty<Quaternion>();
 
-        private Camera _camera;
         private Vector3 _initialPosition;
         private Vector3 _followOffset;
         private Transform _followTarget;
 
-        public Camera Camera => _camera;
+        public Camera Camera { get; private set; }
         public ReadOnlyReactiveProperty<Quaternion> BillboardRotation => _billboardRotation;
 
         public void SetFollowTarget(Transform target)
@@ -24,8 +23,8 @@ namespace Sayne
 
         protected override void OnInit()
         {
-            _camera = Camera.main;
-            _initialPosition = _camera.transform.position;
+            Camera = Camera.main;
+            _initialPosition = Camera.transform.position;
             _followOffset = _initialPosition;
             _billboardRotation.Value = CalculateBillboardRotation();
 
@@ -55,13 +54,13 @@ namespace Sayne
         protected override void OnRelease()
         {
             // 카메라는 씬 소유라 파괴하지 않는다. 대신 원위치로 되돌려서, 재생성 시 오프셋이 다시 옳게 잡히게 한다.
-            if (_camera != null)
+            if (Camera != null)
             {
-                _camera.transform.position = _initialPosition;
+                Camera.transform.position = _initialPosition;
             }
 
             _billboardRotation.Dispose();
-            _camera = null;
+            Camera = null;
         }
 
         private void UpdateFollow()
@@ -72,8 +71,8 @@ namespace Sayne
             }
 
             var destination = _followTarget.position + _followOffset;
-            _camera.transform.position = Vector3.Lerp(
-                _camera.transform.position,
+            Camera.transform.position = Vector3.Lerp(
+                Camera.transform.position,
                 destination,
                 1f - Mathf.Exp(-FollowSpeed * Time.deltaTime));
         }
@@ -85,7 +84,7 @@ namespace Sayne
 
         private Quaternion CalculateBillboardRotation()
         {
-            return _camera.transform.rotation;
+            return Camera.transform.rotation;
         }
     }
 }

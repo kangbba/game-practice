@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -25,18 +24,25 @@ namespace Sayne
             var heroAssetManager = AddManager(new HeroAssetManager());
             var enemyAssetManager = AddManager(new EnemyAssetManager());
             var particleAssetManager = AddManager(new ParticleAssetManager());
-            var weaponAssetManager = AddManager(new WeaponAssetManager());
+            var equipmentAssetManager = AddManager(new EquipmentAssetManager());
             var uiAssetManager = AddManager(new UIAssetManager());
+            var profileAssetManager = AddManager(new ProfileAssetManager());
 
-            await LoadAllAsync(token);
+            await LoadAllAsync();
 
             // 2단계: 게임플레이 매니저 조립. 로드 전에 Get 을 부르면 에셋 매니저가 에러 로그로 알려준다.
             var phaseManager = AddManager(new PhaseManager("RootPhase", token));
             var mapManager = AddManager(new MapManager(mapAssetManager));
-            var weaponManager = AddManager(new WeaponManager(weaponAssetManager));
-            var heroManager = AddManager(new HeroManager(heroAssetManager, weaponManager));
-            var enemyManager = AddManager(new EnemyManager(enemyAssetManager, weaponManager));
+            var equipmentManager = AddManager(new EquipmentManager(equipmentAssetManager));
+            var attackManager = AddManager(new AttackManager());
+            var skillManager = AddManager(new SkillManager());
+            var ultimateManager = AddManager(new UltimateManager());
+            var heroManager = AddManager(new HeroManager(heroAssetManager, equipmentManager, attackManager, skillManager, ultimateManager));
+            var enemyManager = AddManager(new EnemyManager(enemyAssetManager, equipmentManager, attackManager, skillManager, ultimateManager));
             var particleManager = AddManager(new ParticleManager(particleAssetManager, heroManager, enemyManager));
+            var waveManager = AddManager(new WaveManager(enemyManager));
+            var currencyManager = AddManager(new CurrencyManager(enemyManager));
+            var growthManager = AddManager(new GrowthManager(enemyManager));
 
             var cameraManager = AddManager(new CameraManager());
             var cameraDirector = AddManager(new CameraDirector(cameraManager, heroManager));
@@ -45,14 +51,15 @@ namespace Sayne
 
             var phaseUIManager = AddManager(new PhaseUIManager(phaseManager));
             var screenUIManager = AddManager(new ScreenUIManager(phaseUIManager, heroManager,
-                uiAssetManager.BattlePanelPrefab));
+                waveManager, currencyManager, growthManager, profileAssetManager,
+                uiAssetManager.BattlePanelPrefab, uiAssetManager.ResultPanelPrefab));
 
             var heroControlManager = AddManager(new HeroControlManager(heroManager, enemyManager, screenUIManager.BattlePanel));
             var equipmentUIManager = AddManager(new EquipmentUIManager(screenUIManager.BattlePanel, heroManager,
-                weaponManager, weaponAssetManager));
+                equipmentManager));
             var enemyAIManager = AddManager(new EnemyAIManager(heroManager, enemyManager));
 
-            var battleManager = AddManager(new BattleManager(phaseManager, mapManager, heroManager, enemyManager));
+            var battleManager = AddManager(new BattleManager(phaseManager, mapManager, heroManager, enemyManager, waveManager));
         }
 
         private void OnDestroy()
@@ -79,12 +86,12 @@ namespace Sayne
             return manager;
         }
 
-        private UniTask LoadAllAsync(CancellationToken token)
+        private UniTask LoadAllAsync()
         {
             var loads = new List<UniTask>(_loadables.Count);
             foreach (var loadable in _loadables)
             {
-                loads.Add(loadable.LoadAsync(token));
+                loads.Add(loadable.LoadAsync());
             }
 
             return UniTask.WhenAll(loads);

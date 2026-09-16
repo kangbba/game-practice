@@ -27,11 +27,23 @@ MonoBehaviour:
     m_SerializedLabels:
     - Enemies
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 23ec36bae8c24f7f9a74b40e250ee569
+    m_Address: Ogre
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Profiles
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 254750578fe2462f8242bd90c861ad75
     m_Address: Scythe
     m_ReadOnly: 0
     m_SerializedLabels:
     - Weapons
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 27a06f6d2b354e5dae13d2432a1108ef
+    m_Address: CrimsonScarf
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 28ae9f60fe75c44ba87fb7251391ecf8
     m_Address: Nyx
@@ -45,11 +57,29 @@ MonoBehaviour:
     m_SerializedLabels:
     - Heroes
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2bd8597b13fd49d4a4dea6f1ccb52867
+    m_Address: NavyCape
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 330f7d709e0148b7ab4a5c28098e64ef
     m_Address: Impact
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 33c56f43600b44ca8e496f86fe0d9e43
+    m_Address: Staff
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3a24d4d8df22402d91e7253b4aaa7238
+    m_Address: SilverHair
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4036b0020b344c23baea36fab2709cdd
     m_Address: NyxUltimateCharge
@@ -80,6 +110,18 @@ MonoBehaviour:
     m_SerializedLabels:
     - Heroes
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 55f82ab41d824f3991bc2da5a8cc5328
+    m_Address: Goblin
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Profiles
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 56ad399d34e5418cac3dd0c811b9fc97
+    m_Address: Kage
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Profiles
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 58040600121a4bfaa09e4c6760f3382f
     m_Address: Kage
     m_ReadOnly: 0
@@ -91,6 +133,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 70221331b05241e0b65f309e8738f5ca
+    m_Address: Scythe
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 76f3ad4c3fc44bbda8751c11c42fc8e8
+    m_Address: Nyx
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Profiles
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7a34961aedb244e493f9ef07a88352ea
     m_Address: Slash
@@ -109,11 +163,29 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 92d8850d0e2749d4b3a2b00d91521f78
+    m_Address: Sword
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 95a3d6432a744b6fb09532bb12bc6fd6
+    m_Address: WhiteTwinHead
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 97f661b581234bb1bce5087d7a15574b
     m_Address: AldricUltimateCharge
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9a2eb7689c1540ad88111f51de8307b7
+    m_Address: WhiteHair
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a6ceef4b40764f6eab47fd45a8cf61df
     m_Address: Heal
@@ -127,6 +199,12 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cae3287edb07497090ed51f076559db6
+    m_Address: BlackCape
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: cb080f5996124904aca558016de6265c
     m_Address: Goblin
     m_ReadOnly: 0
@@ -139,11 +217,22 @@ MonoBehaviour:
     m_SerializedLabels:
     - Heroes
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d2f897a01677744918fafe0e5a38209e
+    m_Address: ResultPhaseUIPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d912bb82791f46eb949b5ca93df8d3ef
     m_Address: Aldric
     m_ReadOnly: 0
     m_SerializedLabels:
     - Heroes
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d944b903507042d7ba13db86c6dcaf6d
+    m_Address: VioletCape
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e5fef55221b742a6a72f3b331183e0f6
     m_Address: NyxUltimate
@@ -151,11 +240,29 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e8d0aefa90604638945c84452a50f201
+    m_Address: FoxMaskHead
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ecf8fa6bdde243599d7ee5ab9d60d4d1
+    m_Address: SilverHead
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ee43b4921792489abc01a5f42e096441
     m_Address: AldricUltimate
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f88196cff2724300be168a471f36f429
+    m_Address: Aldric
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Profiles
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d245d5bec672c4a3da23b652abf31bc1, type: 2}

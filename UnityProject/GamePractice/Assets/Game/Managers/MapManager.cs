@@ -28,11 +28,6 @@ namespace Sayne
             ClearMap();
 
             var prefab = _mapAssets.Get(mapID);
-            if (prefab == null)
-            {
-                return null;
-            }
-
             _currentMap = Object.Instantiate(prefab);
             _currentMap.transform.position = Vector3.zero;
             return _currentMap;

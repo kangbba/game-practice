@@ -7,10 +7,36 @@ namespace Sayne
 {
     public class HeroManager : ManagerBase
     {
-        private readonly IHeroAssets _heroAssets;
-        private readonly WeaponManager _weaponManager;
-
         private const float ReviveDuration = 5f;
+
+        /// <summary>히어로 기본 설계값. ScriptableObject 대신 당분간 여기서 선언한다.</summary>
+        private static readonly Dictionary<string, (CharacterStats Body, EquipmentIDs Outfit)> Plans =
+            new Dictionary<string, (CharacterStats, EquipmentIDs)>
+            {
+                [HeroID.Kage] = (new CharacterStats(maxHP: 100, moveSpeed: 4.5f), new EquipmentIDs(
+                    rightHand: EquipmentID.Weapon.Scythe,
+                    head: EquipmentID.Head.FoxMask,
+                    back: EquipmentID.Back.Navy,
+                    neck: EquipmentID.Neck.Crimson)),
+
+                [HeroID.Aldric] = (new CharacterStats(maxHP: 100, moveSpeed: 4.5f), new EquipmentIDs(
+                    rightHand: EquipmentID.Weapon.Sword,
+                    head: EquipmentID.Head.Silver,
+                    hair: EquipmentID.Hair.Silver,
+                    back: EquipmentID.Back.Violet)),
+
+                [HeroID.Nyx] = (new CharacterStats(maxHP: 100, moveSpeed: 4.5f), new EquipmentIDs(
+                    rightHand: EquipmentID.Weapon.Staff,
+                    head: EquipmentID.Head.WhiteTwin,
+                    hair: EquipmentID.Hair.White,
+                    back: EquipmentID.Back.Black)),
+            };
+
+        private readonly IAssets<Hero> _heroAssets;
+        private readonly EquipmentManager _equipmentManager;
+        private readonly AttackManager _attackManager;
+        private readonly SkillManager _skillManager;
+        private readonly UltimateManager _ultimateManager;
 
         private readonly List<Hero> _currentHeroes = new List<Hero>();
         private readonly Subject<Character> _spawned = new Subject<Character>();
@@ -22,10 +48,14 @@ namespace Sayne
         /// <summary>부활까지 남은 시간. 살아있는 동안은 0.</summary>
         public ReadOnlyReactiveProperty<float> ReviveRemainTime => _reviveRemainTime;
 
-        public HeroManager(IHeroAssets heroAssets, WeaponManager weaponManager)
+        public HeroManager(IAssets<Hero> heroAssets, EquipmentManager equipmentManager,
+            AttackManager attackManager, SkillManager skillManager, UltimateManager ultimateManager)
         {
             _heroAssets = heroAssets;
-            _weaponManager = weaponManager;
+            _equipmentManager = equipmentManager;
+            _attackManager = attackManager;
+            _skillManager = skillManager;
+            _ultimateManager = ultimateManager;
         }
 
         protected override void OnInit()
@@ -41,21 +71,12 @@ namespace Sayne
 
         public Hero SpawnHero(string heroID, Vector3 position)
         {
-            var prefab = _heroAssets.Get(heroID);
-            var definition = _heroAssets.GetDefinition(heroID);
-            if (prefab == null || definition == null)
-            {
-                return null;
-            }
-
-            var hero = Object.Instantiate(prefab);
+            var plan = Plans[heroID];
+            var hero = Object.Instantiate(_heroAssets.Get(heroID));
             hero.transform.position = position;
-            hero.Init(definition.ToStats(), definition.ToBareHandsAttack());
-
-            if (!string.IsNullOrEmpty(definition.DefaultWeaponID))
-            {
-                _weaponManager.Equip(hero, definition.DefaultWeaponID);
-            }
+            hero.Init(plan.Body, _attackManager.ComboOf(heroID),
+                _skillManager.Of(heroID), _ultimateManager.Of(heroID),
+                _equipmentManager.CreateSet(plan.Outfit));
 
             _currentHeroes.Add(hero);
 

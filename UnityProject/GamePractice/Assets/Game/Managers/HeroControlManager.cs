@@ -37,7 +37,7 @@ namespace Sayne
                 })
                 .RegisterTo(LifeToken);
 
-            _battlePanel.AttackClicked
+            _battlePanel.SkillClicked
                 .Subscribe(this, (_, self) => self.Dispatch(controller => controller.ManualAttack()))
                 .RegisterTo(LifeToken);
 
@@ -69,7 +69,7 @@ namespace Sayne
         {
             foreach (var controller in _controllers)
             {
-                if (controller.Hero != null && controller.Hero.IsAlive.CurrentValue)
+                if (controller.Hero != null && controller.Hero.IsAlive)
                 {
                     action(controller);
                     return;

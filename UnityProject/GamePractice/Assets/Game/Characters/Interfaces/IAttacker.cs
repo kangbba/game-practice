@@ -2,14 +2,9 @@ using R3;
 
 namespace Sayne
 {
+    /// <summary>타격하는 쪽. 어떤 타가 나갈지는 캐릭터가 사이클로 정한다.</summary>
     public interface IAttacker
     {
-        int AttackPower { get; }
-        float AttackRange { get; }
-        bool CanAttack { get; }
-
-        Observable<Unit> Attacked { get; }
-
-        void Attack();
+        CharacterCombat Combat { get; }
     }
 }

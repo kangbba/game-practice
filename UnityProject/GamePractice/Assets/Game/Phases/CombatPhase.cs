@@ -28,8 +28,7 @@ namespace Sayne
             {
                 for (var i = 0; i < entry.Count; i++)
                 {
-                    var enemy = _enemyManager.SpawnEnemy(entry.EnemyID, RandomPosition(), entry.Stats,
-                        entry.BareHandsAttack, entry.WeaponID);
+                    var enemy = _enemyManager.SpawnEnemy(entry.EnemyID, RandomPosition());
                     if (enemy != null)
                     {
                         _spawned.Add(enemy);
@@ -53,7 +52,7 @@ namespace Sayne
         {
             foreach (var enemy in _spawned)
             {
-                if (enemy != null && enemy.IsAlive.CurrentValue)
+                if (enemy != null && enemy.IsAlive)
                 {
                     return false;
                 }

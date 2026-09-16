@@ -27,15 +27,9 @@ AvatarMask:
     m_Weight: 1
   - m_Path: Root/Torso/Cape
     m_Weight: 1
-  - m_Path: Root/Torso/Cape/Skin
-    m_Weight: 1
   - m_Path: Root/Torso/Scarf
     m_Weight: 1
-  - m_Path: Root/Torso/Scarf/Skin
-    m_Weight: 1
   - m_Path: Root/Torso/Head
-    m_Weight: 1
-  - m_Path: Root/Torso/Head/Skin
     m_Weight: 1
   - m_Path: Root/Torso/BackArm
     m_Weight: 1
@@ -54,8 +48,6 @@ AvatarMask:
   - m_Path: Root/Torso/Arm/Forearm/Skin
     m_Weight: 1
   - m_Path: Root/Torso/Arm/Forearm/Weapon
-    m_Weight: 1
-  - m_Path: Root/Torso/Arm/Forearm/Weapon/Skin
     m_Weight: 1
   - m_Path: EffectSocket
     m_Weight: 0

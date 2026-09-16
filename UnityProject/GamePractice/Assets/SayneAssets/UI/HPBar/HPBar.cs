@@ -1,13 +1,12 @@
 using R3;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Sayne
 {
     public class HPBar : MonoBehaviour
     {
-        [SerializeField] private Image _frontFill;
-        [SerializeField] private Image _backFill;
+        [SerializeField] private SlicedFillBar _frontFill;
+        [SerializeField] private SlicedFillBar _backFill;
 
         private HPBarCore _core;
 

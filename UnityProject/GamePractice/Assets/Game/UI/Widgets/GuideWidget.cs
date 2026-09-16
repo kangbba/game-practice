@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Sayne
 {
@@ -10,7 +9,7 @@ namespace Sayne
         [SerializeField] private TextMeshProUGUI _titleText;
         [SerializeField] private TextMeshProUGUI _descText;
         [SerializeField] private TextMeshProUGUI _rewardText;
-        [SerializeField] private Image _progressFill;
+        [SerializeField] private SlicedFillBar _progressFill;
         [SerializeField] private TextMeshProUGUI _progressLabel;
 
         public void SetGuide(string title, string desc)
@@ -26,7 +25,7 @@ namespace Sayne
 
         public void SetProgress(int current, int goal)
         {
-            _progressFill.fillAmount = goal > 0 ? Mathf.Clamp01((float)current / goal) : 0f;
+            _progressFill.FillAmount = goal > 0 ? (float)current / goal : 0f;
             _progressLabel.text = $"{current}/{goal}";
         }
     }

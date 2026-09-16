@@ -4,22 +4,26 @@ using UnityEngine.EventSystems;
 
 namespace Sayne
 {
-    /// <summary>장비창 우측의 아이템 후보 한 칸. 드래그해서 슬롯에 떨어뜨린다.</summary>
+    /// <summary>장비창 우측의 아이템 후보 한 칸. 드래그해서 같은 부위의 슬롯에 떨어뜨린다.</summary>
     public class EquipmentCandidateWidget : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         [SerializeField] private TextMeshProUGUI _label;
         [SerializeField] private UnityEngine.UI.Image _icon;
         [SerializeField] private CanvasGroup _canvasGroup;
 
-        /// <summary>빈 문자열 = 맨손.</summary>
-        public string WeaponID { get; private set; }
-
         private Transform _homeParent;
         private int _homeSiblingIndex;
 
-        public void Setup(string weaponID, string displayName, Sprite icon)
+        /// <summary>빈 문자열 = 그 부위를 벗는다.</summary>
+        public string EquipmentID { get; private set; }
+
+        /// <summary>이 파츠가 들어갈 부위. 착용 조건은 이것뿐이라 캐릭터는 가리지 않는다.</summary>
+        public BodyPart BodyPart { get; private set; }
+
+        public void Setup(string equipmentID, BodyPart bodyPart, string displayName, Sprite icon)
         {
-            WeaponID = weaponID;
+            EquipmentID = equipmentID;
+            BodyPart = bodyPart;
             _label.text = displayName;
             _icon.sprite = icon;
             _icon.enabled = icon != null;

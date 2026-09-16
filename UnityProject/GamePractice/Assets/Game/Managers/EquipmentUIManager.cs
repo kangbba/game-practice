@@ -12,29 +12,19 @@ namespace Sayne
     {
         private readonly BattlePhaseUIPanel _panel;
         private readonly HeroManager _heroManager;
-        private readonly WeaponManager _weaponManager;
-        private readonly IAssets<WeaponDefinition> _weaponAssets;
+        private readonly EquipmentManager _equipmentManager;
 
-        public EquipmentUIManager(BattlePhaseUIPanel panel, HeroManager heroManager, WeaponManager weaponManager,
-            IAssets<WeaponDefinition> weaponAssets)
+        public EquipmentUIManager(BattlePhaseUIPanel panel, HeroManager heroManager, EquipmentManager equipmentManager)
         {
             _panel = panel;
             _heroManager = heroManager;
-            _weaponManager = weaponManager;
-            _weaponAssets = weaponAssets;
+            _equipmentManager = equipmentManager;
         }
 
         protected override void OnInit()
         {
             var window = _panel.EquipmentWindow;
-
-            var candidates = new List<(string, string, Sprite)> { (string.Empty, "맨손", null) };
-            foreach (var weaponID in _weaponAssets.IDs)
-            {
-                candidates.Add((weaponID, weaponID, _weaponAssets.Get(weaponID).Icon));
-            }
-
-            window.SetCandidates(candidates);
+            window.SetCandidates(BuildCandidates());
 
             _heroManager.Spawned
                 .Subscribe(this, (character, self) =>
@@ -51,7 +41,7 @@ namespace Sayne
                 .RegisterTo(LifeToken);
 
             window.Applied
-                .Subscribe(this, (weaponID, self) => self.Apply(weaponID))
+                .Subscribe(this, (request, self) => self.Apply(request.BodyPart, request.EquipmentID))
                 .RegisterTo(LifeToken);
         }
 
@@ -59,12 +49,36 @@ namespace Sayne
         {
         }
 
+        /// <summary>등록된 파츠 전부가 후보다. 치장 부위엔 "벗기" 칸을 앞에 두고, 무기는 맨손도 무기라 벗기가 없다.</summary>
+        private List<(string, BodyPart, string, Sprite)> BuildCandidates()
+        {
+            var candidates = new List<(string, BodyPart, string, Sprite)>();
+
+            foreach (var bodyPart in BodyParts.All)
+            {
+                if (bodyPart != BodyPart.RightHand)
+                {
+                    candidates.Add((string.Empty, bodyPart, $"{BodyParts.DisplayName(bodyPart)} 벗기", null));
+                }
+            }
+
+            foreach (var equipmentID in EquipmentPlans.IDs)
+            {
+                candidates.Add((equipmentID, EquipmentPlans.BodyPartOf(equipmentID), equipmentID, null));
+            }
+
+            return candidates;
+        }
+
         private void BindHero(Hero hero)
         {
-            hero.Equipment.CurrentWeapon
-                .Subscribe(this, (weapon, self) =>
-                    self._panel.EquipmentWindow.SetEquippedID(weapon != null ? weapon.Name : string.Empty))
-                .RegisterTo(hero.destroyCancellationToken);
+            foreach (var bodyPart in BodyParts.All)
+            {
+                hero.Equipment.Observe(bodyPart)
+                    .Subscribe((self: this, bodyPart), (part, state) =>
+                        state.self._panel.EquipmentWindow.SetEquipped(state.bodyPart, part != null ? part.ID : string.Empty))
+                    .RegisterTo(hero.destroyCancellationToken);
+            }
         }
 
         private void Toggle(EquipmentWindow window)
@@ -79,22 +93,22 @@ namespace Sayne
             }
         }
 
-        private void Apply(string weaponID)
+        private void Apply(BodyPart bodyPart, string equipmentID)
         {
             foreach (var hero in _heroManager.CurrentHeroes)
             {
-                if (hero == null || !hero.IsAlive.CurrentValue)
+                if (hero == null || !hero.IsAlive)
                 {
                     continue;
                 }
 
-                if (string.IsNullOrEmpty(weaponID))
+                if (string.IsNullOrEmpty(equipmentID))
                 {
-                    _weaponManager.Unequip(hero);
+                    _equipmentManager.TakeOff(hero, bodyPart);
                 }
                 else
                 {
-                    _weaponManager.Equip(hero, weaponID);
+                    _equipmentManager.Wear(hero, equipmentID);
                 }
 
                 return;

@@ -1,4 +1,3 @@
-using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -6,7 +5,12 @@ namespace Sayne
 {
     public class KagePreviewWindow : EditorWindow
     {
-        private static readonly string[] Clips = { "Idle", "Walk", "Attack", "Hit", "Death", "Ultimate" };
+        private static readonly string[] Heroes = { "Kage", "Aldric", "Nyx" };
+        private int _currentHero;
+        private string PrefabPath => $"Assets/Game/Characters/Heroes/{Heroes[_currentHero]}/{Heroes[_currentHero]}.prefab";
+        private string AnimationPath => $"Assets/DarkFantasy2D/Animations/Heroes/{Heroes[_currentHero]}";
+
+        private static readonly string[] Clips = { "Idle", "Walk", "Attack1", "Attack2", "Attack3", "Skill", "Hit", "Death", "Ultimate" };
         private PreviewRenderUtility _preview;
         private GameObject _hero;
         private GameObject _graphic;
@@ -17,10 +21,11 @@ namespace Sayne
         private bool _isPlaying = true;
         private bool _isFacingLeft;
 
+        [MenuItem("★Sayne★/영웅/애니메이션 프리뷰")]
         [MenuItem("★Sayne★/Kage/애니메이션 프리뷰")]
         public static void Open()
         {
-            GetWindow<KagePreviewWindow>("Kage Preview");
+            GetWindow<KagePreviewWindow>("Hero Motion");
         }
 
         private void OnEnable()
@@ -49,9 +54,17 @@ namespace Sayne
 
         private void OnGUI()
         {
+            EditorGUI.BeginChangeCheck();
+            _currentHero = GUILayout.Toolbar(_currentHero, Heroes);
+            if (EditorGUI.EndChangeCheck())
+            {
+                _preview?.Cleanup();
+                _preview = null;
+                _currentTime = 0f;
+            }
             if (_preview == null && !InitPreview())
             {
-                EditorGUILayout.HelpBox("Kage 프리팹을 먼저 생성하세요: Tools > Dark Fantasy > Kage > Rebuild Assets", MessageType.Info);
+                EditorGUILayout.HelpBox("영웅 프리팹과 애니메이션 에셋을 확인하세요.", MessageType.Info);
                 return;
             }
             EditorGUI.BeginChangeCheck();
@@ -79,10 +92,11 @@ namespace Sayne
 
         private bool InitPreview()
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(KageBuilder.PrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             if (prefab == null) return false;
             _preview = new PreviewRenderUtility();
             _hero = _preview.InstantiatePrefabInScene(prefab);
+            HeroActionAnimationBuilder.DressPreview(_hero.transform.Find("Graphic"), Heroes[_currentHero]);
             _graphic = _hero.transform.Find("Graphic").gameObject;
             _graphic.GetComponent<Animator>().enabled = false;
             SetupCamera(_preview.camera);
@@ -92,7 +106,7 @@ namespace Sayne
 
         private void LoadClip()
         {
-            _clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{KageBuilder.AnimationPath}/{Clips[_currentClip]}.anim");
+            _clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationPath}/{Clips[_currentClip]}.anim");
         }
 
         private void Sample()
@@ -104,46 +118,13 @@ namespace Sayne
         private static void SetupCamera(Camera camera)
         {
             camera.orthographic = true;
-            camera.orthographicSize = 1.65f;
-            camera.transform.position = new Vector3(.15f, 1.20f, -10);
+            camera.orthographicSize = 1.85f;
+            camera.transform.position = new Vector3(.20f, 1.35f, -10);
             camera.transform.rotation = Quaternion.identity;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(.12f, .15f, .19f, 1);
             camera.nearClipPlane = .1f;
             camera.farClipPlane = 30;
-        }
-
-        public static void ExportAttackPreview()
-        {
-            var preview = new PreviewRenderUtility();
-            var sheet = new Texture2D(1536, 1024, TextureFormat.RGB24, false);
-            try
-            {
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(KageBuilder.PrefabPath);
-                var hero = preview.InstantiatePrefabInScene(prefab);
-                var graphic = hero.transform.Find("Graphic").gameObject;
-                graphic.GetComponent<Animator>().enabled = false;
-                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(KageBuilder.AnimationPath + "/Attack.anim");
-                SetupCamera(preview.camera);
-                var times = new[] { 0f, .075f, .115f, .155f, .21f, .50f };
-                for (var i = 0; i < times.Length; i++)
-                {
-                    clip.SampleAnimation(graphic, times[i]);
-                    preview.BeginStaticPreview(new Rect(0, 0, 512, 512));
-                    preview.Render(true);
-                    var frame = preview.EndStaticPreview();
-                    sheet.SetPixels((i % 3) * 512, (1 - i / 3) * 512, 512, 512, frame.GetPixels());
-                    DestroyImmediate(frame);
-                }
-                sheet.Apply();
-                Directory.CreateDirectory("Temp/KageReview");
-                File.WriteAllBytes("Temp/KageReview/Attack.png", sheet.EncodeToPNG());
-            }
-            finally
-            {
-                preview.Cleanup();
-                DestroyImmediate(sheet);
-            }
         }
     }
 }

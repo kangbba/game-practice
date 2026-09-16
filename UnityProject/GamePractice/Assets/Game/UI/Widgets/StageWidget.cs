@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Sayne
 {
@@ -8,7 +7,7 @@ namespace Sayne
     public class StageWidget : MonoBehaviour
     {
         [SerializeField] private TextMeshProUGUI _stageText;
-        [SerializeField] private Image _progressFill;
+        [SerializeField] private SlicedFillBar _progressFill;
         [SerializeField] private TextMeshProUGUI _killLabel;
 
         public void SetStage(string stageName)
@@ -18,7 +17,7 @@ namespace Sayne
 
         public void SetKills(int current, int max)
         {
-            _progressFill.fillAmount = max > 0 ? Mathf.Clamp01((float)current / max) : 0f;
+            _progressFill.FillAmount = max > 0 ? (float)current / max : 0f;
             _killLabel.text = $"{current}/{max}";
         }
     }

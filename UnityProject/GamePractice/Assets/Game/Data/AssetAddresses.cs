@@ -7,9 +7,11 @@ namespace Sayne
         public const string EnemiesLabel = "Enemies";
         public const string ParticlesLabel = "Particles";
         public const string MapsLabel = "Maps";
-        public const string WeaponsLabel = "Weapons";
+        public const string EquipmentLabel = "Equipment";
+        public const string ProfilesLabel = "Profiles";
 
         public const string WorldHPBar = "WorldHPBar";
         public const string BattlePhaseUIPanel = "BattlePhaseUIPanel";
+        public const string ResultPhaseUIPanel = "ResultPhaseUIPanel";
     }
 }

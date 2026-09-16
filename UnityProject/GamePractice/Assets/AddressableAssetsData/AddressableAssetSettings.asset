@@ -104,6 +104,8 @@ MonoBehaviour:
     - Particles
     - Maps
     - Weapons
+    - Equipment
+    - Profiles
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: f2818e5df622a4ad7bce1c635dde41bd, type: 2}

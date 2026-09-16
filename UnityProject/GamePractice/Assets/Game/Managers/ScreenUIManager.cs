@@ -15,20 +15,31 @@ namespace Sayne
 
         private readonly PhaseUIManager _phaseUIManager;
         private readonly HeroManager _heroManager;
+        private readonly WaveManager _waveManager;
+        private readonly CurrencyManager _currencyManager;
+        private readonly GrowthManager _growthManager;
+        private readonly IAssets<CharacterProfile> _profiles;
         private readonly BattlePhaseUIPanel _battlePanelPrefab;
+        private readonly ResultPhaseUIPanel _resultPanelPrefab;
 
         private Canvas _canvas;
-        private BattlePhaseUIPanel _battlePanel;
 
         /// <summary>전투 HUD. OnInit 이후 접근 가능.</summary>
-        public BattlePhaseUIPanel BattlePanel => _battlePanel;
+        public BattlePhaseUIPanel BattlePanel { get; private set; }
 
         public ScreenUIManager(PhaseUIManager phaseUIManager, HeroManager heroManager,
-            BattlePhaseUIPanel battlePanelPrefab)
+            WaveManager waveManager, CurrencyManager currencyManager, GrowthManager growthManager,
+            IAssets<CharacterProfile> profiles, BattlePhaseUIPanel battlePanelPrefab,
+            ResultPhaseUIPanel resultPanelPrefab)
         {
             _phaseUIManager = phaseUIManager;
             _heroManager = heroManager;
+            _waveManager = waveManager;
+            _currencyManager = currencyManager;
+            _growthManager = growthManager;
+            _profiles = profiles;
             _battlePanelPrefab = battlePanelPrefab;
+            _resultPanelPrefab = resultPanelPrefab;
         }
 
         protected override void OnInit()
@@ -47,9 +58,13 @@ namespace Sayne
                 new GameObject(EventSystemName, typeof(EventSystem), typeof(InputSystemUIInputModule));
             }
 
-            _battlePanel = Object.Instantiate(_battlePanelPrefab, _canvas.transform);
-            _battlePanel.Bind(_heroManager);
-            _phaseUIManager.RegisterView(_battlePanel);
+            BattlePanel = Object.Instantiate(_battlePanelPrefab, _canvas.transform);
+            BattlePanel.Bind(_heroManager, _waveManager, _currencyManager, _growthManager, _profiles);
+            _phaseUIManager.RegisterView(BattlePanel);
+
+            var resultPanel = Object.Instantiate(_resultPanelPrefab, _canvas.transform);
+            resultPanel.Bind(_waveManager, _currencyManager);
+            _phaseUIManager.RegisterView(resultPanel);
         }
 
         protected override void OnRelease()
@@ -60,7 +75,7 @@ namespace Sayne
             }
 
             _canvas = null;
-            _battlePanel = null;
+            BattlePanel = null;
         }
     }
 }

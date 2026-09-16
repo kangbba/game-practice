@@ -1,27 +1,7 @@
-using R3;
-
 namespace Sayne
 {
-    public class Hero : Character
+    /// <summary>플레이어가 굴리는 캐릭터. 실제 히어로는 이걸 상속해 자기 ID 와 전투를 밝힌다.</summary>
+    public abstract class Hero : Character
     {
-        private readonly Subject<Unit> _ultimateUsed = new Subject<Unit>();
-
-        public Observable<Unit> UltimateUsed => _ultimateUsed;
-
-        public void UseUltimate()
-        {
-            if (!IsAlive.CurrentValue)
-            {
-                return;
-            }
-
-            _ultimateUsed.OnNext(Unit.Default);
-        }
-
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-            _ultimateUsed.Dispose();
-        }
     }
 }

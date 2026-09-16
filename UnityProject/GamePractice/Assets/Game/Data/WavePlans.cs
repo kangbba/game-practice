@@ -3,50 +3,36 @@ using System.Collections.Generic;
 
 namespace Sayne
 {
+    /// <summary>웨이브에 나오는 적 한 줄. 능력치·장비는 적 자신이 가진다.</summary>
     public readonly struct WaveSpawnEntry
     {
         public readonly string EnemyID;
         public readonly int Count;
-        public readonly CharacterStats Stats;
-        public readonly AttackProfile BareHandsAttack;
 
-        /// <summary>스폰 시 장착할 무기 ID. 비어 있으면 맨손.</summary>
-        public readonly string WeaponID;
-
-        public WaveSpawnEntry(string enemyID, int count, CharacterStats stats, AttackProfile bareHandsAttack,
-            string weaponID = "")
+        public WaveSpawnEntry(string enemyID, int count)
         {
             EnemyID = enemyID;
             Count = count;
-            Stats = stats;
-            BareHandsAttack = bareHandsAttack;
-            WeaponID = weaponID;
         }
     }
 
     /// <summary>웨이브별 적 구성 선언 테이블. 정의되지 않은 웨이브는 가장 가까운 아래 웨이브를 재사용한다.</summary>
     public static class WavePlans
     {
-        private static readonly CharacterStats GoblinBody = new CharacterStats(maxHP: 50, moveSpeed: 1.5f);
-        private static readonly AttackProfile GoblinAttack = new AttackProfile(power: 5, range: 2.5f, interval: 1f);
-
-        private static readonly CharacterStats OgreBody = new CharacterStats(maxHP: 120, moveSpeed: 1.2f);
-        private static readonly AttackProfile OgreAttack = new AttackProfile(power: 12, range: 2.5f, interval: 1.5f);
-
         private static readonly Dictionary<int, WaveSpawnEntry[]> Plans = new Dictionary<int, WaveSpawnEntry[]>
         {
             [1] = new[]
             {
-                new WaveSpawnEntry(EnemyID.Goblin, 5, GoblinBody, GoblinAttack),
+                new WaveSpawnEntry(EnemyID.Goblin, 5),
             },
             [2] = new[]
             {
-                new WaveSpawnEntry(EnemyID.Goblin, 8, GoblinBody, GoblinAttack),
+                new WaveSpawnEntry(EnemyID.Goblin, 8),
             },
             [3] = new[]
             {
-                new WaveSpawnEntry(EnemyID.Goblin, 6, GoblinBody, GoblinAttack),
-                new WaveSpawnEntry(EnemyID.Ogre, 2, OgreBody, OgreAttack),
+                new WaveSpawnEntry(EnemyID.Goblin, 6),
+                new WaveSpawnEntry(EnemyID.Ogre, 2),
             },
         };
 

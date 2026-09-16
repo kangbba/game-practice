@@ -8,7 +8,6 @@ namespace Sayne
     {
         private const float RetargetIntervalMin = 1.5f;
         private const float RetargetIntervalMax = 3f;
-        private const float AttackRange = 2.5f;
         private const float SeparationRadius = 3f;
         private const float SeparationWeight = 2.5f;
         private const float AimError = 1.5f;
@@ -27,6 +26,19 @@ namespace Sayne
 
         protected override void OnInit()
         {
+            // ② 적도 맞는 순간에 다시 판정한다.
+            _enemyManager.Spawned
+                .Subscribe(this, (character, self) =>
+                {
+                    if (character is Enemy enemy)
+                    {
+                        enemy.Combat.HitMoment
+                            .Subscribe((self, enemy), (attack, state) => state.self.ApplyHit(state.enemy, attack))
+                            .RegisterTo(enemy.destroyCancellationToken);
+                    }
+                })
+                .RegisterTo(LifeToken);
+
             Observable.EveryUpdate(UnityFrameProvider.Update)
                 .Subscribe(this, (_, self) => self.UpdateAI())
                 .RegisterTo(LifeToken);
@@ -42,7 +54,7 @@ namespace Sayne
         {
             foreach (var enemy in _enemyManager.CurrentEnemies)
             {
-                if (!enemy.IsAlive.CurrentValue)
+                if (!enemy.IsAlive)
                 {
                     continue;
                 }
@@ -57,10 +69,11 @@ namespace Sayne
             }
         }
 
-        private static void TryAttack(Enemy enemy)
+        /// <summary>③ 판정에 걸린 대상에게 피해를 준다. 사이 벌어졌으면 헛친다.</summary>
+        private void ApplyHit(Enemy enemy, BasicAttack attack)
         {
             var target = enemy.Target;
-            if (target == null || !target.IsAlive.CurrentValue || !enemy.CanAttack)
+            if (target == null || !target.IsAlive)
             {
                 return;
             }
@@ -68,13 +81,30 @@ namespace Sayne
             var offset = target.transform.position - enemy.transform.position;
             offset.y = 0f;
 
-            if (offset.magnitude > enemy.AttackRange)
+            if (enemy.Combat.IsInRange(offset))
+            {
+                enemy.Combat.Hit(target, attack);
+            }
+        }
+
+        private static void TryAttack(Enemy enemy)
+        {
+            var target = enemy.Target;
+            if (target == null || !target.IsAlive || !enemy.Combat.CanAttack)
             {
                 return;
             }
 
-            enemy.Attack();
-            target.TakeDamage(enemy.AttackPower, enemy);
+            var offset = target.transform.position - enemy.transform.position;
+            offset.y = 0f;
+
+            if (!enemy.Combat.IsInRange(offset))
+            {
+                return;
+            }
+
+            enemy.Look(offset);
+            enemy.Combat.Attack();
         }
 
         private bool ShouldThink(Enemy enemy)
@@ -111,7 +141,7 @@ namespace Sayne
 
             foreach (var hero in _heroManager.CurrentHeroes)
             {
-                if (!hero.IsAlive.CurrentValue)
+                if (!hero.IsAlive)
                 {
                     continue;
                 }
@@ -141,9 +171,10 @@ namespace Sayne
             var toTarget = target.transform.position - enemy.transform.position;
             toTarget.y = 0f;
 
-            if (toTarget.magnitude <= AttackRange)
+            // 사거리 안에서는 멈춘다 — 걸으면서는 못 때린다.
+            if (enemy.Combat.IsInRange(toTarget))
             {
-                return separation;
+                return Vector3.zero;
             }
 
             var toAim = aim - enemy.transform.position;

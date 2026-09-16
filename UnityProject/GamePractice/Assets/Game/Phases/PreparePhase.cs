@@ -27,7 +27,7 @@ namespace Sayne
         public override async UniTask MainLogicAsync(CancellationToken token)
         {
             _mapManager.CreateMap(MapID.World);
-            _heroManager.SpawnHero(HeroID.Kage, Vector3.zero);
+            _heroManager.SpawnHero(HeroID.Aldric, Vector3.zero);
 
             await UniTask.Delay(TimeSpan.FromSeconds(CombatStartDelay), cancellationToken: token);
         }

@@ -16,9 +16,9 @@ namespace Sayne.Editor
         private const string EnemiesRoot = "Assets/Game/Characters/Enemies";
         private const string ParticlesRoot = "Assets/Game/Particles";
         private const string MapsRoot = "Assets/Game/Maps";
-        private const string WeaponsRoot = "Assets/Game/Weapons";
+        private const string EquipmentRoot = "Assets/Game/Equipment";
 
-        [MenuItem("★Sayne★/어드레서블 셋업")]
+        [MenuItem("★Sayne★/2. 어드레서블 셋업")]
         public static void Setup()
         {
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
@@ -29,17 +29,22 @@ namespace Sayne.Editor
             count += MarkFolder(settings, group, EnemiesRoot, AssetAddresses.EnemiesLabel);
             count += MarkFolder(settings, group, ParticlesRoot, AssetAddresses.ParticlesLabel);
             count += MarkFolder(settings, group, MapsRoot, AssetAddresses.MapsLabel);
-            count += MarkFolder(settings, group, WeaponsRoot, AssetAddresses.WeaponsLabel);
+            count += MarkFolder(settings, group, EquipmentRoot, AssetAddresses.EquipmentLabel);
+
+            // 프로필은 캐릭터 폴더에 같이 둔다. 에셋 이름 = 캐릭터 ID.
+            count += MarkFolder(settings, group, HeroesRoot, AssetAddresses.ProfilesLabel, "t:CharacterProfile");
+            count += MarkFolder(settings, group, EnemiesRoot, AssetAddresses.ProfilesLabel, "t:CharacterProfile");
 
             count += Mark(settings, group, "Assets/Game/UI/WorldHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/BattlePhaseUIPanel.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/ResultPhaseUIPanel.prefab", null);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"AddressablesSetup: {count} 개 에셋 등록 완료");
         }
 
         private static int MarkFolder(AddressableAssetSettings settings, AddressableAssetGroup group,
-            string root, string label)
+            string root, string label, params string[] filters)
         {
             if (!settings.GetLabels().Contains(label))
             {
@@ -47,7 +52,12 @@ namespace Sayne.Editor
             }
 
             var count = 0;
-            foreach (var filter in new[] { "t:Prefab", "t:CharacterDefinition", "t:WeaponDefinition" })
+            if (filters.Length == 0)
+            {
+                filters = new[] { "t:Prefab" };
+            }
+
+            foreach (var filter in filters)
             {
                 foreach (var guid in AssetDatabase.FindAssets(filter, new[] { root }))
                 {
