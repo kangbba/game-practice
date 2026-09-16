@@ -14,10 +14,15 @@ namespace Sayne.Editor
             Write("Panel", 256, 128, false, false, new Vector4(20, 20, 20, 20));
             Write("Medallion", 256, 256, true, false, Vector4.zero);
             Write("Ring", 256, 256, true, true, Vector4.zero);
-            Write("Gauge", 64, 32, false, true, new Vector4(8, 8, 8, 8));
+
+            // 게이지는 9슬라이스로 폭만 늘어난다. 모서리 사선(6px)이 border(10px) 안에 온전히 들어가야
+            // 늘어나는 가운데 영역에 사선이 안 걸린다. 사선 12px + border 8px 조합은 양끝이 길게 뭉개졌다.
+            Write("Gauge", 64, 32, false, true, new Vector4(10, 10, 10, 10), 6f);
         }
 
-        private static void Write(string name, int width, int height, bool isCircle, bool isOverlay, Vector4 border)
+        /// <param name="corner">사각형 모서리를 깎는 45도 사선의 크기(px). 9슬라이스 border 보다 작아야 한다.</param>
+        private static void Write(string name, int width, int height, bool isCircle, bool isOverlay, Vector4 border,
+            float corner = 12f)
         {
             var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
             var pixels = new Color[width * height];
@@ -31,7 +36,7 @@ namespace Sayne.Editor
                     var dy = Mathf.Min(y, height - 1 - y);
                     var distance = isCircle
                         ? width * 0.5f - 2f - Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(width, height) * 0.5f)
-                        : Mathf.Min(Mathf.Min(dx, dy), (dx + dy - 12f) * 0.7071f) - 1f;
+                        : Mathf.Min(Mathf.Min(dx, dy), (dx + dy - corner) * 0.7071f) - 1f;
                     var color = Color.Lerp(dark, light, (float)y / height);
                     if (isOverlay)
                     {
