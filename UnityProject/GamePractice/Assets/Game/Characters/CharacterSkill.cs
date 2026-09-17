@@ -1,16 +1,23 @@
 namespace Sayne
 {
     /// <summary>
-    /// 캐릭터 스킬. 평타에 쿨타임이 더 붙은 것이다.
-    /// 쿨타임이 0이면 사이클 마지막에 나가는 고유스킬, 0보다 크면 사이클 밖에서 도는 궁극기다.
+    /// 쿨타임이 붙은 캐릭터 기술. 평타 콤보 밖에서 자기 쿨로 돌고, 평타 진행을 끊고 즉발한다.
+    /// 스킬과 궁극기가 같은 꼴이다 — 궁극기가 쿨이 더 길고 셀 뿐이다.
     /// </summary>
     public class CharacterSkill : BasicAttack
     {
         public float Cooldown { get; }
 
-        public CharacterSkill(string name, string animation, float powerMultiplier, float cooldown = 0f,
-            float hitTime = 0.12f, float staggerSeconds = 0.4f)
-            : base(name, animation, powerMultiplier, hitTime, staggerSeconds)
+        public float MotionSeconds => (Animation == CharacterAnimations.UltimateName
+            ? CharacterAnimations.UltimateDuration : CharacterAnimations.SkillDuration) / CharacterAnimations.ActionPlaybackSpeed;
+
+        public CharacterSkill(string name, string animation, float powerMultiplier, float cooldown,
+            float hitTime = -1f, float staggerSeconds = 0.4f)
+            : base(name, animation, powerMultiplier, hitTime >= 0f ? hitTime :
+                (animation == CharacterAnimations.UltimateName
+                    ? CharacterAnimations.UltimateDuration * CharacterAnimations.UltimateImpact
+                    : CharacterAnimations.SkillDuration * CharacterAnimations.SkillImpact) / CharacterAnimations.ActionPlaybackSpeed,
+                staggerSeconds)
         {
             Cooldown = cooldown;
         }

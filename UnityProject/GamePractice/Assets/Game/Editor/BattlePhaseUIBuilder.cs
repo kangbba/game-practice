@@ -36,7 +36,7 @@ namespace Sayne.Editor
         private static Sprite _ring;
         private static Sprite _gauge;
 
-        [MenuItem("★Sayne★/1. 전투 HUD 빌드")]
+        [MenuItem("★Sayne★/6. 전투 HUD 빌드", false, 6)]
         public static void Build()
         {
             BattleHUDArtBuilder.Build();
@@ -63,13 +63,15 @@ namespace Sayne.Editor
             var equipSlotPrefab = BuildEquipmentSlotWidget();
             var equipCandidatePrefab = BuildEquipmentCandidateWidget();
             var equipWindowPrefab = BuildEquipmentWindow(equipSlotPrefab, equipCandidatePrefab);
+            var growthStatPrefab = BuildGrowthStatWidget();
+            var growthWindowPrefab = BuildGrowthWindow(growthStatPrefab);
 
             ComposePanel(heroStatusPrefab, currencyPrefab, guidePrefab, stagePrefab, iconMenuPrefab, circleButtonPrefab,
-                skillButtonPrefab, equipWindowPrefab);
+                skillButtonPrefab, equipWindowPrefab, growthWindowPrefab);
 
             ComposeResultPanel();
 
-            Debug.Log("BattlePhaseUIBuilder: 위젯 프리팹 10종 + 전투 HUD 패널 재구성 완료");
+            Debug.Log("BattlePhaseUIBuilder: 위젯 프리팹 11종 + 전투 HUD 패널 재구성 완료");
         }
 
         // ---- 위젯 프리팹 ----
@@ -257,8 +259,8 @@ namespace Sayne.Editor
             bg.raycastTarget = true;
 
             var slotName = Text(
-                Rect(root, "SlotName", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -6f), new Vector2(72f, 22f)),
-                "-", 18f, TextGray);
+                Rect(root, "SlotName", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -5f), new Vector2(96f, 20f)),
+                "-", 14f, TextGray);
 
             var iconRT = Rect(root, "Icon", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 4f), new Vector2(64f, 64f));
             iconRT.anchorMin = new Vector2(0.2f, 0.30f);
@@ -269,8 +271,8 @@ namespace Sayne.Editor
             icon.enabled = false;
 
             var itemName = Text(
-                Rect(root, "ItemName", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 6f), new Vector2(72f, 22f)),
-                "없음", 18f, TextWhite);
+                Rect(root, "ItemName", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 5f), new Vector2(96f, 20f)),
+                "없음", 14f, TextWhite);
 
             var widget = root.gameObject.AddComponent<EquipmentSlotWidget>();
             var so = new SerializedObject(widget);
@@ -295,14 +297,22 @@ namespace Sayne.Editor
             icon.enabled = false;
 
             var label = Text(
-                Rect(root, "Label", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 4f), new Vector2(68f, 20f)),
-                "-", 16f, TextWhite);
+                Rect(root, "Label", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 4f), new Vector2(96f, 18f)),
+                "-", 13f, TextWhite);
+
+            // 장착중 표식. 기본은 꺼져 있고 창이 장비 상태를 보고 켠다.
+            var equippedMark = Rect(root, "EquippedMark", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(4f, -4f), new Vector2(40f, 20f));
+            Img(equippedMark, Gold, _rounded);
+            Text(Stretch(equippedMark, "Text", 1f), "장착", 11f, new Color(0.08f, 0.09f, 0.14f));
+            equippedMark.gameObject.SetActive(false);
 
             var widget = root.gameObject.AddComponent<EquipmentCandidateWidget>();
             var so = new SerializedObject(widget);
             so.FindProperty("_label").objectReferenceValue = label;
             so.FindProperty("_icon").objectReferenceValue = icon;
             so.FindProperty("_canvasGroup").objectReferenceValue = canvasGroup;
+            so.FindProperty("_equippedMark").objectReferenceValue = equippedMark.gameObject;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             return SaveWidget(root.gameObject);
@@ -310,61 +320,201 @@ namespace Sayne.Editor
 
         private static GameObject BuildEquipmentWindow(GameObject slotPrefab, GameObject candidatePrefab)
         {
-            var root = WidgetRoot("EquipmentWindow", new Vector2(840f, 560f), new Vector2(0.5f, 0.5f));
+            var root = WidgetRoot("EquipmentWindow", new Vector2(900f, 620f), new Vector2(0.5f, 0.5f));
             var bg = Img(root, Color.white, _panel);
             bg.raycastTarget = true;
 
-            Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -10f), new Vector2(200f, 40f)),
-                "장비", 30f, TextWhite, HorizontalAlignmentOptions.Left);
-            var closeButton = MakeButton(root, "CloseButton", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-12f, -12f), new Vector2(52f, 52f), "X");
+            Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -12f), new Vector2(200f, 36f)),
+                "장비", 26f, TextWhite, HorizontalAlignmentOptions.Left);
+            var closeBtn = MakeButton(root, "CloseBtn", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-12f, -12f), new Vector2(48f, 48f), "X");
 
-            // 인체 배치: 위 머리, 좌 머리카락, 우 스카프, 중앙 망토, 오른팔 무기. BodyPart 하나당 슬롯 하나다.
-            var head = PlaceSlot(slotPrefab, root, BodyPart.Head, new Vector2(190f, -60f), new Vector2(90f, 90f));
-            var hair = PlaceSlot(slotPrefab, root, BodyPart.Hair, new Vector2(78f, -60f), new Vector2(80f, 80f));
-            var scarf = PlaceSlot(slotPrefab, root, BodyPart.Neck, new Vector2(302f, -60f), new Vector2(80f, 80f));
-            var cape = PlaceSlot(slotPrefab, root, BodyPart.Back, new Vector2(190f, -165f), new Vector2(150f, 180f));
-            var weapon = PlaceSlot(slotPrefab, root, BodyPart.RightHand, new Vector2(78f, -165f), new Vector2(80f, 150f));
+            // ---- 좌측: 장비 슬롯. 자리 하나당 슬롯 하나 — 위 줄은 몸에 걸치는 것, 아래 줄은 손과 다리 ----
+            var slotLayout = new[]
+            {
+                EquipmentSlot.Helmet, EquipmentSlot.Chest, EquipmentSlot.Greaves,
+                EquipmentSlot.MainHand, EquipmentSlot.OffHand, EquipmentSlot.Boots,
+            };
 
-            Text(Rect(root, "CandidatesLabel", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(420f, -64f), new Vector2(200f, 30f)),
-                "후보", 22f, TextGray, HorizontalAlignmentOptions.Left);
+            var slotWidgets = new EquipmentSlotWidget[slotLayout.Length];
+            for (var i = 0; i < slotLayout.Length; i++)
+            {
+                var pos = new Vector2(74f + 100f * (i % 3), -76f - 120f * (i / 3));
+                slotWidgets[i] = PlaceSlot(slotPrefab, root, slotLayout[i], pos, new Vector2(88f, 110f));
+            }
 
-            // 부위별 "벗기" 칸 다섯 개까지 얹히므로 칸을 줄여 4x5 로 깔린다.
+            // ---- 좌측 중단: 몸 스탯 줄(기본+성장 합). 미장착 후보를 고르면 영향치 (+x) 가 붙는다 ----
+            var statAttack = Text(
+                Rect(root, "StatAttack", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -372f), new Vector2(190f, 28f)),
+                "공격력 0", 17f, TextWhite, HorizontalAlignmentOptions.Left);
+            var statHP = Text(
+                Rect(root, "StatHP", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(220f, -372f), new Vector2(196f, 28f)),
+                "체력 0", 17f, TextWhite, HorizontalAlignmentOptions.Left);
+
+            // ---- 좌측 하단: 설명 칸 + 장착 버튼. 후보를 고르면 여기가 채워진다 ----
+            var description = Rect(root, "Description", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(24f, -408f), new Vector2(392f, 120f));
+            Img(description, Color.white, _panel);
+
+            var descIconRT = Rect(description, "Icon", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -14f), new Vector2(74f, 74f));
+            var descIcon = Img(descIconRT, Color.white);
+            descIcon.preserveAspect = true;
+            descIcon.enabled = false;
+
+            var descName = Text(
+                Rect(description, "Name", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(100f, -16f), new Vector2(278f, 26f)),
+                "-", 19f, Gold, HorizontalAlignmentOptions.Left);
+
+            var descText = Text(
+                Rect(description, "Text", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(100f, -46f), new Vector2(278f, 66f)),
+                "", 14f, TextGray, HorizontalAlignmentOptions.Left);
+            descText.verticalAlignment = VerticalAlignmentOptions.Top;
+            descText.textWrappingMode = TextWrappingModes.Normal;
+
+            var actionBtn = MakeButton(root, "ActionBtn", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(24f, -540f), new Vector2(392f, 56f), "장착");
+            var actionBtnLabel = actionBtn.GetComponentInChildren<TextMeshProUGUI>();
+
+            // ---- 우측: 자리 탭 + 후보 목록 ----
+            // 자리가 늘어 한 줄에 안 들어간다 — 다섯 개씩 두 줄로 접는다.
+            var tabBtns = new Button[EquipmentSlots.All.Length + 1];
+            for (var i = 0; i < tabBtns.Length; i++)
+            {
+                var displayName = i == 0 ? "전체" : EquipmentSlots.DisplayName(EquipmentSlots.All[i - 1]);
+                var pos = new Vector2(436f + 88f * (i % 5), -64f - 44f * (i / 5));
+                tabBtns[i] = MakeButton(root, $"Tab_{displayName}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    pos, new Vector2(84f, 40f), displayName);
+                tabBtns[i].GetComponentInChildren<TextMeshProUGUI>().fontSize = 14f;
+            }
+
             var candidatesRoot = Rect(root, "Candidates", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(420f, -100f), new Vector2(380f, 420f));
+                new Vector2(436f, -158f), new Vector2(440f, 438f));
             var grid = candidatesRoot.gameObject.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(76f, 76f);
-            grid.spacing = new Vector2(8f, 8f);
-
-            var applyButton = MakeButton(root, "ApplyButton", new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-24f, 24f), new Vector2(170f, 64f), "적용");
+            grid.cellSize = new Vector2(102f, 102f);
+            grid.spacing = new Vector2(10f, 10f);
 
             var window = root.gameObject.AddComponent<EquipmentWindow>();
             var so = new SerializedObject(window);
             var slots = so.FindProperty("_slots");
-            slots.arraySize = 5;
-            slots.GetArrayElementAtIndex(0).objectReferenceValue = weapon;
-            slots.GetArrayElementAtIndex(1).objectReferenceValue = head;
-            slots.GetArrayElementAtIndex(2).objectReferenceValue = hair;
-            slots.GetArrayElementAtIndex(3).objectReferenceValue = cape;
-            slots.GetArrayElementAtIndex(4).objectReferenceValue = scarf;
+            slots.arraySize = slotWidgets.Length;
+            for (var i = 0; i < slotWidgets.Length; i++)
+            {
+                slots.GetArrayElementAtIndex(i).objectReferenceValue = slotWidgets[i];
+            }
+
+            var tabs = so.FindProperty("_tabBtns");
+            tabs.arraySize = tabBtns.Length;
+            for (var i = 0; i < tabBtns.Length; i++)
+            {
+                tabs.GetArrayElementAtIndex(i).objectReferenceValue = tabBtns[i];
+            }
+
             so.FindProperty("_candidatesRoot").objectReferenceValue = candidatesRoot;
             so.FindProperty("_candidatePrefab").objectReferenceValue = candidatePrefab.GetComponent<EquipmentCandidateWidget>();
-            so.FindProperty("_applyButton").objectReferenceValue = applyButton;
-            so.FindProperty("_closeButton").objectReferenceValue = closeButton;
+            so.FindProperty("_closeBtn").objectReferenceValue = closeBtn;
+            so.FindProperty("_statAttackText").objectReferenceValue = statAttack;
+            so.FindProperty("_statHPText").objectReferenceValue = statHP;
+            so.FindProperty("_descriptionIcon").objectReferenceValue = descIcon;
+            so.FindProperty("_descriptionName").objectReferenceValue = descName;
+            so.FindProperty("_descriptionText").objectReferenceValue = descText;
+            so.FindProperty("_actionBtn").objectReferenceValue = actionBtn;
+            so.FindProperty("_actionBtnLabel").objectReferenceValue = actionBtnLabel;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             return SaveWidget(root.gameObject);
         }
 
-        private static EquipmentSlotWidget PlaceSlot(GameObject slotPrefab, RectTransform parent, BodyPart bodyPart,
+        /// <summary>성장 항목 한 줄. 이름·레벨, "기본 + 성장" 분해, 값이 붙은 강화 버튼. 값은 창이 구독해서 채운다.</summary>
+        private static GameObject BuildGrowthStatWidget()
+        {
+            var root = WidgetRoot("GrowthStatWidget", new Vector2(460f, 84f));
+            Img(root, Color.white, _panel);
+
+            var nameText = Text(
+                Rect(root, "NameText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -10f), new Vector2(260f, 32f)),
+                "공격력  Lv.1", 21f, TextWhite, HorizontalAlignmentOptions.Left);
+
+            var valueText = Text(
+                Rect(root, "ValueText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -46f), new Vector2(260f, 28f)),
+                "기본 0 (+ 성장 0)", 16f, TextGray, HorizontalAlignmentOptions.Left);
+
+            var upgradeBtn = MakeButton(root, "UpgradeBtn", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-14f, 0f), new Vector2(150f, 60f), "강화");
+            var upgradeLabel = upgradeBtn.GetComponentInChildren<TextMeshProUGUI>();
+            upgradeLabel.fontSize = 19f;
+            ((RectTransform)upgradeLabel.transform).anchoredPosition = new Vector2(0f, 12f);
+
+            // 값은 버튼 안 아래쪽에 붙인다 — 무엇을 누르면 얼마가 나가는지 한 덩어리로 읽힌다.
+            var costText = Text(
+                Rect((RectTransform)upgradeBtn.transform, "CostText", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                    new Vector2(0f, 8f), new Vector2(140f, 22f)),
+                "0 G", 16f, Gold);
+
+            var widget = root.gameObject.AddComponent<GrowthStatWidget>();
+            var so = new SerializedObject(widget);
+            so.FindProperty("_nameText").objectReferenceValue = nameText;
+            so.FindProperty("_valueText").objectReferenceValue = valueText;
+            so.FindProperty("_upgradeBtn").objectReferenceValue = upgradeBtn;
+            so.FindProperty("_costText").objectReferenceValue = costText;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            return SaveWidget(root.gameObject);
+        }
+
+        /// <summary>성장 모달. 보유 골드와 성장 항목 줄들. 줄 순서는 GrowthPlan.All 과 같아야 한다.</summary>
+        private static GameObject BuildGrowthWindow(GameObject statPrefab)
+        {
+            var stats = GrowthPlan.All;
+            var height = 190f + 96f * stats.Length;
+            var root = WidgetRoot("GrowthWindow", new Vector2(520f, height), new Vector2(0.5f, 0.5f));
+            var bg = Img(root, Color.white, _panel);
+            bg.raycastTarget = true;
+
+            Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -12f), new Vector2(200f, 36f)),
+                "성장", 26f, TextWhite, HorizontalAlignmentOptions.Left);
+            var closeBtn = MakeButton(root, "CloseBtn", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-12f, -12f), new Vector2(48f, 48f), "X");
+
+            var goldText = Text(
+                Rect(root, "GoldText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -60f), new Vector2(460f, 32f)),
+                "보유 골드  0", 20f, TextWhite, HorizontalAlignmentOptions.Left);
+
+            var statWidgets = new GrowthStatWidget[stats.Length];
+            for (var i = 0; i < stats.Length; i++)
+            {
+                statWidgets[i] = Place<GrowthStatWidget>(statPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(30f, -102f - 96f * i));
+            }
+
+            Text(Rect(root, "Hint", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(460f, 28f)),
+                "골드를 써서 항목을 하나씩 올린다. 올릴수록 값이 비싸진다", 15f, TextGray);
+
+            var window = root.gameObject.AddComponent<GrowthWindow>();
+            var so = new SerializedObject(window);
+            so.FindProperty("_closeBtn").objectReferenceValue = closeBtn;
+            so.FindProperty("_goldText").objectReferenceValue = goldText;
+
+            var widgets = so.FindProperty("_statWidgets");
+            widgets.arraySize = statWidgets.Length;
+            for (var i = 0; i < statWidgets.Length; i++)
+            {
+                widgets.GetArrayElementAtIndex(i).objectReferenceValue = statWidgets[i];
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            return SaveWidget(root.gameObject);
+        }
+
+        private static EquipmentSlotWidget PlaceSlot(GameObject slotPrefab, RectTransform parent, EquipmentSlot slot,
             Vector2 pos, Vector2 size)
         {
-            var slot = Place<EquipmentSlotWidget>(slotPrefab, parent, new Vector2(0f, 1f), new Vector2(0.5f, 1f), pos);
-            ((RectTransform)slot.transform).sizeDelta = size;
-            slot.Setup(bodyPart, BodyParts.DisplayName(bodyPart));
-            slot.SetItem("없음", null);
-            return slot;
+            var widget = Place<EquipmentSlotWidget>(slotPrefab, parent, new Vector2(0f, 1f), new Vector2(0.5f, 1f), pos);
+            ((RectTransform)widget.transform).sizeDelta = size;
+            widget.Setup(slot, EquipmentSlots.DisplayName(slot));
+            widget.SetItem("없음", null);
+            return widget;
         }
 
         private static Button MakeButton(RectTransform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
@@ -432,7 +582,7 @@ namespace Sayne.Editor
 
         private static void ComposePanel(GameObject heroStatusPrefab, GameObject currencyPrefab, GameObject guidePrefab,
             GameObject stagePrefab, GameObject iconMenuPrefab, GameObject circleButtonPrefab, GameObject skillButtonPrefab,
-            GameObject equipmentWindowPrefab)
+            GameObject equipmentWindowPrefab, GameObject growthWindowPrefab)
         {
             var panelRoot = PrefabUtility.LoadPrefabContents(PanelPath);
 
@@ -487,19 +637,20 @@ namespace Sayne.Editor
             Img(bottomBar, Color.white, _panel);
             var bottomMenus = new[] { ("성장", "HealSkill", -246f), ("장비", "Shield", -132f), ("편성", "HeroPortrait", 132f), ("심연 장비", "Chest", 246f) };
             Button equipMenuButton = null;
+            Button growthMenuButton = null;
             foreach (var (label, iconName, offsetX) in bottomMenus)
             {
                 var menu = Place<IconMenuWidget>(iconMenuPrefab, bottomBar, Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(offsetX, 0f));
                 ((RectTransform)menu.transform).sizeDelta = new Vector2(100f, 104f);
                 menu.SetLabel(label);
-                SetMenuIcon(menu, iconName, label != "장비");
+                SetMenuIcon(menu, iconName, label != "장비" && label != "성장");
                 if (label == "장비")
                 {
-                    var icon = menu.GetComponent<Image>();
-                    icon.raycastTarget = true;
-                    equipMenuButton = menu.gameObject.AddComponent<Button>();
-                    equipMenuButton.targetGraphic = icon;
-                    StyleButton(equipMenuButton);
+                    equipMenuButton = MenuButton(menu);
+                }
+                if (label == "성장")
+                {
+                    growthMenuButton = MenuButton(menu);
                 }
             }
             var centerSlot = Place<CircleButtonWidget>(circleButtonPrefab, bottomBar, Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(0f, 14f));
@@ -523,6 +674,11 @@ namespace Sayne.Editor
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f));
             equipmentWindow.gameObject.SetActive(false);
 
+            // 성장 모달 — 같은 원리로 성장 메뉴 버튼으로 연다.
+            var growthWindow = Place<GrowthWindow>(growthWindowPrefab, root,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f));
+            growthWindow.gameObject.SetActive(false);
+
             // 부활 텍스트
             var reviveText = Text(
                 Rect(root, "ReviveText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -160f), new Vector2(500f, 50f)),
@@ -541,6 +697,8 @@ namespace Sayne.Editor
             so.FindProperty("_ultimateButton").objectReferenceValue = ultimateButton;
             so.FindProperty("_equipMenuButton").objectReferenceValue = equipMenuButton;
             so.FindProperty("_equipmentWindow").objectReferenceValue = equipmentWindow;
+            so.FindProperty("_growthMenuButton").objectReferenceValue = growthMenuButton;
+            so.FindProperty("_growthWindow").objectReferenceValue = growthWindow;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             foreach (var component in panelRoot.GetComponentsInChildren<Component>(true))
@@ -552,6 +710,17 @@ namespace Sayne.Editor
             }
             PrefabUtility.SaveAsPrefabAsset(panelRoot, PanelPath);
             PrefabUtility.UnloadPrefabContents(panelRoot);
+        }
+
+        /// <summary>아이콘 메뉴를 실제 눌리는 버튼으로 승격한다.</summary>
+        private static Button MenuButton(IconMenuWidget menu)
+        {
+            var icon = menu.GetComponent<Image>();
+            icon.raycastTarget = true;
+            var button = menu.gameObject.AddComponent<Button>();
+            button.targetGraphic = icon;
+            StyleButton(button);
+            return button;
         }
 
         private static FloatingJoystick BuildJoystick(RectTransform root)

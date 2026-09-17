@@ -1,4 +1,5 @@
 using R3;
+using TMPro;
 using UnityEngine;
 
 namespace Sayne
@@ -8,9 +9,12 @@ namespace Sayne
         [SerializeField] private SlicedFillBar _frontFill;
         [SerializeField] private SlicedFillBar _backFill;
 
+        /// <summary>"현재/최대" 절대수치 라벨. 안 꽂으면 바만 그린다.</summary>
+        [SerializeField] private TMP_Text _label;
+
         private HPBarCore _core;
 
-        protected HPBarCore Core => _core ??= new HPBarCore(_frontFill, _backFill, HPBarStyle.Default);
+        protected HPBarCore Core => _core ??= new HPBarCore(_frontFill, _backFill, _label, HPBarStyle.Default);
 
         public float Value
         {
@@ -18,7 +22,7 @@ namespace Sayne
             set => Core.SetRatio(value);
         }
 
-        public void Bind(ReadOnlyReactiveProperty<float> currentHP, float maxHP)
+        public void Bind(ReadOnlyReactiveProperty<float> currentHP, ReadOnlyReactiveProperty<float> maxHP)
         {
             Core.Bind(currentHP, maxHP);
         }

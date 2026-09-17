@@ -9,9 +9,19 @@ namespace Sayne
         public const string MapsLabel = "Maps";
         public const string EquipmentLabel = "Equipment";
         public const string ProfilesLabel = "Profiles";
+        public const string EquipmentPortraitsLabel = "EquipmentPortraits";
+        public const string EnemyPlansLabel = "EnemyPlans";
+        public const string HeroPlansLabel = "HeroPlans";
+        public const string EquipmentPlansLabel = "EquipmentPlans";
+        public const string DropPortraitsLabel = "DropPortraits";
 
         public const string WorldHPBar = "WorldHPBar";
+        public const string DamageText = "DamageText";
         public const string BattlePhaseUIPanel = "BattlePhaseUIPanel";
         public const string ResultPhaseUIPanel = "ResultPhaseUIPanel";
+        public const string DropItem = "DropItem";
+
+        /// <summary>골드 드랍 구슬에 들어가는 동전 그림.</summary>
+        public const string GoldPortrait = "Gold";
     }
 }

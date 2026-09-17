@@ -38,7 +38,7 @@ namespace Sayne
                 .RegisterTo(LifeToken);
 
             _battlePanel.SkillClicked
-                .Subscribe(this, (_, self) => self.Dispatch(controller => controller.ManualAttack()))
+                .Subscribe(this, (_, self) => self.Dispatch(controller => controller.UseSkill()))
                 .RegisterTo(LifeToken);
 
             _battlePanel.UltimateClicked

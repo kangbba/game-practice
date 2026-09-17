@@ -1,36 +1,44 @@
-using System.Collections.Generic;
 using R3;
 
 namespace Sayne
 {
-    /// <summary>재화의 주인. 적을 잡으면 골드가 들어온다. 젬은 아직 얻을 길이 없다.</summary>
+    /// <summary>
+    /// 재화의 주인. 들어오고 나가는 문만 지킨다 — 누가 왜 주는지는 알지 않는다.
+    /// 처치 보상은 이제 적의 설계값(EnemyPlan)이 정하고 드랍 구슬을 거쳐 들어온다.
+    /// </summary>
     public class CurrencyManager : ManagerBase
     {
-        /// <summary>적 하나를 잡으면 주는 골드.</summary>
-        private static readonly Dictionary<string, long> GoldPerKill = new Dictionary<string, long>
-        {
-            [EnemyID.Goblin] = 12,
-            [EnemyID.Ogre] = 40,
-        };
-
-        private readonly EnemyManager _enemyManager;
-
         private readonly ReactiveProperty<long> _gold = new ReactiveProperty<long>();
         private readonly ReactiveProperty<long> _gem = new ReactiveProperty<long>();
 
         public ReadOnlyReactiveProperty<long> Gold => _gold;
         public ReadOnlyReactiveProperty<long> Gem => _gem;
 
-        public CurrencyManager(EnemyManager enemyManager)
-        {
-            _enemyManager = enemyManager;
-        }
-
         protected override void OnInit()
         {
-            _enemyManager.Died
-                .Subscribe(this, (enemy, self) => self._gold.Value += GoldPerKill[enemy.ID])
-                .RegisterTo(LifeToken);
+        }
+
+        /// <summary>골드가 들어온다. 주워 든 동전이든 다른 무엇이든 들어오는 문은 이것 하나다.</summary>
+        public void AddGold(long amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            _gold.Value += amount;
+        }
+
+        /// <summary>모자라면 아무것도 건드리지 않고 false. 성장 같은 "사는" 쪽은 이 문 하나로만 골드를 쓴다.</summary>
+        public bool TrySpendGold(long amount)
+        {
+            if (amount < 0 || _gold.Value < amount)
+            {
+                return false;
+            }
+
+            _gold.Value -= amount;
+            return true;
         }
 
         protected override void OnRelease()

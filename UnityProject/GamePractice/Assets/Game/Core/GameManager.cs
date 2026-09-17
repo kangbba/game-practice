@@ -27,27 +27,32 @@ namespace Sayne
             var equipmentAssetManager = AddManager(new EquipmentAssetManager());
             var uiAssetManager = AddManager(new UIAssetManager());
             var profileAssetManager = AddManager(new ProfileAssetManager());
+            var equipmentPortraitAssetManager = AddManager(new EquipmentPortraitAssetManager());
+            var enemyPlanAssetManager = AddManager(new EnemyPlanAssetManager());
+            var heroPlanAssetManager = AddManager(new HeroPlanAssetManager());
+            var equipmentPlanAssetManager = AddManager(new EquipmentPlanAssetManager());
+            var dropPortraitAssetManager = AddManager(new DropPortraitAssetManager());
 
             await LoadAllAsync();
 
             // 2단계: 게임플레이 매니저 조립. 로드 전에 Get 을 부르면 에셋 매니저가 에러 로그로 알려준다.
             var phaseManager = AddManager(new PhaseManager("RootPhase", token));
             var mapManager = AddManager(new MapManager(mapAssetManager));
-            var equipmentManager = AddManager(new EquipmentManager(equipmentAssetManager));
-            var attackManager = AddManager(new AttackManager());
-            var skillManager = AddManager(new SkillManager());
-            var ultimateManager = AddManager(new UltimateManager());
-            var heroManager = AddManager(new HeroManager(heroAssetManager, equipmentManager, attackManager, skillManager, ultimateManager));
-            var enemyManager = AddManager(new EnemyManager(enemyAssetManager, equipmentManager, attackManager, skillManager, ultimateManager));
+            var equipmentManager = AddManager(new EquipmentManager(equipmentAssetManager, equipmentPlanAssetManager));
+            var enemyManager = AddManager(new EnemyManager(enemyAssetManager, enemyPlanAssetManager, equipmentManager));
+            var currencyManager = AddManager(new CurrencyManager());
+            // 성장이 히어로보다 먼저다 — 히어로는 태어날 때 성장 레벨이 얹힌 스탯으로 만들어진다.
+            // 성장은 골드를 내고 사는 것이라 재화가 그보다 먼저다.
+            var growthManager = AddManager(new GrowthManager(enemyManager, currencyManager));
+            var heroManager = AddManager(new HeroManager(heroAssetManager, heroPlanAssetManager, equipmentManager, growthManager));
             var particleManager = AddManager(new ParticleManager(particleAssetManager, heroManager, enemyManager));
             var waveManager = AddManager(new WaveManager(enemyManager));
-            var currencyManager = AddManager(new CurrencyManager(enemyManager));
-            var growthManager = AddManager(new GrowthManager(enemyManager));
+            var questManager = AddManager(new QuestManager(enemyManager));
 
             var cameraManager = AddManager(new CameraManager());
             var cameraDirector = AddManager(new CameraDirector(cameraManager, heroManager));
             var worldUIManager = AddManager(new WorldUIManager(cameraManager, heroManager, enemyManager,
-                uiAssetManager.WorldHPBarPrefab));
+                uiAssetManager.WorldHPBarPrefab, uiAssetManager.DamageTextPrefab));
 
             var phaseUIManager = AddManager(new PhaseUIManager(phaseManager));
             var screenUIManager = AddManager(new ScreenUIManager(phaseUIManager, heroManager,
@@ -56,8 +61,10 @@ namespace Sayne
 
             var heroControlManager = AddManager(new HeroControlManager(heroManager, enemyManager, screenUIManager.BattlePanel));
             var equipmentUIManager = AddManager(new EquipmentUIManager(screenUIManager.BattlePanel, heroManager,
-                equipmentManager));
+                equipmentManager, equipmentPortraitAssetManager));
             var enemyAIManager = AddManager(new EnemyAIManager(heroManager, enemyManager));
+            var dropManager = AddManager(new DropManager(enemyManager, heroManager, currencyManager,
+                equipmentPortraitAssetManager, dropPortraitAssetManager, uiAssetManager.DropItemPrefab));
 
             var battleManager = AddManager(new BattleManager(phaseManager, mapManager, heroManager, enemyManager, waveManager));
         }

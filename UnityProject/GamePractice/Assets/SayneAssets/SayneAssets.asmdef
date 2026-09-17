@@ -3,6 +3,7 @@
     "rootNamespace": "Sayne",
     "references": [
         "R3.Unity",
+        "Unity.TextMeshPro",
         "UniTask",
         "UniTask.Addressables",
         "Unity.Addressables",

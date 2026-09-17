@@ -1,0 +1,84 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Sayne
+{
+    /// <summary>
+    /// 적 하나의 설계값 전부. 얼마나 튼튼하고, 뭘 들고 나오고, 죽으면 뭘 흘리는가.
+    /// 주인은 파일명이 아니라 _enemyID 필드다 — 같은 폴더에 프로필 에셋이 같은 이름으로 이미 있기 때문이다.
+    /// </summary>
+    [CreateAssetMenu(menuName = "Game/Enemy Plan", fileName = "EnemyPlan")]
+    public class EnemyPlan : ScriptableObject
+    {
+        /// <summary>죽을 때 굴리는 항목 하나. 항목끼리는 독립이라 확률 하나가 다른 항목의 당첨을 막지 않는다.</summary>
+        [Serializable]
+        private class DropEntry
+        {
+            [SerializeField] private DropKind _kind;
+
+            [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _equipmentID;
+
+            [SerializeField] private long _goldAmount;
+
+            [Range(0f, 1f)] [SerializeField] private float _chance = 0.1f;
+
+            public float Chance => _chance;
+
+            /// <summary>장비 드랍인데 장비를 안 고른 줄은 굴려도 줄 게 없다.</summary>
+            public bool IsValid => _kind != DropKind.Equipment || !string.IsNullOrEmpty(_equipmentID);
+
+            public DropReward Reward => new DropReward(_kind, _equipmentID, _goldAmount);
+        }
+
+        [EnemyIDPicker] [SerializeField] private string _enemyID;
+
+        [Header("몸")]
+        [SerializeField] private int _maxHP = 50;
+        [SerializeField] private float _moveSpeed = 1.5f;
+        [SerializeField] private int _attackPower;
+
+        /// <summary>비워 두면 자기 ID 의 프리팹을 쓴다. 같은 몸에 다른 장비를 입힌 변종은 여기만 채운다.</summary>
+        [EnemyIDPicker(allowEmpty: true)] [SerializeField] private string _prefabID;
+
+        [Header("입고 나오는 한 벌")]
+        [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _mainHand;
+        [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _offHand;
+        [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _helmet;
+        [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _chest;
+        [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _greaves;
+        [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _boots;
+
+        [Header("싸우는 방식")]
+        [SerializeField] private CombatPlanData _combat = new CombatPlanData();
+
+        [Header("죽으면 흘리는 것")]
+        [SerializeField] private DropEntry[] _drops = Array.Empty<DropEntry>();
+
+        /// <summary>이 설계값의 주인.</summary>
+        public string EnemyID => _enemyID;
+
+        public CharacterStats Body => new CharacterStats(_maxHP, _moveSpeed, _attackPower);
+
+        /// <summary>몸으로 쓸 프리팹의 ID. 따로 정하지 않았으면 자기 자신이다.</summary>
+        public string PrefabID => string.IsNullOrEmpty(_prefabID) ? _enemyID : _prefabID;
+
+        public EquipmentIDs Outfit => new EquipmentIDs(_mainHand, _offHand, _helmet, _chest,
+            _greaves, _boots);
+
+        /// <summary>평타 콤보와 기술. 적은 보통 1타만 치고 기술이 없다.</summary>
+        public CombatPlan Combat => _combat.ToPlan();
+
+        /// <summary>죽는 순간 한 번 굴린다. 당첨된 전리품들이 나온다 — 아무것도 안 나올 수도 있다.</summary>
+        public IEnumerable<DropReward> Roll()
+        {
+            foreach (var entry in _drops)
+            {
+                if (entry.IsValid && UnityEngine.Random.value < entry.Chance)
+                {
+                    yield return entry.Reward;
+                }
+            }
+        }
+    }
+}

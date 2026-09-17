@@ -6,22 +6,9 @@ namespace Sayne
 {
     public class EnemyManager : ManagerBase
     {
-        /// <summary>적 기본 설계값. 히어로와 같은 모양이다 — ScriptableObject 대신 당분간 여기서 선언한다.</summary>
-        private static readonly Dictionary<string, (CharacterStats Body, EquipmentIDs Outfit)> Plans =
-            new Dictionary<string, (CharacterStats, EquipmentIDs)>
-            {
-                [EnemyID.Goblin] = (new CharacterStats(maxHP: 50, moveSpeed: 1.5f),
-                    new EquipmentIDs(rightHand: EquipmentID.Weapon.GoblinClub)),
-
-                [EnemyID.Ogre] = (new CharacterStats(maxHP: 120, moveSpeed: 1.2f),
-                    new EquipmentIDs(rightHand: EquipmentID.Weapon.OgreClub)),
-            };
-
         private readonly IAssets<Enemy> _enemyAssets;
+        private readonly IAssets<EnemyPlan> _enemyPlans;
         private readonly EquipmentManager _equipmentManager;
-        private readonly AttackManager _attackManager;
-        private readonly SkillManager _skillManager;
-        private readonly UltimateManager _ultimateManager;
 
         private readonly List<Enemy> _currentEnemies = new List<Enemy>();
         private readonly Subject<Character> _spawned = new Subject<Character>();
@@ -33,14 +20,12 @@ namespace Sayne
         /// <summary>적이 죽었다. 재화·경험치·처치 수가 이걸 본다.</summary>
         public Observable<Enemy> Died => _died;
 
-        public EnemyManager(IAssets<Enemy> enemyAssets, EquipmentManager equipmentManager,
-            AttackManager attackManager, SkillManager skillManager, UltimateManager ultimateManager)
+        public EnemyManager(IAssets<Enemy> enemyAssets, IAssets<EnemyPlan> enemyPlans,
+            EquipmentManager equipmentManager)
         {
             _enemyAssets = enemyAssets;
+            _enemyPlans = enemyPlans;
             _equipmentManager = equipmentManager;
-            _attackManager = attackManager;
-            _skillManager = skillManager;
-            _ultimateManager = ultimateManager;
         }
 
         protected override void OnInit()
@@ -56,13 +41,17 @@ namespace Sayne
 
         public Enemy SpawnEnemy(string enemyID, Vector3 position)
         {
-            var plan = Plans[enemyID];
-            var enemy = Object.Instantiate(_enemyAssets.Get(enemyID));
+            var plan = _enemyPlans.Get(enemyID);
+            var enemy = Object.Instantiate(_enemyAssets.Get(plan.PrefabID));
+
+            // 이름을 ID 로 고정해 둔다. 같은 프리팹을 쓰는 변종끼리 하이어라키에서 구분이 되어야 한다.
+            enemy.name = enemyID;
             enemy.transform.position = position;
 
-            enemy.Init(plan.Body, _attackManager.ComboOf(enemyID),
-                _skillManager.Of(enemyID), _ultimateManager.Of(enemyID),
-                _equipmentManager.CreateSet(plan.Outfit));
+            // 몸을 만들기 전에 자기 설계값부터 쥐여 준다 — 죽을 때 무엇을 흘릴지는 남이 아니라 자기가 안다.
+            enemy.SetPlan(plan);
+
+            enemy.Init(plan.Body, plan.Combat, _equipmentManager.CreateSet(plan.Outfit));
 
             _currentEnemies.Add(enemy);
 

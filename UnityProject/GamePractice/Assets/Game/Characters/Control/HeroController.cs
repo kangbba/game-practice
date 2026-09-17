@@ -5,8 +5,8 @@ namespace Sayne
 {
     /// <summary>
     /// 히어로 반자동 컨트롤러. 입력원이 활성이면 수동 이동, 아니면 자동사냥 이동.
-    /// 공격은 항상 사거리 내 자동. 순수 자동 = 입력원이 조용한 상태일 뿐이라 모드 전환 개념이 없다.
-    /// 자동일 때 궁극기는 쿨이 돌아온 뒤 사이클 한 바퀴(고유스킬까지)를 마치고 나간다 — 그 시점에 버튼을 누른 것과 같다.
+    /// 평타는 항상 사거리 내 자동 4콤보. 순수 자동 = 입력원이 조용한 상태일 뿐이라 모드 전환 개념이 없다.
+    /// 자동일 때 스킬·궁극기는 쿨이 돌아오면 그 자리에서 나간다 — 평타 콤보 도중이어도 끊고 즉발. 버튼을 누른 것과 같다.
     /// </summary>
     public class HeroController
     {
@@ -17,7 +17,6 @@ namespace Sayne
 
         private readonly EnemyManager _enemyManager;
         private readonly IMoveInputSource _moveSource;
-        private bool _isUltimatePending;
 
         public Hero Hero { get; }
 
@@ -67,6 +66,12 @@ namespace Sayne
                 return;
             }
 
+            // 기술을 쓰는 동안은 어떤 커맨드도 받지 않는다 — 이동·타겟 변경·평타 전부 모션이 끝난 뒤다.
+            if (Hero.Combat.IsCasting)
+            {
+                return;
+            }
+
             // 수동 이동이 들어오면 교전을 끊는다. 손을 떼면 타겟 찾기부터 다시 시작한다.
             if (_moveSource.IsActive)
             {
@@ -75,20 +80,11 @@ namespace Sayne
                 return;
             }
 
-            if (_isUltimatePending)
-            {
-                _isUltimatePending = false;
-                if (!_moveSource.IsActive && Hero.Combat.CanUseUltimate)
-                {
-                    UseUltimate();
-                    return;
-                }
-            }
-
             // ⓪ 싸울 상대를 정한다. 죽었거나 사라졌으면 다시 고른다.
             AcquireTarget();
 
             AutoMove();
+            TryAutoCast();
             TryAutoAttack();
         }
 
@@ -121,17 +117,18 @@ namespace Sayne
             Hero.Move(offset.normalized);
         }
 
-        public void ManualAttack()
+        /// <summary>스킬 버튼이 부르는 곳. 자동전투는 쿨이 돌아오면 같은 함수를 대신 불러준다.</summary>
+        public void UseSkill()
         {
-            if (Hero == null || !Hero.IsAlive)
+            if (Hero == null)
             {
                 return;
             }
 
-            TryAutoAttack();
+            Hero.Combat.UseSkill();
         }
 
-        /// <summary>궁극기 버튼이 부르는 곳. 자동전투도 사이클을 한 바퀴 돌 때마다 같은 함수를 부른다.</summary>
+        /// <summary>궁극기 버튼이 부르는 곳. 자동전투는 쿨이 돌아오면 같은 함수를 대신 불러준다.</summary>
         public void UseUltimate()
         {
             if (Hero == null)
@@ -140,6 +137,31 @@ namespace Sayne
             }
 
             Hero.Combat.UseUltimate();
+        }
+
+        /// <summary>자동전투의 스킬·궁극기. 사거리에 타겟이 있고 쿨이 돌아왔으면 그 자리에서 쓴다. 궁극기가 먼저다.</summary>
+        private void TryAutoCast()
+        {
+            if (Hero.Target is not Enemy target || !Hero.Combat.IsInRange(ToTarget(target)))
+            {
+                return;
+            }
+
+            if (!Hero.Combat.CanUseUltimate && !Hero.Combat.CanUseSkill)
+            {
+                return;
+            }
+
+            Hero.Look(ToTarget(target));
+
+            if (Hero.Combat.CanUseUltimate)
+            {
+                Hero.Combat.UseUltimate();
+            }
+            else
+            {
+                Hero.Combat.UseSkill();
+            }
         }
 
         private void TryAutoAttack()
@@ -156,14 +178,7 @@ namespace Sayne
             }
 
             Hero.Look(ToTarget(target));
-
-            var isCycleEnd = Hero.Combat.Cycle.IsAtLast;
             Hero.Combat.Attack();
-
-            if (!_moveSource.IsActive && isCycleEnd)
-            {
-                _isUltimatePending = true;
-            }
         }
 
         private Enemy FindNearestEnemy(float maxDistance)

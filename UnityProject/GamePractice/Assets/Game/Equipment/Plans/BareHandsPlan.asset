@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4342e93c0b874f828bbc9dca499a0a43, type: 3}
+  m_Name: BareHandsPlan
+  m_EditorClassIdentifier:
+  _equipmentID: BareHands
+  _slot: 0
+  _displayName: 맨손
+  _description: 아무것도 들지 않은 상태. 사거리가 짧고 위력이 약하지만 휘두르는 속도는 준수하다.
+  _maxHP: 0
+  _moveSpeed: 0
+  _attackPower: 5
+  _weaponType: 0
+  _range: 2
+  _comboInterval: 0.45
+  _cycleInterval: 1.6
+  _useTrail: 0
+  _hitEffects: []

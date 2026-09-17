@@ -13,9 +13,6 @@ namespace Sayne
         /// <summary>이만큼 좌우로 움직여야 방향을 바꾼다. 위아래로만 걸을 때 안 뒤집히게 하는 값이다.</summary>
         private const float FacingThreshold = 0.35f;
 
-        /// <summary>공격 모션 재생 배속. 1 이면 클립 그대로, 클수록 빨리 휘두른다.</summary>
-        private const float ActionPlaybackSpeed = 1.6f;
-
         private const float HitRecoilDistance = 0.2f;
         private const float HitRecoilDuration = 0.18f;
         private const float HitFlashDuration = 0.12f;
@@ -78,7 +75,7 @@ namespace Sayne
                 return;
             }
 
-            _animator.speed = ActionPlaybackSpeed;
+            _animator.speed = CharacterAnimations.ActionPlaybackSpeed;
             _animator.Play(stateHash, CharacterAnimations.BaseLayer, startNormalized);
 
             // 다음 프레임을 기다리지 않고 그 자리에서 첫 포즈로 바꾼다.
@@ -87,7 +84,7 @@ namespace Sayne
             _oneShotReturn?.Dispose();
             _isPlayingOneShot = true;
 
-            var remain = duration * (1f - startNormalized) / ActionPlaybackSpeed;
+            var remain = duration * (1f - startNormalized) / CharacterAnimations.ActionPlaybackSpeed;
             _oneShotReturn = Observable.Timer(TimeSpan.FromSeconds(remain))
                 .Subscribe(this, (_, self) => self.ReturnToState())
                 .AddTo(this);
@@ -140,6 +137,12 @@ namespace Sayne
             // 죽음·피격·걷기는 한 번짜리 모션을 끊고 들어간다.
             if (state == CharacterState.Hit || state == CharacterState.Death || state == CharacterState.Walk)
             {
+                // 기술을 끊는 사유는 피격과 죽음뿐이다. 걷기는 캐스팅 중엔 아예 들어오지 않는다 — 이동 명령이 잠겨 있다.
+                if (state != CharacterState.Walk)
+                {
+                    _character.Combat.CancelCast();
+                }
+
                 _oneShotReturn?.Dispose();
                 _oneShotReturn = null;
                 _isPlayingOneShot = false;

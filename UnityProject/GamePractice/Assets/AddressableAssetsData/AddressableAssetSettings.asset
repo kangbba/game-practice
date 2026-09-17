@@ -106,6 +106,12 @@ MonoBehaviour:
     - Weapons
     - Equipment
     - Profiles
+    - EquipmentPortraits
+    - DropTables
+    - EnemyPlans
+    - HeroPlans
+    - EquipmentPlans
+    - DropPortraits
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: f2818e5df622a4ad7bce1c635dde41bd, type: 2}

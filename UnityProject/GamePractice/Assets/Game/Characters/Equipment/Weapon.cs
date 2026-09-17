@@ -7,9 +7,13 @@ namespace Sayne
     {
         public WeaponInfo Info { get; }
 
-        public override BodyPart BodyPart => BodyPart.RightHand;
+        public override EquipmentSlot Slot => EquipmentSlot.MainHand;
 
-        public Weapon(string id, GameObject visual, WeaponInfo info) : base(id, visual)
+        /// <summary>휘두를 때 트레일을 쓸지. 프리팹에 트레일이 있어도 여기서 끄면 안 나온다.</summary>
+        public bool UseTrail => Info.UseTrail;
+
+        public Weapon(string id, GameObject visual, WeaponInfo info, CharacterStats stats)
+            : base(id, visual, stats)
         {
             Info = info;
         }

@@ -11,12 +11,12 @@ namespace Sayne
         private const float SpawnRadiusMax = 12f;
 
         private readonly EnemyManager _enemyManager;
-        private readonly int _wave;
+        private readonly WaveNumber _wave;
         private readonly List<Enemy> _spawned = new List<Enemy>();
 
         public override string Key => PhaseID.Combat;
 
-        public CombatPhase(EnemyManager enemyManager, int wave)
+        public CombatPhase(EnemyManager enemyManager, WaveNumber wave)
         {
             _enemyManager = enemyManager;
             _wave = wave;

@@ -10,12 +10,12 @@ namespace Sayne
 
         private float _startTime;
 
-        private readonly ReactiveProperty<int> _currentWave = new ReactiveProperty<int>(1);
+        private readonly ReactiveProperty<WaveNumber> _currentWave = new ReactiveProperty<WaveNumber>(WaveNumber.First);
         private readonly ReactiveProperty<int> _kills = new ReactiveProperty<int>();
         private readonly ReactiveProperty<int> _goal = new ReactiveProperty<int>();
         private readonly ReactiveProperty<WaveResult> _lastResult = new ReactiveProperty<WaveResult>();
 
-        public ReadOnlyReactiveProperty<int> CurrentWave => _currentWave;
+        public ReadOnlyReactiveProperty<WaveNumber> CurrentWave => _currentWave;
 
         /// <summary>이번 웨이브에서 잡은 수와 잡아야 할 수.</summary>
         public ReadOnlyReactiveProperty<int> Kills => _kills;
@@ -45,7 +45,7 @@ namespace Sayne
         }
 
         /// <summary>웨이브가 시작될 때 전투가 알려준다. 목표는 그 웨이브 구성에서 센다.</summary>
-        public void BeginWave(int wave)
+        public void BeginWave(WaveNumber wave)
         {
             var goal = 0;
 

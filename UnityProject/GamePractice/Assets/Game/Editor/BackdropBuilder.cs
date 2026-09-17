@@ -22,7 +22,7 @@ namespace Sayne.Editor
         /// <summary>지면의 위쪽 끝. 스프라이트 48x24 에 Graphic 스케일 2 가 걸려 96x48 이라 여기가 +24 다.</summary>
         private const float GroundTopY = 24f;
 
-        [MenuItem("★Sayne★/3. 배경 하늘 빌드")]
+        [MenuItem("★Sayne★/2. 배경 하늘 빌드", false, 2)]
         public static void Build()
         {
             BackdropArtBuilder.Build();

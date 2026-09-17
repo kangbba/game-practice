@@ -27,7 +27,7 @@ namespace Sayne
 
         private void Draw(WaveResult result)
         {
-            _titleText.text = $"{result.Wave} 웨이브 클리어";
+            _titleText.text = $"{result.Wave.Label} 클리어";
             _killText.text = $"처치 {result.Kills}";
             _timeText.text = $"소요 {result.ClearSeconds:0.0}초";
         }

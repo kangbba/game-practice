@@ -20,6 +20,12 @@ namespace Sayne
             _label.text = text;
         }
 
+        /// <summary>지금 누를 수 있나. 쿨이 돌거나 기술 모션 중이면 꺼둔다 — 눌려도 무시되는 버튼은 두지 않는다.</summary>
+        public void SetInteractable(bool interactable)
+        {
+            _button.interactable = interactable;
+        }
+
         /// <summary>남은 비율 0~1. 0 이면 쿨타임이 안 보인다.</summary>
         public void SetCooldownRatio(float ratio)
         {

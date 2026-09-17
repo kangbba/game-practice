@@ -102,11 +102,14 @@ namespace Sayne
                 var frontEnd = front.Transform.InverseTransformPoint(graphic.TransformPoint(frontSole));
                 var rearEnd = rear.Transform.InverseTransformPoint(graphic.TransformPoint(rearSole));
                 var poses = Poses(hero, action);
-                if (action >= 3) poses = poses.Select(Exaggerate).ToArray();
+                poses = poses.Select(pose => Exaggerate(pose, hero, action)).ToArray();
+                var weapon = bones[WeaponPath];
+                var weaponTip = GetWeaponTip(hero);
+                var radius = action == 3 ? 7f : action == 4 ? 10f : 0f;
                 var times = action == 3
-                    ? new[] { 0f, .08f, .18f, .29f, .32f, .40f, .51f, .64f, .67f, .76f, .87f, .95f, 1f }
+                    ? new[] { 0f, .08f, .18f, CharacterAnimations.SkillImpact, .32f, .40f, .51f, .64f, .67f, .76f, .87f, .95f, 1f }
                     : action == 4
-                        ? new[] { 0f, .14f, .30f, .52f, .55f, .64f, .78f, .92f, 1f }
+                        ? new[] { 0f, .10f, .20f, .38f, .46f, CharacterAnimations.UltimateImpact, .56f, .68f, .82f, .94f, 1f }
                         : new[] { 0f, .10f, .24f, .36f, .40f, .51f, .69f, .87f, 1f };
                 var samples = Mathf.CeilToInt(duration * 60f);
                 for (var frame = 0; frame <= samples; frame++)
@@ -126,14 +129,18 @@ namespace Sayne
                     bones[ElbowPath].Rotate(elbow.Elbow * tail);
                     // 무기 방향을 어깨/팔꿈치 각도의 합에서 분리해 칼끝이 의도한 호를 지난다.
                     bones[WeaponPath].Rotate((pose.Blade - torso.Lean - arm.Arm - elbow.Elbow) * tail);
+                    if (action == 4)
+                        AimSlamAtGround(weapon, graphic, weaponTip, radius, t);
+                    if (radius > 0f)
+                        ExpandWeapon(weapon, graphic, weaponTip, radius, GetExpansion(action, t));
                     var lag = Sample(poses, times, Mathf.Max(0f, t - .065f));
                     Rotate(bones, TorsoPath + "/BackArm", (-lag.Arm * .48f - pose.Lean * .35f) * tail);
                     Rotate(bones, TorsoPath + "/BackArm/Forearm", (22f * pose.Reach - lag.Elbow * .55f) * tail);
                     Rotate(bones, TorsoPath + "/Head", (-torso.Lean * .72f + lag.Lean * .12f) * tail);
                     var drag = Sample(poses, times, Mathf.Max(0f, t - .105f));
                     var velocity = (pose.X - Sample(poses, times, Mathf.Max(0f, t - .03f)).X) / .03f;
-                    var capeLimit = action >= 3 ? 72f : 48f;
-                    var scarfLimit = action >= 3 ? 90f : 65f;
+                    var capeLimit = radius > 0f ? 85f : 48f;
+                    var scarfLimit = radius > 0f ? 110f : 65f;
                     Rotate(bones, TorsoPath + "/Cape", Mathf.Clamp(-drag.Lean * .9f - velocity * 8f, -capeLimit, capeLimit) * tail);
                     Rotate(bones, TorsoPath + "/Scarf", Mathf.Clamp(-drag.Lean * 1.2f - velocity * 11f, -scarfLimit, scarfLimit) * tail);
                     Rotate(bones, TorsoPath + "/Head/Hair", (-drag.Lean * .35f - velocity * 3f) * tail);
@@ -190,19 +197,64 @@ namespace Sayne
             return keep.Select(i => keys[i]).ToArray();
         }
 
-        private static Pose Exaggerate(Pose pose)
+        private static Pose Exaggerate(Pose pose, string hero, int action)
         {
-            var x = pose.X * 3f;
-            var extraHeight = Mathf.Max(0f, pose.Y) * 2f;
-            // 전신 이동을 크게 하고 발도 함께 옮긴다. 보폭만 세 배 늘려 다리가 길어지지 않게 한다.
-            return new Pose(x, pose.Y >= 0f ? pose.Y * 3f : pose.Y * 1.3f,
-                Mathf.Clamp(pose.Lean * 1.5f, -65f, 65f),
-                Mathf.Clamp(pose.Arm * 1.2f, -180f, 180f),
-                Mathf.Clamp(pose.Elbow * 1.2f, -110f, 110f),
-                pose.Blade * 1.45f, pose.Reach * 1.4f,
-                x + (pose.Step - pose.X) * 1.35f,
-                x + (pose.RearStep - pose.X) * 1.35f,
-                pose.Lift * 1.2f + extraHeight, pose.RearLift * 1.2f + extraHeight);
+            var travel = action switch { 0 => .7f, 1 => 1.1f, 2 => 1.6f, 5 => 2.6f,
+                3 => hero == "Nyx" ? 6f : 5f, _ => hero == "Nyx" ? 8f : 9f };
+            var height = action == 4 ? 5f : action == 3 ? 2.5f : action == 5 ? 1.8f : 1f;
+            var power = action == 4 ? 1.7f : action == 3 ? 1.4f : action == 5 ? 1.25f : 1f;
+            var x = pose.X * travel;
+            var y = pose.Y >= 0f ? pose.Y * height : pose.Y * 1.2f;
+            // 전신 이동을 발에도 더해 큰 보폭에서 다리가 늘어나지 않게 한다.
+            return new Pose(x, y, Mathf.Clamp(pose.Lean * power, -70f, 70f),
+                Mathf.Clamp(pose.Arm * power, -200f, 200f),
+                Mathf.Clamp(pose.Elbow * power, -115f, 115f),
+                pose.Blade, pose.Reach * power,
+                x + (pose.Step - pose.X) * 1.2f,
+                x + (pose.RearStep - pose.X) * 1.2f,
+                pose.Lift + y - pose.Y, pose.RearLift + y - pose.Y);
+        }
+
+        private static Vector3 GetWeaponTip(string hero)
+        {
+            var name = hero == "Kage" ? "Scythe" : hero == "Aldric" ? "Sword" : "Staff";
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/Weapon/{name}.prefab");
+            var sprite = prefab.GetComponent<SpriteRenderer>();
+            var bounds = sprite.sprite.bounds;
+            return prefab.transform.localPosition + prefab.transform.localRotation *
+                Vector3.Scale(prefab.transform.localScale, new Vector3(bounds.center.x, bounds.max.y, 0f));
+        }
+
+        private static float GetExpansion(int action, float t)
+        {
+            var start = action == 3 ? .18f : .30f;
+            var impact = action == 3 ? CharacterAnimations.SkillImpact : CharacterAnimations.UltimateImpact;
+            var release = action == 3 ? .76f : .78f;
+            var grow = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, impact, t));
+            var shrink = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(release, .96f, t));
+            return grow * shrink;
+        }
+
+        private static void AimSlamAtGround(Bone weapon, Transform graphic, Vector3 tip, float radius, float t)
+        {
+            var weight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.46f, CharacterAnimations.UltimateImpact, t))
+                * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.68f, .94f, t)));
+            var target = weapon.Transform.parent.InverseTransformPoint(graphic.TransformPoint(new Vector3(radius, 0f, 0f)))
+                - weapon.Transform.localPosition;
+            var blade = weapon.Transform.localRotation * Vector3.Scale(weapon.Transform.localScale, tip);
+            var angle = Vector2.SignedAngle(blade, target);
+            weapon.Transform.localRotation = Quaternion.AngleAxis(angle * weight, Vector3.forward) * weapon.Transform.localRotation;
+        }
+
+        private static void ExpandWeapon(Bone weapon, Transform graphic, Vector3 tip, float radius, float weight)
+        {
+            var grip = (Vector2)graphic.InverseTransformPoint(weapon.Transform.position);
+            var blade = (Vector2)graphic.InverseTransformVector(weapon.Transform.TransformVector(tip));
+            // 기본 장착 무기의 끝이 영웅 원점에서 반경 7/10에 닿도록 손잡이를 기준으로 키운다.
+            var projection = Vector2.Dot(grip, blade);
+            var discriminant = projection * projection + blade.sqrMagnitude * (radius * radius - grip.sqrMagnitude);
+            var scale = Mathf.Max(1f, (-projection + Mathf.Sqrt(Mathf.Max(0f, discriminant))) / blade.sqrMagnitude);
+            weapon.Transform.localScale = weapon.Scale * Mathf.Lerp(1f, scale, weight);
         }
 
         private static Vector3 Sole(Transform leg, Transform graphic)
@@ -239,8 +291,26 @@ namespace Sayne
             return default;
         }
 
+        private static Pose[] UltimatePoses(string hero)
+        {
+            var advance = hero == "Kage" ? .50f : hero == "Aldric" ? .36f : .24f;
+            var apexHeight = hero == "Nyx" ? 1.35f : 1.15f;
+            var crouch = new Pose(-.08f,-.25f,28,55,-70,45,-.7f,-.18f,-.28f);
+            var takeoff = new Pose(advance * .35f,.65f,-12,150,-75,40,-.3f,
+                advance * .35f,advance * .35f-.15f,.78f,.90f);
+            var apex = new Pose(advance * .75f,apexHeight,18,165,-80,20,-.5f,
+                advance * .75f+.05f,advance * .75f-.12f,apexHeight+.25f,apexHeight+.38f);
+            var dive = new Pose(advance,.82f,-18,155,-50,0,.5f,
+                advance+.12f,advance-.10f,.95f,1.08f);
+            var impact = new Pose(advance,-.22f,-40,78,8,-110,1.6f,advance+.22f,advance-.18f);
+            var follow = new Pose(advance+.04f,-.16f,-36,48,22,-145,1.1f,advance+.24f,advance-.14f);
+            return new[] { default(Pose), crouch, takeoff, apex, dive, impact, impact, follow,
+                Pose.Lerp(follow, default, .55f), Pose.Lerp(follow, default, .94f), default };
+        }
+
         private static Pose[] Poses(string hero, int action)
         {
+            if (action == 4) return UltimatePoses(hero);
             Pose windup, strike, follow;
             if (hero == "Kage")
             {
@@ -249,8 +319,9 @@ namespace Sayne
                     0 => (new Pose(-.10f,-.06f,12,92,-52,65,-.3f,0,-.12f,.10f), new Pose(.25f,-.09f,-28,66,-18,-92,1,.40f,0), new Pose(.32f,-.07f,-34,42,10,-136,.8f,.40f,.04f,0,.08f)),
                     1 => (new Pose(.02f,-.12f,-22,24,-40,-125,-.2f,.12f,-.14f), new Pose(.24f,.06f,14,120,-44,20,1,.32f,-.08f,.05f,.14f), new Pose(.29f,.09f,20,138,-52,65,.7f,.32f,-.02f,.08f,.18f)),
                     2 => (new Pose(-.14f,-.10f,22,140,-64,115,-.5f,0,-.20f,.16f), new Pose(.36f,-.13f,-36,78,-14,-110,1.2f,.54f,.10f), new Pose(.43f,-.10f,-30,32,22,-165,.7f,.54f,.14f,0,.12f)),
+                    5 => (new Pose(-.24f,-.22f,38,155,-82,145,-.6f,-.10f,-.32f,.12f), new Pose(.68f,.28f,-48,92,12,-135,1.6f,.82f,.48f,.34f,.42f), new Pose(.82f,.12f,-55,20,38,-235,1,.90f,.62f,.18f,.22f)),
                     3 => (new Pose(-.18f,-.12f,25,100,-62,85,-.5f,0,-.24f,.12f), new Pose(.50f,-.12f,-40,76,-8,-100,1.3f,.65f,.24f), new Pose(.60f,-.08f,-34,28,20,-160,.8f,.68f,.26f,0,.16f)),
-                    _ => (new Pose(-.16f,-.14f,26,150,-64,160,-.6f,-.02f,-.22f), new Pose(.48f,.32f,-34,115,-34,-92,1.2f,.58f,.16f,.38f,.58f), new Pose(.58f,-.13f,-40,54,-12,-170,1,.72f,.25f))
+                    _ => throw new ArgumentOutOfRangeException(nameof(action))
                 };
             }
             else if (hero == "Aldric")
@@ -260,8 +331,9 @@ namespace Sayne
                     0 => (new Pose(-.08f,-.06f,18,110,-50,70,-.3f,0,-.14f,.06f), new Pose(.18f,-.11f,-25,72,-18,-65,.9f,.32f,-.05f), new Pose(.24f,-.09f,-31,46,12,-100,.8f,.32f,0)),
                     1 => (new Pose(-.12f,-.07f,26,36,-58,105,-.4f,-.03f,-.16f), new Pose(.27f,-.06f,-19,100,-20,-25,1.1f,.42f,0), new Pose(.31f,-.04f,-24,112,-8,-55,.8f,.42f,.05f,0,.05f)),
                     2 => (new Pose(-.10f,-.13f,-20,30,-28,-85,-.4f,.10f,-.18f), new Pose(.22f,.12f,19,140,-42,75,1.2f,.38f,0,.14f,.20f), new Pose(.28f,.17f,24,152,-54,108,.8f,.40f,.05f,.18f,.26f)),
+                    5 => (new Pose(-.22f,.26f,30,168,-80,160,-.6f,-.14f,-.30f,.30f,.38f), new Pose(.54f,-.24f,-52,80,12,-105,1.6f,.72f,.34f), new Pose(.64f,-.18f,-58,24,30,-155,1,.78f,.46f)),
                     3 => (new Pose(-.13f,-.10f,26,148,-66,100,-.5f,0,-.20f,.12f), new Pose(.36f,-.14f,-36,90,-20,-80,1.3f,.52f,.10f), new Pose(.42f,-.11f,-40,48,8,-128,1,.52f,.14f)),
-                    _ => (new Pose(-.10f,.42f,12,158,-68,110,-.4f,-.08f,-.22f,.44f,.58f), new Pose(.30f,-.16f,-38,95,-16,-92,1.4f,.48f,.10f), new Pose(.37f,-.12f,-43,46,14,-132,1,.48f,.16f))
+                    _ => throw new ArgumentOutOfRangeException(nameof(action))
                 };
             }
             else
@@ -271,8 +343,9 @@ namespace Sayne
                     0 => (new Pose(-.10f,.04f,15,36,-58,35,-.3f,-.04f,-.12f,.05f,.10f), new Pose(.14f,.09f,-18,82,-12,-45,.9f,.22f,-.04f,.12f,.16f), new Pose(.07f,.12f,8,64,-30,-25,-.2f,.18f,-.08f,.15f,.19f)),
                     1 => (new Pose(-.06f,.07f,-12,80,-65,-52,-.3f,.02f,-.12f,.08f,.14f), new Pose(.15f,.15f,16,130,-35,65,1,.24f,-.06f,.18f,.26f), new Pose(.06f,.18f,22,144,-52,90,.5f,.18f,-.10f,.22f,.30f)),
                     2 => (new Pose(-.10f,.18f,22,132,-72,85,-.4f,-.06f,-.16f,.20f,.28f), new Pose(.22f,.05f,-25,70,-12,-72,1.1f,.30f,-.02f,.08f,.16f), new Pose(.10f,.10f,-12,50,-30,-105,.5f,.24f,-.04f,.12f,.20f)),
+                    5 => (new Pose(-.24f,.28f,32,158,-82,155,-.6f,-.16f,-.32f,.32f,.40f), new Pose(.40f,.46f,-38,96,10,-125,1.5f,.52f,.22f,.50f,.58f), new Pose(.22f,.32f,-28,30,28,-230,.8f,.34f,.04f,.36f,.44f)),
                     3 => (new Pose(-.12f,.22f,26,140,-70,110,-.5f,-.08f,-.20f,.25f,.34f), new Pose(.24f,.14f,-30,106,-16,-55,1.2f,.34f,.02f,.18f,.28f), new Pose(.08f,.20f,16,80,-45,-15,-.2f,.24f,-.10f,.24f,.34f)),
-                    _ => (new Pose(-.08f,.48f,20,154,-60,135,-.5f,-.14f,-.24f,.50f,.62f), new Pose(.20f,.54f,-24,118,-12,-60,1.4f,.38f,-.02f,.56f,.72f), new Pose(-.06f,.66f,24,80,-48,-12,-.5f,.18f,-.20f,.68f,.80f))
+                    _ => throw new ArgumentOutOfRangeException(nameof(action))
                 };
             }
             var preload = Pose.Lerp(default, windup, .48f);

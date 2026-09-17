@@ -3,35 +3,22 @@ using UnityEngine;
 
 namespace Sayne
 {
-    /// <summary>평타와 고유스킬을 한 사이클로 담아 순서대로 돌린다. 콤보가 끊기면 1타로 돌아간다.</summary>
+    /// <summary>평타 콤보를 순서대로 돌린다. 콤보가 끊기면 1타로 돌아간다.</summary>
     public class AttackCycle
     {
         private const float ComboWindow = 1.2f;
 
-        private readonly BasicAttack[] _attacks;
+        private readonly IReadOnlyList<BasicAttack> _attacks;
 
         private int _step;
         private float _expireTime;
 
-        /// <summary>다음 타가 사이클의 마지막(고유스킬)인가. 자동전투가 궁극기를 끼워 넣는 지점이다.</summary>
-        public bool IsAtLast => CurrentStep == _attacks.Length - 1;
+        /// <summary>다음 타가 콤보의 마지막인가. 마지막 타 뒤에는 다음 묶음까지 길게 쉰다.</summary>
+        public bool IsAtLast => CurrentStep == _attacks.Count - 1;
 
-        /// <summary>사이클을 마무리하는 타. 고유스킬이 없는 캐릭터면 마지막 평타다.</summary>
-        public BasicAttack Last => _attacks[_attacks.Length - 1];
-
-        public AttackCycle(IReadOnlyList<BasicAttack> combo, CharacterSkill signature)
+        public AttackCycle(IReadOnlyList<BasicAttack> combo)
         {
-            _attacks = new BasicAttack[combo.Count + (signature != null ? 1 : 0)];
-
-            for (var i = 0; i < combo.Count; i++)
-            {
-                _attacks[i] = combo[i];
-            }
-
-            if (signature != null)
-            {
-                _attacks[combo.Count] = signature;
-            }
+            _attacks = combo;
         }
 
         /// <summary>다음에 나갈 타격을 꺼내고 한 칸 넘긴다.</summary>
@@ -39,7 +26,7 @@ namespace Sayne
         {
             var attack = _attacks[CurrentStep];
 
-            _step = (CurrentStep + 1) % _attacks.Length;
+            _step = (CurrentStep + 1) % _attacks.Count;
             _expireTime = Time.time + ComboWindow;
 
             return attack;

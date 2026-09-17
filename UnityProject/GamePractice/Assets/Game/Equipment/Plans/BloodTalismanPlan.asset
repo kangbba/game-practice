@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4342e93c0b874f828bbc9dca499a0a43, type: 3}
+  m_Name: BloodTalismanPlan
+  m_EditorClassIdentifier:
+  _equipmentID: BloodTalisman
+  _slot: 1
+  _displayName: 피의 부적
+  _description: 제 피를 걸고 위력을 빌리는 부적. 때리는 힘이 오르는 대신 몸이 약해진다.
+  _maxHP: -10
+  _moveSpeed: 0
+  _attackPower: 6
+  _weaponType: 0
+  _range: 2
+  _comboInterval: 0.35
+  _cycleInterval: 1.6
+  _useTrail: 0
+  _hitEffects: []

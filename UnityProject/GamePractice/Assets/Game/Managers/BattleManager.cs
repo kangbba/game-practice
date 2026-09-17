@@ -37,7 +37,7 @@ namespace Sayne
 
             await _phaseManager.RunAsync(new PreparePhase(_mapManager, _heroManager));
 
-            var wave = 1;
+            var wave = WaveNumber.First;
             while (!token.IsCancellationRequested)
             {
                 _waveManager.BeginWave(wave);
@@ -52,7 +52,7 @@ namespace Sayne
                 _waveManager.EndWave();
 
                 await _phaseManager.RunAsync(new ResultPhase(wave));
-                wave++;
+                wave = wave.Next();
             }
         }
 

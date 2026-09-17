@@ -20,7 +20,7 @@ namespace Sayne
         private Vector3 Destination => _target.position + transform.rotation * _offset;
 
         public void Attach(Transform target, Vector3 offset,
-            ReadOnlyReactiveProperty<float> currentHP, float maxHP)
+            ReadOnlyReactiveProperty<float> currentHP, ReadOnlyReactiveProperty<float> maxHP)
         {
             _target = target;
             _offset = offset;

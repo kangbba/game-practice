@@ -31,9 +31,8 @@ namespace Sayne
 
         public void SetHP(int current, int max)
         {
-            var ratio = max > 0 ? (float)current / max : 0f;
-            _hpFill.FillAmount = ratio;
-            _hpLabel.text = $"{current}({Mathf.RoundToInt(ratio * 100f)}%)";
+            _hpFill.FillAmount = max > 0 ? (float)current / max : 0f;
+            _hpLabel.text = $"{current}/{max}";
         }
 
         public void SetEXPRatio(float ratio)

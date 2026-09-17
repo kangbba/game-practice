@@ -10,7 +10,7 @@ namespace Sayne
         private string PrefabPath => $"Assets/Game/Characters/Heroes/{Heroes[_currentHero]}/{Heroes[_currentHero]}.prefab";
         private string AnimationPath => $"Assets/DarkFantasy2D/Animations/Heroes/{Heroes[_currentHero]}";
 
-        private static readonly string[] Clips = { "Idle", "Walk", "Attack1", "Attack2", "Attack3", "Skill", "Hit", "Death", "Ultimate" };
+        private static readonly string[] Clips = { "Idle", "Walk", "Attack1", "Attack2", "Attack3", "Attack4", "Skill", "Hit", "Death", "Ultimate" };
         private PreviewRenderUtility _preview;
         private GameObject _hero;
         private GameObject _graphic;
@@ -21,8 +21,7 @@ namespace Sayne
         private bool _isPlaying = true;
         private bool _isFacingLeft;
 
-        [MenuItem("★Sayne★/영웅/애니메이션 프리뷰")]
-        [MenuItem("★Sayne★/Kage/애니메이션 프리뷰")]
+        [MenuItem("★Sayne★/영웅/애니메이션 프리뷰", false, 101)]
         public static void Open()
         {
             GetWindow<KagePreviewWindow>("Hero Motion");
@@ -107,9 +106,9 @@ namespace Sayne
         private void LoadClip()
         {
             _clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationPath}/{Clips[_currentClip]}.anim");
-            var isLargeAction = Clips[_currentClip] == "Skill" || Clips[_currentClip] == "Ultimate";
-            _preview.camera.orthographicSize = isLargeAction ? 3.25f : 1.85f;
-            _preview.camera.transform.position = new Vector3(0f, isLargeAction ? 2f : 1.35f, -10f);
+            var action = Clips[_currentClip];
+            _preview.camera.orthographicSize = action == "Ultimate" ? 11f : action == "Skill" ? 8f : action == "Attack4" ? 4.5f : 2.8f;
+            _preview.camera.transform.position = new Vector3(0f, action == "Ultimate" || action == "Skill" ? 0f : 1.35f, -10f);
         }
 
         private void Sample()

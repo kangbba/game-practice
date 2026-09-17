@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a476257acfdc1494588d31f822316879, type: 3}
+  m_Name: OgreBossPlan
+  m_EditorClassIdentifier:
+  _enemyID: OgreBoss
+  _maxHP: 600
+  _moveSpeed: 1.1
+  _attackPower: 0
+  _prefabID: 
+  _mainHand: OgreClub
+  _offHand: 
+  _helmet: 
+  _chest: 
+  _greaves: 
+  _boots: 
+  _combat:
+    _comboPowerMultipliers:
+    - 2.0
+    _comboStaggers: 0
+    _skill:
+      _name: 
+      _powerMultiplier: 0
+      _cooldown: 0
+    _ultimate:
+      _name: 
+      _powerMultiplier: 0
+      _cooldown: 0
+    _ultimateParticleID: 
+  _drops:
+  - _kind: 1
+    _equipmentID: 
+    _goldAmount: 150
+    _chance: 1.0
+  - _kind: 0
+    _equipmentID: Sword
+    _goldAmount: 0
+    _chance: 0.5
+  - _kind: 0
+    _equipmentID: Scythe
+    _goldAmount: 0
+    _chance: 0.35
+  - _kind: 0
+    _equipmentID: PlateArmor
+    _goldAmount: 0
+    _chance: 0.4
+  - _kind: 0
+    _equipmentID: TowerShield
+    _goldAmount: 0
+    _chance: 0.3
+  - _kind: 0
+    _equipmentID: SwiftBoots
+    _goldAmount: 0
+    _chance: 0.3
+  - _kind: 0
+    _equipmentID: BloodTalisman
+    _goldAmount: 0
+    _chance: 0.2

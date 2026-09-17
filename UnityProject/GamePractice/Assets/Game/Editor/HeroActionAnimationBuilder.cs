@@ -13,10 +13,13 @@ namespace Sayne
         private const string AnimationRoot = "Assets/DarkFantasy2D/Animations/Heroes";
         private const string PrefabRoot = "Assets/Game/Characters/Heroes";
         private static readonly string[] Heroes = { "Kage", "Aldric", "Nyx" };
-        private static readonly string[] Actions = { "Attack1", "Attack2", "Attack3", "Skill", "Ultimate" };
-        private static readonly float[] Durations = { .55f, .60f, .68f, 1.05f, 1.80f };
+        private static readonly string[] Actions = { "Attack1", "Attack2", "Attack3", "Attack4", "Skill", "Ultimate" };
+        private static readonly float[] Durations = { .55f, .60f, .68f, .68f, CharacterAnimations.SkillDuration, CharacterAnimations.UltimateDuration };
 
-        [MenuItem("★Sayne★/영웅/전신 공격 애니메이션 재빌드")]
+        /// <summary>포즈 원본 인덱스. 5번은 평타 4타 전용 마무리 동작이다.</summary>
+        private static readonly int[] PoseIndices = { 0, 1, 2, 5, 3, 4 };
+
+        [MenuItem("★Sayne★/영웅/전신 공격 애니메이션 재빌드", false, 100)]
         public static void Build()
         {
             foreach (var hero in Heroes)
@@ -30,7 +33,7 @@ namespace Sayne
             }
             AssetDatabase.SaveAssets();
             Validate();
-            Debug.Log("HERO_ACTIONS_BUILD_PASS: 3 heroes, 15 independent full-body clips.");
+            Debug.Log("HERO_ACTIONS_BUILD_PASS: 3 heroes, 18 independent full-body clips.");
         }
 
         private static void WriteActions(string hero, Transform graphic, AnimatorController controller)
@@ -45,7 +48,7 @@ namespace Sayne
 
             for (var i = 0; i < Actions.Length; i++)
             {
-                var authored = HeroActionPoseAuthoring.Create(graphic, hero, i, Actions[i], Durations[i]);
+                var authored = HeroActionPoseAuthoring.Create(graphic, hero, PoseIndices[i], Actions[i], Durations[i]);
                 var path = $"{folder}/{Actions[i]}.anim";
                 var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
                 if (clip == null)
@@ -113,7 +116,10 @@ namespace Sayne
                     {
                         if (graphic.Find(binding.path) == null) throw new InvalidOperationException("Missing bone: " + binding.path);
                         var curve = AnimationUtility.GetEditorCurve(clip, binding);
-                        if (Mathf.Abs(curve.Evaluate(0) - curve.Evaluate(clip.length)) > .001f)
+                        var recovery = binding.propertyName == "localEulerAnglesRaw.z"
+                            ? Mathf.DeltaAngle(curve.Evaluate(0), curve.Evaluate(clip.length))
+                            : curve.Evaluate(0) - curve.Evaluate(clip.length);
+                        if (Mathf.Abs(recovery) > .001f)
                             throw new InvalidOperationException("Action does not recover: " + path + "/" + binding.path);
                     }
                     foreach (var leg in new[] { "Root/FrontLeg", "Root/RearLeg" })
@@ -123,8 +129,51 @@ namespace Sayne
                             throw new InvalidOperationException("Missing footwork: " + path);
                     }
                 }
+                ValidateMotionSize(prefab, hero);
             }
             Debug.Log("HERO_ACTIONS_VALIDATION_PASS: independent assets, bindings, recovery, footwork, base-layer wiring.");
+        }
+
+        private static void ValidateMotionSize(GameObject prefab, string hero)
+        {
+            var instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                var graphic = instance.GetComponentInChildren<Animator>().gameObject;
+                graphic.GetComponent<Animator>().enabled = false;
+                DressPreview(graphic.transform, hero);
+                var step3 = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/Attack3.anim");
+                var step4 = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/Attack4.anim");
+                var travel = EditorCurveBinding.FloatCurve("Root", typeof(Transform), "m_LocalPosition.x");
+                var thirdReach = AnimationUtility.GetEditorCurve(step3, travel).keys.Max(key => key.value);
+                var fourthReach = AnimationUtility.GetEditorCurve(step4, travel).keys.Max(key => key.value);
+                if (fourthReach - thirdReach < .5f)
+                    throw new InvalidOperationException($"{hero}: combo finisher needs a distinct step.");
+                var weapon = graphic.transform.Find("Root/Torso/Arm/Forearm/Weapon").GetComponentInChildren<SpriteRenderer>();
+                var tip = new Vector3(weapon.sprite.bounds.center.x, weapon.sprite.bounds.max.y, 0f);
+                foreach (var action in new[] { "Skill", "Ultimate" })
+                {
+                    var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/{action}.anim");
+                    var radius = action == "Skill" ? 7f : 10f;
+                    var impact = action == "Skill" ? CharacterAnimations.SkillImpact : CharacterAnimations.UltimateImpact;
+                    clip.SampleAnimation(graphic, clip.length * impact);
+                    var actual = ((Vector2)graphic.transform.InverseTransformPoint(weapon.transform.TransformPoint(tip))).magnitude;
+                    if (Mathf.Abs(actual - radius) > .15f)
+                        throw new InvalidOperationException($"{hero}/{action}: radius {actual:F2}, expected {radius}.");
+                    if (action != "Ultimate") continue;
+                    var tipHeight = graphic.transform.InverseTransformPoint(weapon.transform.TransformPoint(tip)).y;
+                    if (Mathf.Abs(tipHeight) > .15f)
+                        throw new InvalidOperationException($"{hero}: slam misses ground ({tipHeight:F2}).");
+                    var root = graphic.transform.Find("Root");
+                    var landing = root.localPosition.y;
+                    clip.SampleAnimation(graphic, clip.length * .38f);
+                    var jump = root.localPosition.y - landing;
+                    if (jump < 5f)
+                        throw new InvalidOperationException($"{hero}: ultimate jump too small ({jump:F2}).");
+                    Debug.Log($"HERO_MOTION_SIZE_PASS: {hero}, skill=7, ultimate={actual:F2}, jump={jump:F2}");
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(instance); }
         }
 
         public static void BuildAndReview()
@@ -135,7 +184,7 @@ namespace Sayne
             foreach (var heroId in Heroes)
             {
                 var preview = new PreviewRenderUtility();
-                var sheet = new Texture2D(1920, 1600, TextureFormat.RGB24, false);
+                var sheet = new Texture2D(1920, 320 * Actions.Length, TextureFormat.RGB24, false);
                 try
                 {
                     var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabRoot}/{heroId}/{heroId}.prefab");
@@ -156,14 +205,14 @@ namespace Sayne
                     for (var row = 0; row < Actions.Length; row++)
                     {
                         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{heroId}/{Actions[row]}.anim");
-                        var fractions = row == 3 ? new[] { 0f, .18f, .29f, .51f, .64f, .87f } : row == 4 ? new[] { 0f, .30f, .52f, .64f, .78f, .92f } : new[] { 0f, .24f, .36f, .51f, .69f, .87f };
+                        var fractions = row == 4 ? new[] { 0f, .18f, .29f, .51f, .64f, .87f } : row == 5 ? new[] { .10f, .20f, .38f, .46f, .52f, .68f } : new[] { 0f, .24f, .36f, .51f, .69f, .87f };
                         for (var column = 0; column < fractions.Length; column++)
                         {
                             clip.SampleAnimation(graphic, fractions[column] * clip.length);
                             preview.BeginStaticPreview(new Rect(0, 0, 320, 320));
                             preview.Render(true);
                             var frame = preview.EndStaticPreview();
-                            sheet.SetPixels(column * 320, (4 - row) * 320, 320, 320, frame.GetPixels());
+                            sheet.SetPixels(column * 320, (Actions.Length - 1 - row) * 320, 320, 320, frame.GetPixels());
                             UnityEngine.Object.DestroyImmediate(frame);
                         }
                     }
@@ -196,36 +245,27 @@ namespace Sayne
 
         internal static void DressPreview(Transform graphic, string hero)
         {
-            // 장비 이름에 영웅 이름이 없으므로 어떤 한 벌을 입힐지는 여기서 짝지어준다.
+            // 머리·머리카락·망토·스카프는 프리팹에 이미 구워져 있다. 여기서 입히는 건 갈아입는 장비뿐이다.
             var parts = hero switch
             {
-                "Kage" => new List<(BodyPart Part, string Folder, string Name)>
+                "Kage" => new List<(EquipmentSlot Slot, string Folder, string Name)>
                 {
-                    (BodyPart.RightHand, "Weapon", "Scythe"),
-                    (BodyPart.Head, "Head", "FoxMaskHead"),
-                    (BodyPart.Back, "Cape", "NavyCape"),
-                    (BodyPart.Neck, "Scarf", "CrimsonScarf"),
+                    (EquipmentSlot.MainHand, "Weapon", "Scythe"),
                 },
-                "Aldric" => new List<(BodyPart Part, string Folder, string Name)>
+                "Aldric" => new List<(EquipmentSlot Slot, string Folder, string Name)>
                 {
-                    (BodyPart.RightHand, "Weapon", "Sword"),
-                    (BodyPart.Head, "Head", "SilverHead"),
-                    (BodyPart.Hair, "Hair", "SilverHair"),
-                    (BodyPart.Back, "Cape", "VioletCape"),
+                    (EquipmentSlot.MainHand, "Weapon", "Sword"),
                 },
-                _ => new List<(BodyPart Part, string Folder, string Name)>
+                _ => new List<(EquipmentSlot Slot, string Folder, string Name)>
                 {
-                    (BodyPart.RightHand, "Weapon", "Staff"),
-                    (BodyPart.Head, "Head", "WhiteTwinHead"),
-                    (BodyPart.Hair, "Hair", "WhiteHair"),
-                    (BodyPart.Back, "Cape", "BlackCape"),
+                    (EquipmentSlot.MainHand, "Weapon", "Staff"),
                 },
             };
 
             foreach (var part in parts)
             {
                 var visual = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/{part.Folder}/{part.Name}.prefab");
-                graphic.GetComponent<CharacterSkin>().Wear(part.Part, visual);
+                graphic.GetComponent<CharacterSkin>().Wear(part.Slot, visual);
             }
         }
 

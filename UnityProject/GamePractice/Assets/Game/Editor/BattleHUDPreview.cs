@@ -19,7 +19,7 @@ namespace Sayne.Editor
             Capture();
         }
 
-        [MenuItem("★Sayne★/UI/전투 HUD 미리보기 저장")]
+        [MenuItem("★Sayne★/UI/전투 HUD 미리보기 저장", false, 130)]
         public static void Capture()
         {
             var output = Path.GetFullPath("HUDPreviews");
