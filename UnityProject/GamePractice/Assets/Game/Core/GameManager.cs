@@ -36,6 +36,8 @@ namespace Sayne
             await LoadAllAsync();
 
             // 2단계: 게임플레이 매니저 조립. 로드 전에 Get 을 부르면 에셋 매니저가 에러 로그로 알려준다.
+            // 중단이 맨 앞이다 — 창·컷씬·조작·AI 가 전부 이걸 본다.
+            var pauseManager = AddManager(new PauseManager());
             var phaseManager = AddManager(new PhaseManager("RootPhase", token));
             var mapManager = AddManager(new MapManager(mapAssetManager));
             var equipmentManager = AddManager(new EquipmentManager(equipmentAssetManager, equipmentPlanAssetManager));
@@ -46,27 +48,35 @@ namespace Sayne
             var growthManager = AddManager(new GrowthManager(enemyManager, currencyManager));
             var heroManager = AddManager(new HeroManager(heroAssetManager, heroPlanAssetManager, equipmentManager, growthManager));
             var particleManager = AddManager(new ParticleManager(particleAssetManager, heroManager, enemyManager));
+            var dropManager = AddManager(new DropManager(enemyManager, heroManager, currencyManager,
+                equipmentPortraitAssetManager, dropPortraitAssetManager, uiAssetManager.DropItemPrefab));
             var waveManager = AddManager(new WaveManager(enemyManager));
             var questManager = AddManager(new QuestManager(enemyManager));
 
             var cameraManager = AddManager(new CameraManager());
             var cameraDirector = AddManager(new CameraDirector(cameraManager, heroManager));
             var worldUIManager = AddManager(new WorldUIManager(cameraManager, heroManager, enemyManager,
-                uiAssetManager.WorldHPBarPrefab, uiAssetManager.DamageTextPrefab));
+                uiAssetManager.OverlayHPBarPrefab, uiAssetManager.DamageTextPrefab));
 
             var phaseUIManager = AddManager(new PhaseUIManager(phaseManager));
-            var screenUIManager = AddManager(new ScreenUIManager(phaseUIManager, heroManager,
+            var screenUIManager = AddManager(new ScreenUIManager(pauseManager, phaseUIManager, heroManager,
                 waveManager, currencyManager, growthManager, profileAssetManager,
-                uiAssetManager.BattlePanelPrefab, uiAssetManager.ResultPanelPrefab));
+                uiAssetManager.BattlePanelPrefab));
 
-            var heroControlManager = AddManager(new HeroControlManager(heroManager, enemyManager, screenUIManager.BattlePanel));
+            var cutsceneManager = AddManager(new CutsceneManager(pauseManager, heroManager, profileAssetManager,
+                uiAssetManager.UltimateCutscenePanelPrefab));
+
+            var tutorialManager = AddManager(new TutorialManager(pauseManager, cameraManager,
+                uiAssetManager.TutorialWidgetPrefab, uiAssetManager.OverlaySpeechBubblePrefab));
+
+            var heroControlManager = AddManager(new HeroControlManager(pauseManager, heroManager, enemyManager, screenUIManager.BattlePanel));
             var equipmentUIManager = AddManager(new EquipmentUIManager(screenUIManager.BattlePanel, heroManager,
-                equipmentManager, equipmentPortraitAssetManager));
-            var enemyAIManager = AddManager(new EnemyAIManager(heroManager, enemyManager));
-            var dropManager = AddManager(new DropManager(enemyManager, heroManager, currencyManager,
-                equipmentPortraitAssetManager, dropPortraitAssetManager, uiAssetManager.DropItemPrefab));
+                equipmentManager, equipmentPortraitAssetManager, heroAssetManager));
+            var enemyAIManager = AddManager(new EnemyAIManager(pauseManager, heroManager, enemyManager));
 
-            var battleManager = AddManager(new BattleManager(phaseManager, mapManager, heroManager, enemyManager, waveManager));
+            var tutorialDirector = AddManager(new TutorialDirector(tutorialManager, heroManager, enemyManager, waveManager));
+
+            phaseManager.RunAsync(new InGamePhase(mapManager, heroManager, enemyManager, waveManager)).Forget();
         }
 
         private void OnDestroy()

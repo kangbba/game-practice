@@ -91,6 +91,37 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &1762415249482605845
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7298284124945390678}
+  m_Layer: 0
+  m_Name: EquipmentHelmet
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7298284124945390678
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1762415249482605845}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.07692307, y: -0.14410256, z: 0}
+  m_LocalScale: {x: 1.1030769, y: 1.1030769, z: 1.1030769}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3265974708863108226}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1868564001927341319
 GameObject:
   m_ObjectHideFlags: 0
@@ -301,6 +332,15 @@ MonoBehaviour:
   _slots:
   - _slot: 0
     _transform: {fileID: 8763512892468679891}
+    _coveredSprites: []
+    _overrideSortingOrder: 0
+    _sortingOrder: 0
+  - _slot: 2
+    _transform: {fileID: 7298284124945390678}
+    _coveredSprites:
+    - {fileID: 3448023774356952200}
+    _overrideSortingOrder: 1
+    _sortingOrder: 9
 --- !u!1 &2843234089065675457
 GameObject:
   m_ObjectHideFlags: 0
@@ -1310,6 +1350,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2453731577449004331}
+  - {fileID: 7298284124945390678}
   m_Father: {fileID: 2732541273082296123}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8294774839840335513

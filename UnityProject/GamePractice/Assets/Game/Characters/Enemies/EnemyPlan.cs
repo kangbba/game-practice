@@ -15,7 +15,7 @@ namespace Sayne
         [Serializable]
         private class DropEntry
         {
-            [SerializeField] private DropKind _kind;
+            [SerializeField] private DropType _type;
 
             [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _equipmentID;
 
@@ -26,9 +26,9 @@ namespace Sayne
             public float Chance => _chance;
 
             /// <summary>장비 드랍인데 장비를 안 고른 줄은 굴려도 줄 게 없다.</summary>
-            public bool IsValid => _kind != DropKind.Equipment || !string.IsNullOrEmpty(_equipmentID);
+            public bool IsValid => _type != DropType.Equipment || !string.IsNullOrEmpty(_equipmentID);
 
-            public DropReward Reward => new DropReward(_kind, _equipmentID, _goldAmount);
+            public DropReward Reward => new DropReward(_type, _equipmentID, _goldAmount);
         }
 
         [EnemyIDPicker] [SerializeField] private string _enemyID;
@@ -52,7 +52,8 @@ namespace Sayne
         [Header("싸우는 방식")]
         [SerializeField] private CombatPlanData _combat = new CombatPlanData();
 
-        [Header("죽으면 흘리는 것")]
+        [Header("죽으면 주는 것")]
+        [SerializeField] private int _expReward;
         [SerializeField] private DropEntry[] _drops = Array.Empty<DropEntry>();
 
         /// <summary>이 설계값의 주인.</summary>
@@ -68,6 +69,9 @@ namespace Sayne
 
         /// <summary>평타 콤보와 기술. 적은 보통 1타만 치고 기술이 없다.</summary>
         public CombatPlan Combat => _combat.ToPlan();
+
+        /// <summary>죽을 때 주는 경험치. 드랍과 달리 확률 없이 언제나 준다.</summary>
+        public int ExpReward => _expReward;
 
         /// <summary>죽는 순간 한 번 굴린다. 당첨된 전리품들이 나온다 — 아무것도 안 나올 수도 있다.</summary>
         public IEnumerable<DropReward> Roll()

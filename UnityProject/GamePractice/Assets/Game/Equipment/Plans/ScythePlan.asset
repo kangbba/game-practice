@@ -19,9 +19,9 @@ MonoBehaviour:
   _maxHP: 0
   _moveSpeed: -0.2
   _attackPower: 10
-  _weaponType: 1
+  _weaponType: 0
   _range: 4
   _comboInterval: 0.3
   _cycleInterval: 1.4
   _useTrail: 1
-  _hitEffects: []
+  _hitDebuffs: []

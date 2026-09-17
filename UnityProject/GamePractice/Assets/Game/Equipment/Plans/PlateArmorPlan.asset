@@ -16,12 +16,12 @@ MonoBehaviour:
   _slot: 3
   _displayName: 판금 갑옷
   _description: 통짜 강철을 두른 갑옷. 어지간한 공격은 튕겨내지만 몸이 무거워진다.
-  _maxHP: 60
-  _moveSpeed: -0.5
+  _maxHP: 90
+  _moveSpeed: -0.6
   _attackPower: 0
   _weaponType: 0
   _range: 2
   _comboInterval: 0.35
   _cycleInterval: 1.6
   _useTrail: 0
-  _hitEffects: []
+  _hitDebuffs: []

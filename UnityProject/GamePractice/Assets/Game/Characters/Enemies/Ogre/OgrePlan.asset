@@ -36,20 +36,25 @@ MonoBehaviour:
       _powerMultiplier: 0
       _cooldown: 0
     _ultimateParticleID: 
+  _expReward: 30
   _drops:
-  - _kind: 1
+  - _type: 1
     _equipmentID: 
     _goldAmount: 65
     _chance: 0.6
-  - _kind: 0
+  - _type: 0
     _equipmentID: OgreClub
     _goldAmount: 0
     _chance: 0.1
-  - _kind: 0
+  - _type: 0
     _equipmentID: LeatherArmor
     _goldAmount: 0
     _chance: 0.1
-  - _kind: 0
+  - _type: 0
     _equipmentID: TravelerBoots
+    _goldAmount: 0
+    _chance: 0.08
+  - _type: 0
+    _equipmentID: BoneGreaves
     _goldAmount: 0
     _chance: 0.08

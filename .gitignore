@@ -45,3 +45,6 @@ sysinfo.txt
 
 # Crashlytics
 crashlytics-build.properties
+
+# 에디터 요청 파일 (장비 미리보기·굽기 트리거)
+UnityProject/GamePractice/tmp/

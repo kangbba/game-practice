@@ -30,11 +30,11 @@ MonoBehaviour:
     - 1.2
     _comboStaggers: 1
     _skill:
-      _name: 그림자 가르기
+      _name: 초승달 베기
       _powerMultiplier: 1.8
-      _cooldown: 5
-    _ultimate:
-      _name: 그림자 참
-      _powerMultiplier: 3
       _cooldown: 10
+    _ultimate:
+      _name: 수확
+      _powerMultiplier: 3
+      _cooldown: 45
     _ultimateParticleID: 

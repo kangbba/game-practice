@@ -15,6 +15,9 @@ namespace Sayne
         {
             [SerializeField] private EquipmentSlot _slot;
             [SerializeField] private Transform _transform;
+            [SerializeField] private SpriteRenderer[] _coveredSprites = Array.Empty<SpriteRenderer>();
+            [SerializeField] private bool _overrideSortingOrder;
+            [SerializeField] private int _sortingOrder;
 
             private GameObject _worn;
 
@@ -26,6 +29,11 @@ namespace Sayne
                 TakeOff();
 
                 _worn = UnityEngine.Object.Instantiate(visual, _transform, false);
+                foreach (var sprite in _coveredSprites)
+                    if (sprite != null) sprite.enabled = false;
+                if (_overrideSortingOrder)
+                    foreach (var sprite in _worn.GetComponentsInChildren<SpriteRenderer>())
+                        sprite.sortingOrder = _sortingOrder;
                 return _worn;
             }
 
@@ -39,6 +47,8 @@ namespace Sayne
 
                 UnityEngine.Object.Destroy(_worn);
                 _worn = null;
+                foreach (var sprite in _coveredSprites)
+                    if (sprite != null) sprite.enabled = true;
             }
         }
 
@@ -48,7 +58,7 @@ namespace Sayne
         /// <summary>타격 시점 뒤에 궤적이 이어지는 시간. 휘두른 뒤의 잔상이다.</summary>
         private const float TrailFollowThrough = 0.15f;
 
-        private Dictionary<EquipmentSlot, SlotEntry> _table;
+        private Dictionary<EquipmentSlot, List<SlotEntry>> _table;
         private Character _character;
         private WeaponTrail _weaponTrail;
 
@@ -57,10 +67,8 @@ namespace Sayne
         {
             _character = character;
 
-            foreach (var entry in _slots)
+            foreach (var slot in Entries().Keys)
             {
-                var slot = entry.Slot;
-
                 character.Equipment.Observe(slot)
                     .Subscribe((self: this, slot), (part, state) => state.self.Apply(state.slot, part))
                     .AddTo(this);
@@ -75,12 +83,14 @@ namespace Sayne
         /// <summary>그 자리에 이 그림을 걸친다. 에디터 프리뷰 툴도 이걸 쓴다.</summary>
         public void Wear(EquipmentSlot slot, GameObject visual)
         {
-            EntryOf(slot).Wear(visual);
+            if (!Entries().TryGetValue(slot, out var entries)) return;
+            foreach (var entry in entries) entry.Wear(visual);
         }
 
         public void TakeOff(EquipmentSlot slot)
         {
-            EntryOf(slot).TakeOff();
+            if (!Entries().TryGetValue(slot, out var entries)) return;
+            foreach (var entry in entries) entry.TakeOff();
         }
 
         private void Apply(EquipmentSlot slot, EquipmentPart part)
@@ -97,11 +107,11 @@ namespace Sayne
                 return;
             }
 
-            var worn = EntryOf(slot).Wear(part.Visual);
-
-            if (part is Weapon weapon)
+            if (!Entries().TryGetValue(slot, out var entries)) return;
+            foreach (var entry in entries)
             {
-                SetupTrail(worn, weapon);
+                var worn = entry.Wear(part.Visual);
+                if (part is Weapon weapon) SetupTrail(worn, weapon);
             }
         }
 
@@ -117,19 +127,21 @@ namespace Sayne
         }
 
         /// <summary>처음 쓸 때 한 번만 묶는다. 에디터에서도 Awake 없이 쓰이므로 여기서 만든다.</summary>
-        private SlotEntry EntryOf(EquipmentSlot slot)
+        private Dictionary<EquipmentSlot, List<SlotEntry>> Entries()
         {
             if (_table == null)
             {
-                _table = new Dictionary<EquipmentSlot, SlotEntry>();
+                _table = new Dictionary<EquipmentSlot, List<SlotEntry>>();
 
                 foreach (var entry in _slots)
                 {
-                    _table[entry.Slot] = entry;
+                    if (!_table.TryGetValue(entry.Slot, out var entries))
+                        _table[entry.Slot] = entries = new List<SlotEntry>();
+                    entries.Add(entry);
                 }
             }
 
-            return _table[slot];
+            return _table;
         }
     }
 }

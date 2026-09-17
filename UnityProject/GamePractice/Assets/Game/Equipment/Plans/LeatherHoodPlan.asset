@@ -16,12 +16,12 @@ MonoBehaviour:
   _slot: 2
   _displayName: 가죽 두건
   _description: 가벼운 가죽 두건. 시야를 가리지 않아 움직임이 편하다.
-  _maxHP: 8
-  _moveSpeed: 0.1
+  _maxHP: 15
+  _moveSpeed: 0.3
   _attackPower: 0
   _weaponType: 0
   _range: 2
   _comboInterval: 0.35
   _cycleInterval: 1.6
   _useTrail: 0
-  _hitEffects: []
+  _hitDebuffs: []

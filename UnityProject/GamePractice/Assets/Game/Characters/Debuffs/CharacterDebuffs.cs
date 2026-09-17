@@ -10,35 +10,45 @@ namespace Sayne
     /// </summary>
     public class CharacterDebuffs : IDisposable
     {
-        private readonly Dictionary<Debuff, ReactiveProperty<bool>> _effects =
-            new Dictionary<Debuff, ReactiveProperty<bool>>();
+        private readonly Dictionary<DebuffType, ReactiveProperty<bool>> _effects =
+            new Dictionary<DebuffType, ReactiveProperty<bool>>();
 
-        private readonly Dictionary<Debuff, IDisposable> _timers =
-            new Dictionary<Debuff, IDisposable>();
+        private readonly Dictionary<DebuffType, IDisposable> _timers =
+            new Dictionary<DebuffType, IDisposable>();
 
         public CharacterDebuffs()
         {
-            foreach (var effect in Debuffs.All)
+            foreach (var effect in DebuffTypes.All)
             {
                 _effects[effect] = new ReactiveProperty<bool>();
             }
         }
 
-        public ReadOnlyReactiveProperty<bool> Observe(Debuff effect) => _effects[effect];
+        public ReadOnlyReactiveProperty<bool> Observe(DebuffType effect) => _effects[effect];
 
-        public bool Has(Debuff effect) => _effects[effect].Value;
+        public bool Has(DebuffType effect) => _effects[effect].Value;
 
-        /// <summary>같은 상태이상을 다시 걸면 지속 시간이 새로 시작된다.</summary>
-        public void Apply(Debuff effect, float duration)
+        /// <summary>
+        /// 상태이상 한 건을 건다. 같은 종류를 다시 걸면 지속 시간이 새로 시작된다.
+        /// 지속 시간이 0 이하면 타이머를 안 건다 — Clear 로 벗기기 전까지 계속 걸려 있다.
+        /// </summary>
+        public void Apply(Debuff debuff)
         {
-            Stop(effect);
+            var type = debuff.Type;
+            Stop(type);
 
-            _effects[effect].Value = true;
-            _timers[effect] = Observable.Timer(TimeSpan.FromSeconds(duration))
-                .Subscribe((self: this, effect), (_, state) => state.self.Clear(state.effect));
+            _effects[type].Value = true;
+
+            if (debuff.Seconds <= 0f)
+            {
+                return;
+            }
+
+            _timers[type] = Observable.Timer(TimeSpan.FromSeconds(debuff.Seconds))
+                .Subscribe((self: this, type), (_, state) => state.self.Clear(state.type));
         }
 
-        public void Clear(Debuff effect)
+        public void Clear(DebuffType effect)
         {
             Stop(effect);
             _effects[effect].Value = false;
@@ -46,13 +56,13 @@ namespace Sayne
 
         public void ClearAll()
         {
-            foreach (var effect in Debuffs.All)
+            foreach (var effect in DebuffTypes.All)
             {
                 Clear(effect);
             }
         }
 
-        private void Stop(Debuff effect)
+        private void Stop(DebuffType effect)
         {
             if (_timers.TryGetValue(effect, out var timer))
             {

@@ -16,12 +16,12 @@ MonoBehaviour:
   _slot: 5
   _displayName: 여행자의 장화
   _description: 오래 걸어도 발이 편한 장화. 평범하지만 튼튼하다.
-  _maxHP: 10
-  _moveSpeed: 0.3
+  _maxHP: 15
+  _moveSpeed: 0.5
   _attackPower: 0
   _weaponType: 0
   _range: 2
   _comboInterval: 0.35
   _cycleInterval: 1.6
   _useTrail: 0
-  _hitEffects: []
+  _hitDebuffs: []

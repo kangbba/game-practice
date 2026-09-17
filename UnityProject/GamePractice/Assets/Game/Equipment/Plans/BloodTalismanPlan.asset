@@ -16,12 +16,12 @@ MonoBehaviour:
   _slot: 1
   _displayName: 피의 부적
   _description: 제 피를 걸고 위력을 빌리는 부적. 때리는 힘이 오르는 대신 몸이 약해진다.
-  _maxHP: -10
+  _maxHP: -25
   _moveSpeed: 0
-  _attackPower: 6
+  _attackPower: 12
   _weaponType: 0
   _range: 2
   _comboInterval: 0.35
   _cycleInterval: 1.6
   _useTrail: 0
-  _hitEffects: []
+  _hitDebuffs: []

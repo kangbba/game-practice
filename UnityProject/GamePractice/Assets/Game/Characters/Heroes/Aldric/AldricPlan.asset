@@ -30,11 +30,11 @@ MonoBehaviour:
     - 1.2
     _comboStaggers: 1
     _skill:
-      _name: 성검 내려베기
+      _name: 빛가르기
       _powerMultiplier: 2
-      _cooldown: 6
+      _cooldown: 10
     _ultimate:
-      _name: 성검 강타
+      _name: 백야
       _powerMultiplier: 3.5
-      _cooldown: 12
+      _cooldown: 45
     _ultimateParticleID: AldricUltimate

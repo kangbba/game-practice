@@ -36,20 +36,29 @@ MonoBehaviour:
       _powerMultiplier: 0
       _cooldown: 0
     _ultimateParticleID: 
+  _expReward: 8
   _drops:
-  - _kind: 1
+  - _type: 1
     _equipmentID: 
     _goldAmount: 24
     _chance: 0.5
-  - _kind: 0
+  - _type: 0
     _equipmentID: GoblinClub
     _goldAmount: 0
     _chance: 0.15
-  - _kind: 0
+  - _type: 0
     _equipmentID: LeatherHood
     _goldAmount: 0
     _chance: 0.1
-  - _kind: 0
+  - _type: 0
     _equipmentID: WoodenShield
+    _goldAmount: 0
+    _chance: 0.08
+  - _type: 0
+    _equipmentID: LeatherGreaves
+    _goldAmount: 0
+    _chance: 0.1
+  - _type: 0
+    _equipmentID: HuntingBow
     _goldAmount: 0
     _chance: 0.08

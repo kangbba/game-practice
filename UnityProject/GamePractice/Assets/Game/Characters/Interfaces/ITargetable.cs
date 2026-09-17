@@ -6,11 +6,11 @@ namespace Sayne
     public interface ITargetable
     {
         Transform Transform { get; }
-        Team Team { get; }
+        TeamType Team { get; }
         bool IsTargetable { get; }
     }
 
-    public enum Team
+    public enum TeamType
     {
         Ally,
         Enemy

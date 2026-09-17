@@ -17,11 +17,11 @@ MonoBehaviour:
   _displayName: 신속의 장화
   _description: 바람을 밟는 듯한 장화. 지키는 건 없지만 누구보다 빨리 붙는다.
   _maxHP: 0
-  _moveSpeed: 0.9
+  _moveSpeed: 1.5
   _attackPower: 0
   _weaponType: 0
   _range: 2
   _comboInterval: 0.35
   _cycleInterval: 1.6
   _useTrail: 0
-  _hitEffects: []
+  _hitDebuffs: []

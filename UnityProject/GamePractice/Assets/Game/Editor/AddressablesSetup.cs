@@ -18,7 +18,7 @@ namespace Sayne.Editor
         private const string MapsRoot = "Assets/Game/Maps";
         private const string EquipmentRoot = "Assets/Game/Equipment";
 
-        [MenuItem("★Sayne★/7. 어드레서블 셋업", false, 7)]
+        // 돌릴 일이 끝나서 메뉴에서 내렸다. 빌더를 고쳐 다시 돌려야 하면 번호를 붙여 MenuItem 을 다시 단다.
         public static void Setup()
         {
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
@@ -50,10 +50,13 @@ namespace Sayne.Editor
 
             count += Mark(settings, group, "Assets/Game/Drops/DropItem.prefab", null);
 
-            count += Mark(settings, group, "Assets/Game/UI/WorldHPBar.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/OverlayHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/DamageText.prefab", null);
+            count += Mark(settings, group, "Assets/Game/Cutscene/UltimateCutscenePanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/BattlePhaseUIPanel.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UI/ResultPhaseUIPanel.prefab", null);
+
+            count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/TutorialWidget.prefab", null);
+            count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/OverlaySpeechBubble.prefab", null);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"AddressablesSetup: {count} 개 에셋 등록 완료");

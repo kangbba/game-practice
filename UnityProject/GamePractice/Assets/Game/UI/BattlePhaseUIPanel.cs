@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using R3;
 using TMPro;
@@ -7,7 +8,7 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
-    /// Combat 페이즈 동안만 보이는 전투 HUD. PhaseUIManager가 표시를 토글한다.
+    /// InGame 페이즈 동안만 보이는 전투 HUD. PhaseUIManager가 표시를 토글한다.
     /// 여기서는 계산하지 않는다 — 매니저가 들고 있는 값을 구독해서 그리기만 한다.
     /// </summary>
     public class BattlePhaseUIPanel : PhaseUIBase
@@ -33,13 +34,16 @@ namespace Sayne
         /// <summary>성장 모달이 "기본 + 성장" 을 그릴 때 보는 히어로. 부활하면 새 히어로로 갈린다.</summary>
         private Character _hero;
 
-        public override string PhaseKey => PhaseID.Combat;
+        public override string PhaseKey => PhaseID.InGame;
 
         public FloatingJoystick Joystick => _joystick;
         public Observable<Unit> SkillClicked => _skillButton.Clicked;
         public Observable<Unit> UltimateClicked => _ultimateButton.Clicked;
         public Observable<Unit> EquipMenuClicked => _equipMenuButton.onClick.AsObservable();
         public EquipmentWindow EquipmentWindow => _equipmentWindow;
+
+        /// <summary>이 HUD 위에 뜨는 창 전부. 새 창을 만들면 여기에 올린다 — 열린 동안 게임 중단은 그걸로 따라온다.</summary>
+        public IReadOnlyList<PopupWindow> Popups => new PopupWindow[] { _equipmentWindow, _growthWindow };
 
         public void Bind(HeroManager heroManager, WaveManager waveManager,
             CurrencyManager currencyManager, GrowthManager growthManager, IAssets<CharacterProfile> profiles)

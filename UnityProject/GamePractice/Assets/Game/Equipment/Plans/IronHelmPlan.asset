@@ -16,12 +16,12 @@ MonoBehaviour:
   _slot: 2
   _displayName: 철 투구
   _description: 머리를 통째로 감싸는 철 투구. 묵직하지만 확실하다.
-  _maxHP: 22
-  _moveSpeed: -0.1
+  _maxHP: 45
+  _moveSpeed: -0.3
   _attackPower: 0
   _weaponType: 0
   _range: 2
   _comboInterval: 0.35
   _cycleInterval: 1.6
   _useTrail: 0
-  _hitEffects: []
+  _hitDebuffs: []

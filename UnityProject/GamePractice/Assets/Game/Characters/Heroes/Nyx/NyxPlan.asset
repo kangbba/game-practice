@@ -32,9 +32,9 @@ MonoBehaviour:
     _skill:
       _name: 어둠 갈퀴
       _powerMultiplier: 1.6
-      _cooldown: 4.5
+      _cooldown: 10
     _ultimate:
-      _name: 어둠 폭발
+      _name: 월식
       _powerMultiplier: 3
-      _cooldown: 9
+      _cooldown: 45
     _ultimateParticleID: NyxUltimate

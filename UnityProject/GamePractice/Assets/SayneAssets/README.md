@@ -27,6 +27,28 @@
 - 계층(HSM): 페이즈가 자식 `PhaseManager`를 소유하면 서브 상태 머신이 된다. 소유한 페이즈는 반드시 `OnEnter`에서 자식 `Init()`, `OnExit`에서 자식 `Release()`를 부른다. 이 두 줄로 정리 연쇄가 바깥에서 안쪽까지 전파된다.
 - 부모의 생명주기가 자식을 소유한다. 자식 머신을 바깥에서 직접 만지지 않는다.
 
+## UI / Tutorial
+
+안내 대사 위젯. 그림과 글을 받아서 틀 뿐, 누구의 어떤 대사인지는 모른다. 의존: UniTask, TextMeshPro.
+연출은 전부 unscaled 시간으로 돌아서 게임이 멈춘(timeScale 0) 동안에도 움직인다.
+
+| 파일 | 역할 |
+|---|---|
+| `SpeechBubble` | 말풍선 한 개. `PlayAsync(text, token)` — 튀어나오고, 한 글자씩 찍고, `Advance()` 를 받으면 닫힌다. 글이 길면 풍선이 늘어난다. |
+| `TutorialWidget` (+프리팹) | 화면 아래 초상화 + 말풍선. `PlayAsync(portrait, text, token)`. 화면 아무 데나 누르면 넘어간다. |
+| `OverlaySpeechBubble` (+프리팹) | 캐릭터 머리 위를 따라다니는 말풍선. `OverlayHPBar` 처럼 `Attach(camera, target, worldOffset, screenOffset)` 로 붙인 뒤 `PlayAsync(text, token)`. |
+
+```csharp
+var widget = Object.Instantiate(tutorialWidgetPrefab, canvas.transform);   // 스크린 오버레이 캔버스 + GraphicRaycaster
+await widget.PlayAsync(portraitSprite, "조이스틱을 끌어서 움직여 보세요.", token);
+
+var bubble = Object.Instantiate(overlayBubblePrefab, canvas.transform);
+bubble.Attach(camera, hero.transform, new Vector3(0f, 2.2f, 0f), new Vector2(0f, 36f));
+await bubble.PlayAsync("저 고블린부터 잡자!", token);
+```
+
+프리팹은 폰트(`Assets/Fonts/TMP/SB_Aggro_Bold SDF`)를 참조한다. 다른 프로젝트로 옮기면 폰트만 다시 지정한다.
+
 ## 사용법
 
 ### 0. 새 프로젝트에 도입

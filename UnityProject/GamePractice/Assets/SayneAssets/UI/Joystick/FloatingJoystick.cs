@@ -41,7 +41,16 @@ namespace Sayne
                 return;
             }
 
-            var offset = Vector2.ClampMagnitude(ToLocalPoint(eventData) - _base.anchoredPosition, _radius);
+            // 손가락이 반경 밖으로 나가면 베이스를 끌고 간다 — 노브는 항상 테두리에 붙고,
+            // 반대로 꺾을 때는 그 자리에서 바로 반응한다(고정 베이스면 한참 되돌려야 방향이 바뀐다).
+            var finger = ToLocalPoint(eventData);
+            var offset = finger - _base.anchoredPosition;
+            if (offset.magnitude > _radius)
+            {
+                offset = offset.normalized * _radius;
+                _base.anchoredPosition = finger - offset;
+            }
+
             _knob.anchoredPosition = offset;
             Direction = offset / _radius;
         }

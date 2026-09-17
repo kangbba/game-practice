@@ -11,18 +11,16 @@ namespace Sayne
     /// 이 창은 받은 대로 그리고 "이 항목을 올려달라" 만 흘린다.
     /// 줄 순서는 GrowthPlan.All 과 같다 — 빌더가 그 순서로 꽂는다.
     /// </summary>
-    public class GrowthWindow : MonoBehaviour
+    public class GrowthWindow : PopupWindow
     {
         [SerializeField] private Button _closeBtn;
         [SerializeField] private TextMeshProUGUI _goldText;
         [SerializeField] private GrowthStatWidget[] _statWidgets;
 
-        private readonly Subject<GrowthStat> _upgradeRequested = new Subject<GrowthStat>();
-
-        public bool IsOpen => gameObject.activeSelf;
+        private readonly Subject<GrowthStatType> _upgradeRequested = new Subject<GrowthStatType>();
 
         /// <summary>강화를 요청한 항목. 실제로 살 수 있는지는 성장 매니저가 마지막으로 판단한다.</summary>
-        public Observable<GrowthStat> UpgradeRequested => _upgradeRequested;
+        public Observable<GrowthStatType> UpgradeRequested => _upgradeRequested;
 
         private void Awake()
         {
@@ -40,19 +38,11 @@ namespace Sayne
             }
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             _upgradeRequested.Dispose();
-        }
-
-        public void Show()
-        {
-            gameObject.SetActive(true);
-        }
-
-        public void Hide()
-        {
-            gameObject.SetActive(false);
         }
 
         /// <summary>가진 골드. 값을 보면서 살지 말지 정하는 창이라 액수가 창 안에 있어야 한다.</summary>
@@ -61,7 +51,7 @@ namespace Sayne
             _goldText.text = $"보유 골드  <color=#F0C776>{gold:N0}</color>";
         }
 
-        public void SetStat(GrowthStat stat, int level, int baseValue, int growth)
+        public void SetStat(GrowthStatType stat, int level, int baseValue, int growth)
         {
             var widget = Widget(stat);
 
@@ -72,7 +62,7 @@ namespace Sayne
             }
         }
 
-        public void SetCost(GrowthStat stat, long cost, bool affordable, bool maxed)
+        public void SetCost(GrowthStatType stat, long cost, bool affordable, bool maxed)
         {
             var widget = Widget(stat);
 
@@ -82,7 +72,7 @@ namespace Sayne
             }
         }
 
-        private GrowthStatWidget Widget(GrowthStat stat)
+        private GrowthStatWidget Widget(GrowthStatType stat)
         {
             var index = Array.IndexOf(GrowthPlan.All, stat);
 

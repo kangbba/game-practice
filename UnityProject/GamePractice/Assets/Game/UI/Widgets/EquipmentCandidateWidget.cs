@@ -2,27 +2,35 @@ using R3;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Sayne
 {
     /// <summary>
     /// 장비창 우측의 아이템 후보 한 칸. 누르면 선택되어 설명·장착 버튼이 이 장비를 향한다.
-    /// 드래그해서 같은 자리의 슬롯에 떨어뜨리면 바로 장착이다.
+    /// 끌어서 같은 자리의 슬롯에 떨어뜨리면 바로 장착이다.
     /// </summary>
     public class EquipmentCandidateWidget : MonoBehaviour,
         IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
+        private const float GhostAlpha = 0.85f;
+        private const float DraggedAlpha = 0.35f;
+
         [SerializeField] private TextMeshProUGUI _label;
-        [SerializeField] private UnityEngine.UI.Image _icon;
+        [SerializeField] private Image _icon;
         [SerializeField] private CanvasGroup _canvasGroup;
 
         /// <summary>장착 중 표식. 창이 장비 상태를 보고 켜고 끈다.</summary>
         [SerializeField] private GameObject _equippedMark;
 
+        /// <summary>선택 테두리. 창이 선택 상태를 보고 켜고 끈다.</summary>
+        [SerializeField] private GameObject _selectedMark;
+
         private readonly Subject<string> _clicked = new Subject<string>();
 
-        private Transform _homeParent;
-        private int _homeSiblingIndex;
+        /// <summary>끌려다니는 사본. 원본은 목록에 그대로 남아 있어서 목록이 출렁이지 않는다.</summary>
+        private EquipmentCandidateWidget _ghost;
+
         private bool _isDragging;
 
         public string EquipmentID { get; private set; }
@@ -41,6 +49,7 @@ namespace Sayne
             _icon.sprite = icon;
             _icon.enabled = icon != null;
             _equippedMark.SetActive(false);
+            _selectedMark.SetActive(false);
         }
 
         public void SetEquipped(bool isEquipped)
@@ -48,28 +57,36 @@ namespace Sayne
             _equippedMark.SetActive(isEquipped);
         }
 
+        public void SetSelected(bool isSelected)
+        {
+            _selectedMark.SetActive(isSelected);
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             _isDragging = true;
-            _homeParent = transform.parent;
-            _homeSiblingIndex = transform.GetSiblingIndex();
 
-            // 드래그 중엔 최상위로 올려서 다른 UI 위에 그려지고, 레이캐스트를 꺼서 슬롯이 드랍을 받게 한다.
-            transform.SetParent(GetComponentInParent<Canvas>().transform, true);
-            _canvasGroup.blocksRaycasts = false;
+            // 사본은 캔버스 맨 위에 올려 어디서든 보이게 하고, 레이캐스트를 꺼서 아래의 슬롯이 드랍을 받게 한다.
+            _ghost = Instantiate(this, GetComponentInParent<Canvas>().transform);
+            _ghost._canvasGroup.blocksRaycasts = false;
+            _ghost._canvasGroup.alpha = GhostAlpha;
+            _ghost.transform.position = eventData.position;
+
+            _canvasGroup.alpha = DraggedAlpha;
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            transform.position = eventData.position;
+            _ghost.transform.position = eventData.position;
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            transform.SetParent(_homeParent, false);
-            transform.SetSiblingIndex(_homeSiblingIndex);
-            _canvasGroup.blocksRaycasts = true;
             _isDragging = false;
+
+            Destroy(_ghost.gameObject);
+            _ghost = null;
+            _canvasGroup.alpha = 1f;
         }
 
         public void OnPointerClick(PointerEventData eventData)

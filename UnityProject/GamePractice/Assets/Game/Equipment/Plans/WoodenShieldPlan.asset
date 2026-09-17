@@ -16,7 +16,7 @@ MonoBehaviour:
   _slot: 1
   _displayName: 나무 방패
   _description: 손에 잡히는 대로 덧댄 방패. 없는 것보단 낫다.
-  _maxHP: 15
+  _maxHP: 25
   _moveSpeed: 0
   _attackPower: 0
   _weaponType: 0
@@ -24,4 +24,4 @@ MonoBehaviour:
   _comboInterval: 0.35
   _cycleInterval: 1.6
   _useTrail: 0
-  _hitEffects: []
+  _hitDebuffs: []

@@ -29,6 +29,8 @@
 - 비동기 메서드는 `Async` 접미사 — `MainLogicAsync`
 - 두 글자 약어는 둘 다 대문자 — `HP`, `MaxHP`
 - 상수는 PascalCase. `UPPER_CASE` 안 씀
+- **enum 이름에는 `Type` 접미사를 붙인다** — `DebuffType`, `WeaponType`. 접미사가 없으면 "종류 이름표"인지 "실제 한 건"인지 구분이 안 되고, 나중에 그 종류에 지속시간 같은 값이 붙은 타입을 만들 때 쓸 이름이 사라진다. 실제 한 건을 담는 타입이 접미사 없는 이름을 가져간다 — `Debuff { DebuffType Type; float Seconds; }`
+- enum 의 목록·표시명을 들고 있는 짝꿍 static class 는 복수형으로 같은 파일에 둔다 — `DebuffTypes.All`, `WeaponTypes.DisplayName()`
 - 헝가리안 표기 안 씀
 - `Button`은 `button`이 아니라 `btn`으로 줄인다 — `_rerollBtn`
 - 임시·테스트값에는 `Test` 접두사 — `TestHeroMaxHP`

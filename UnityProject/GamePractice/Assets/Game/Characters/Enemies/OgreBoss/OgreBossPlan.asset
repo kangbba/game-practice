@@ -36,32 +36,41 @@ MonoBehaviour:
       _powerMultiplier: 0
       _cooldown: 0
     _ultimateParticleID: 
+  _expReward: 200
   _drops:
-  - _kind: 1
+  - _type: 1
     _equipmentID: 
     _goldAmount: 150
     _chance: 1.0
-  - _kind: 0
+  - _type: 0
     _equipmentID: Sword
     _goldAmount: 0
     _chance: 0.5
-  - _kind: 0
+  - _type: 0
     _equipmentID: Scythe
     _goldAmount: 0
     _chance: 0.35
-  - _kind: 0
+  - _type: 0
     _equipmentID: PlateArmor
     _goldAmount: 0
     _chance: 0.4
-  - _kind: 0
+  - _type: 0
     _equipmentID: TowerShield
     _goldAmount: 0
     _chance: 0.3
-  - _kind: 0
+  - _type: 0
     _equipmentID: SwiftBoots
     _goldAmount: 0
     _chance: 0.3
-  - _kind: 0
+  - _type: 0
     _equipmentID: BloodTalisman
     _goldAmount: 0
     _chance: 0.2
+  - _type: 0
+    _equipmentID: PlatedBoots
+    _goldAmount: 0
+    _chance: 0.3
+  - _type: 0
+    _equipmentID: LongBow
+    _goldAmount: 0
+    _chance: 0.3

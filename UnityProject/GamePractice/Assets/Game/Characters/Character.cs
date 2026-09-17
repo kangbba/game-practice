@@ -14,7 +14,7 @@ namespace Sayne
         private readonly ReactiveProperty<CharacterStats> _currentStats = new ReactiveProperty<CharacterStats>();
 
         private readonly ReactiveProperty<int> _currentHP = new ReactiveProperty<int>();
-        private readonly ReactiveProperty<CharacterState> _state = new ReactiveProperty<CharacterState>(CharacterState.Idle);
+        private readonly ReactiveProperty<CharacterStateType> _state = new ReactiveProperty<CharacterStateType>(CharacterStateType.Idle);
 
         private readonly Subject<Vector3> _looked = new Subject<Vector3>();
         private readonly Subject<int> _damaged = new Subject<int>();
@@ -64,7 +64,7 @@ namespace Sayne
         public CharacterCombat Combat { get; private set; }
 
         public ReadOnlyReactiveProperty<int> CurrentHP => _currentHP;
-        public ReadOnlyReactiveProperty<CharacterState> State => _state;
+        public ReadOnlyReactiveProperty<CharacterStateType> State => _state;
 
         /// <summary>HP 의 파생값이라 따로 들지 않는다.</summary>
         public bool IsAlive => _currentHP.Value > 0;
@@ -74,7 +74,7 @@ namespace Sayne
 
         /// <summary>움직이거나 때릴 수 있는 상태인가. 움찔·기절·빙결이면 아무것도 못 한다.</summary>
         public bool CanAct => IsAlive && !IsStaggered
-            && !Debuffs.Has(Debuff.Stun) && !Debuffs.Has(Debuff.Freeze);
+            && !Debuffs.Has(DebuffType.Stun) && !Debuffs.Has(DebuffType.Freeze);
 
         /// <summary>기술을 쓰는 중인가. 그 동안은 평타·다른 기술은 물론 이동 명령도 받지 않는다.</summary>
         public bool IsActing => Combat != null && Combat.IsCasting;
@@ -112,7 +112,7 @@ namespace Sayne
             }
 
             _currentHP.Value = FinalMaxHP;
-            _state.Value = CharacterState.Idle;
+            _state.Value = CharacterStateType.Idle;
 
 
 
@@ -160,7 +160,7 @@ namespace Sayne
             _moveDirection = Vector3.ClampMagnitude(direction, 1f);
 
             // 상태는 명령이 들어온 그 자리에서 정한다. Update 를 기다리면 한 프레임 늦는다.
-            _state.Value = CharacterState.Walk;
+            _state.Value = CharacterStateType.Walk;
             Look(_moveDirection);
         }
 
@@ -179,7 +179,7 @@ namespace Sayne
             }
 
             StopMove();
-            _state.Value = CharacterState.Hit;
+            _state.Value = CharacterStateType.Hit;
 
             _stagger?.Dispose();
             _stagger = Observable.Timer(TimeSpan.FromSeconds(seconds))
@@ -193,7 +193,7 @@ namespace Sayne
 
             if (IsAlive)
             {
-                _state.Value = CharacterState.Idle;
+                _state.Value = CharacterStateType.Idle;
             }
         }
 
@@ -215,7 +215,7 @@ namespace Sayne
 
             if (IsAlive)
             {
-                _state.Value = CharacterState.Idle;
+                _state.Value = CharacterStateType.Idle;
             }
         }
 
@@ -232,6 +232,12 @@ namespace Sayne
 
         public void TakeDamage(int amount)
         {
+            // 죽은 자는 다시 죽지 않는다. 시체를 때려도 아무 일도 일어나지 않는다.
+            if (!IsAlive)
+            {
+                return;
+            }
+
             _currentHP.Value = Mathf.Max(_currentHP.Value - amount, 0);
 
             if (!IsAlive)
@@ -245,7 +251,7 @@ namespace Sayne
         private void Die()
         {
             StopMove();
-            _state.Value = CharacterState.Death;
+            _state.Value = CharacterStateType.Death;
 
             _died.OnNext(this);
         }

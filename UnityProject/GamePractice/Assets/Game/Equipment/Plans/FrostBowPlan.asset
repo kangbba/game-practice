@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4342e93c0b874f828bbc9dca499a0a43, type: 3}
+  m_Name: FrostBowPlan
+  m_EditorClassIdentifier:
+  _equipmentID: FrostBow
+  _slot: 0
+  _displayName: 서리 활
+  _description: 맞은 자리가 얼어붙는 활. 맞은 적은 한동안 발이 느려진다.
+  _maxHP: 0
+  _moveSpeed: 0
+  _attackPower: 10
+  _weaponType: 2
+  _range: 6.5
+  _comboInterval: 0.35
+  _cycleInterval: 1.6
+  _useTrail: 0
+  _projectile: {fileID: 7700000000000000004, guid: 9787db3211e4446d9c1d4d7b2126ca72, type: 3}
+  _hitDebuffs:
+  - _type: 4
+    _seconds: 1.5

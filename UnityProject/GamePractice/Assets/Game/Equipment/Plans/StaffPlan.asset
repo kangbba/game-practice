@@ -24,4 +24,4 @@ MonoBehaviour:
   _comboInterval: 0.32
   _cycleInterval: 1.5
   _useTrail: 1
-  _hitEffects: []
+  _hitDebuffs: []

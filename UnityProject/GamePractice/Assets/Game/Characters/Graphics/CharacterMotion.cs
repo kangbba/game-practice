@@ -132,13 +132,13 @@ namespace Sayne
             PlayState(_character.State.CurrentValue);
         }
 
-        private void PlayState(CharacterState state)
+        private void PlayState(CharacterStateType state)
         {
             // 죽음·피격·걷기는 한 번짜리 모션을 끊고 들어간다.
-            if (state == CharacterState.Hit || state == CharacterState.Death || state == CharacterState.Walk)
+            if (state == CharacterStateType.Hit || state == CharacterStateType.Death || state == CharacterStateType.Walk)
             {
                 // 기술을 끊는 사유는 피격과 죽음뿐이다. 걷기는 캐스팅 중엔 아예 들어오지 않는다 — 이동 명령이 잠겨 있다.
-                if (state != CharacterState.Walk)
+                if (state != CharacterStateType.Walk)
                 {
                     _character.Combat.CancelCast();
                 }
@@ -171,13 +171,13 @@ namespace Sayne
             transform.localScale = scale;
         }
 
-        private static int StateHash(CharacterState state)
+        private static int StateHash(CharacterStateType state)
         {
             return state switch
             {
-                CharacterState.Walk => CharacterAnimations.Walk,
-                CharacterState.Hit => CharacterAnimations.Hit,
-                CharacterState.Death => CharacterAnimations.Death,
+                CharacterStateType.Walk => CharacterAnimations.Walk,
+                CharacterStateType.Hit => CharacterAnimations.Hit,
+                CharacterStateType.Death => CharacterAnimations.Death,
                 _ => CharacterAnimations.Idle
             };
         }
