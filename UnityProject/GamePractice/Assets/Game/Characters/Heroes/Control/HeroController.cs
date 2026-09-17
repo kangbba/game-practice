@@ -12,6 +12,12 @@ namespace Sayne
     {
         private const float StopDistanceFactor = 0.8f;
 
+        /// <summary>
+        /// 상대로 삼는 거리는 사거리에서 이만큼 여유를 둔다. 딱 사거리로 자르면 경계에 선 적을
+        /// 잡았다 놓았다 하며 깜빡인다.
+        /// </summary>
+        private const float AcquireRangeFactor = 1.1f;
+
         /// <summary>타격이 퍼지는 반경. 타겟 주위에 있는 적도 같이 맞는다.</summary>
         private const float SplashRadius = 1.2f;
 
@@ -143,26 +149,36 @@ namespace Sayne
             TryAutoAttack();
         }
 
-        /// <summary>타겟이 없거나 유실됐으면 가장 가까운 적을 새로 잡는다. 살아 있으면 그놈을 계속 쫓는다.</summary>
+        /// <summary>
+        /// 싸울 상대는 사거리 안에서만 고른다. 지금 상대가 아직 사거리 안이면 그놈을 계속 친다 —
+        /// 매 프레임 가까운 놈으로 갈아타면 콤보가 끊기고 몸이 두리번거린다.
+        /// </summary>
         private void AcquireTarget()
         {
-            if (Hero.Target is Enemy current && current != null && current.IsAlive)
+            if (Hero.Target is Enemy current && current != null && current.IsAlive && IsInAcquireRange(current))
             {
                 return;
             }
 
-            Hero.SetTarget(FindNearestEnemy(float.MaxValue));
+            Hero.SetTarget(FindNearestEnemy(AcquireRange));
         }
 
+        /// <summary>
+        /// 걷는 건 사거리와 상관없이 언제나 제일 가까운 적 쪽이다. 사거리 안에 들면 멈춘다 —
+        /// 걸으면서는 못 때리기 때문이다. 타겟은 멈춘 뒤 AcquireTarget 이 알아서 잡는다.
+        /// </summary>
         private void AutoMove()
         {
-            if (Hero.Target is not Enemy target)
+            var nearest = FindNearestEnemy(float.MaxValue);
+
+            if (nearest == null)
             {
                 Hero.StopMove();
                 return;
             }
 
-            var offset = ToTarget(target);
+            var offset = ToTarget(nearest);
+
             if (CharacterCombat.DistanceOf(offset) <= Hero.Combat.AttackRange * StopDistanceFactor)
             {
                 Hero.StopMove();
@@ -234,6 +250,13 @@ namespace Sayne
 
             Hero.Look(ToTarget(target));
             Hero.Combat.Attack();
+        }
+
+        private float AcquireRange => Hero.Combat.AttackRange * AcquireRangeFactor;
+
+        private bool IsInAcquireRange(Enemy enemy)
+        {
+            return CharacterCombat.DistanceOf(ToTarget(enemy)) <= AcquireRange;
         }
 
         private Enemy FindNearestEnemy(float maxDistance)

@@ -74,8 +74,11 @@ namespace Sayne
             billboard.enabled = false;
             billboard.transform.localRotation = Quaternion.identity;
 
-            // 창이 열린 동안 게임은 멈춰 있다. 인형은 그 동안에도 숨을 쉰다.
-            doll.GetComponentInChildren<Animator>().updateMode = AnimatorUpdateMode.UnscaledTime;
+            // 인형은 Init 을 안 거친 빈 몸이라 아무도 상태를 정해주지 않는다. 숨 쉬는 모션은 여기서 직접 틀어 둔다.
+            // 창이 열린 동안 게임은 멈춰 있으므로 시간도 스케일 밖의 것을 쓴다.
+            var animator = doll.GetComponentInChildren<Animator>();
+            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+            animator.Play(CharacterAnimations.Idle, CharacterAnimations.BaseLayer, 0f);
 
             _dollSkin = doll.GetComponentInChildren<CharacterSkin>();
         }

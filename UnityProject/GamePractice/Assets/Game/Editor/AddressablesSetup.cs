@@ -18,7 +18,7 @@ namespace Sayne.Editor
         private const string MapsRoot = "Assets/Game/Maps";
         private const string EquipmentRoot = "Assets/Game/Equipment";
 
-        // 돌릴 일이 끝나서 메뉴에서 내렸다. 빌더를 고쳐 다시 돌려야 하면 번호를 붙여 MenuItem 을 다시 단다.
+        [MenuItem("★Sayne★/2. 어드레서블 셋업", false, 2)]
         public static void Setup()
         {
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
@@ -30,7 +30,6 @@ namespace Sayne.Editor
             count += MarkFolder(settings, group, ParticlesRoot, AssetAddresses.ParticlesLabel);
             count += MarkFolder(settings, group, MapsRoot, AssetAddresses.MapsLabel);
             count += MarkFolder(settings, group, EquipmentRoot, AssetAddresses.EquipmentLabel);
-            count += MarkFolder(settings, group, EquipmentRoot + "/Portraits", AssetAddresses.EquipmentPortraitsLabel, "t:Sprite");
 
             // 프로필은 캐릭터 폴더에 같이 둔다. 에셋 이름 = 캐릭터 ID.
             count += MarkFolder(settings, group, HeroesRoot, AssetAddresses.ProfilesLabel, "t:CharacterProfile");
@@ -52,8 +51,10 @@ namespace Sayne.Editor
 
             count += Mark(settings, group, "Assets/Game/UI/OverlayHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/DamageText.prefab", null);
-            count += Mark(settings, group, "Assets/Game/Cutscene/UltimateCutscenePanel.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UI/BattlePhaseUIPanel.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UIDirection/UltimateCutscenePanel.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/BattlePanel.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UIDirection/UIPrefab_WaveStart.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UIDirection/UIPrefab_LowHealth.prefab", null);
 
             count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/TutorialWidget.prefab", null);
             count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/OverlaySpeechBubble.prefab", null);

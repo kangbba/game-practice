@@ -40,6 +40,7 @@
 - 상태는 `ReactiveProperty`, 일반 변수 규칙 그대로 — `IsAlive`, `CurrentHP`
 - 사건은 과거형 — `Attacked`, `Damaged`, `Spawned`
 - 스트림에 `On~` / `~Property` / `Rp` 안 붙임
+- 구독 해제는 MonoBehaviour 안에서는 `.AddTo(this)` — 남의 수명에 걸 땐 `.AddTo(hero)`. 순수 클래스인 매니저는 `AddTo` 를 못 쓰니 `.RegisterTo(LifeToken)`
 
 ## 문제 해결
 

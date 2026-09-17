@@ -14,14 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _equipmentID: Staff
   _slot: 0
-  _displayName: 어둠의 지팡이
-  _description: 멀리서 때리는 지팡이. 위력은 낮지만 사거리가 가장 길고 걸음이 가볍다.
+  _displayName: 핏빛 쌍날낫
+  _description: 자루 양 끝에 날이 달린 긴 낫. 위력은 낮지만 사거리가 가장 길고 걸음이 가볍다.
   _maxHP: 0
   _moveSpeed: 0.3
   _attackPower: 8
   _weaponType: 3
   _range: 5
-  _comboInterval: 0.32
-  _cycleInterval: 1.5
+  _comboCount: 3
+  _comboInterval: 0.4
+  _cycleInterval: 1.2
   _useTrail: 1
   _hitDebuffs: []

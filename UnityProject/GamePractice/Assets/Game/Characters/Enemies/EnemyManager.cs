@@ -28,13 +28,9 @@ namespace Sayne
 
         private readonly Subject<Character> _spawned = new Subject<Character>();
         private readonly Subject<Enemy> _died = new Subject<Enemy>();
-        private readonly ReactiveProperty<int> _aliveCount = new ReactiveProperty<int>();
 
         /// <summary>지금 살아있는 적. 시체는 안 들어 있으니 거를 것 없이 그대로 쓰면 된다.</summary>
         public IReadOnlyList<Enemy> CurrentEnemies => _currentEnemies;
-
-        /// <summary>살아있는 적 수. 0 이 되는 순간이 웨이브가 끝난 순간이다.</summary>
-        public ReadOnlyReactiveProperty<int> AliveCount => _aliveCount;
 
         public Observable<Character> Spawned => _spawned;
 
@@ -58,24 +54,18 @@ namespace Sayne
             DestroyAllEnemies();
             _spawned.Dispose();
             _died.Dispose();
-            _aliveCount.Dispose();
         }
 
-        /// <summary>웨이브 구성 한 장을 그대로 받아 그만큼 내보낸다. 실제로 내보낸 마릿수를 돌려준다.</summary>
-        public int SpawnEnemies(IReadOnlyDictionary<string, int> plan)
+        /// <summary>웨이브 구성 한 장을 그대로 받아 그만큼 내보낸다.</summary>
+        public void SpawnEnemies(IReadOnlyDictionary<string, int> plan)
         {
-            var spawned = 0;
-
             foreach (var (enemyID, count) in plan)
             {
                 for (var i = 0; i < count; i++)
                 {
                     SpawnEnemy(enemyID);
-                    spawned++;
                 }
             }
-
-            return spawned;
         }
 
         public Enemy SpawnEnemy(string enemyID)
@@ -93,7 +83,6 @@ namespace Sayne
             enemy.Init(plan.Body, plan.Combat, _equipmentManager.CreateSet(plan.Outfit));
 
             _currentEnemies.Add(enemy);
-            _aliveCount.Value = _currentEnemies.Count;
 
             enemy.Died
                 .Subscribe((self: this, enemy), (_, state) => state.self.MoveToCorpse(state.enemy))
@@ -101,6 +90,12 @@ namespace Sayne
 
             _spawned.OnNext(enemy);
             return enemy;
+        }
+
+        /// <summary>살아있는 적이 하나도 없다. 웨이브가 끝났는지 묻는 쪽이 이걸 본다.</summary>
+        public bool IsAliveEnemyNone()
+        {
+            return _currentEnemies.Count == 0;
         }
 
         /// <summary>즉사시킨다. 체력을 깎아 죽이므로 죽음의 경로는 맞아 죽는 것과 똑같다.</summary>
@@ -114,7 +109,6 @@ namespace Sayne
         {
             _currentEnemies.Remove(enemy);
             _corpses.Remove(enemy);
-            _aliveCount.Value = _currentEnemies.Count;
 
             Object.Destroy(enemy.gameObject);
         }
@@ -124,8 +118,6 @@ namespace Sayne
         {
             DestroyEach(_currentEnemies);
             DestroyEach(_corpses);
-
-            _aliveCount.Value = 0;
         }
 
         /// <summary>죽는 순간 목록을 옮긴다 — "살아있느냐" 는 곧 CurrentEnemies 에 있느냐다.</summary>
@@ -133,7 +125,6 @@ namespace Sayne
         {
             _currentEnemies.Remove(enemy);
             _corpses.Add(enemy);
-            _aliveCount.Value = _currentEnemies.Count;
 
             _died.OnNext(enemy);
         }
@@ -142,7 +133,11 @@ namespace Sayne
         {
             foreach (var enemy in enemies)
             {
-                Object.Destroy(enemy.gameObject);
+                // 게임이 끝나 씬이 내려갈 때는 유니티가 먼저 몸을 치운다. 그때는 이미 없는 것을 또 치우지 않는다.
+                if (enemy != null)
+                {
+                    Object.Destroy(enemy.gameObject);
+                }
             }
 
             enemies.Clear();

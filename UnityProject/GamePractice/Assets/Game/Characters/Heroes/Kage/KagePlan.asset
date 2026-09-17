@@ -16,12 +16,12 @@ MonoBehaviour:
   _maxHP: 100
   _moveSpeed: 4.5
   _attackPower: 5
-  _mainHand: Scythe
+  _mainHand: Sword
   _offHand: 
   _helmet: 
-  _chest: 
+  _chest: KageArmor
   _greaves: 
-  _boots: 
+  _boots: KageBoots
   _combat:
     _comboPowerMultipliers:
     - 1

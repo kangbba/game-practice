@@ -51,15 +51,15 @@ MonoBehaviour:
     _goldAmount: 0
     _chance: 0.1
   - _type: 0
-    _equipmentID: IronGreaves
+    _equipmentID: KageBoots
     _goldAmount: 0
     _chance: 0.1
   - _type: 0
-    _equipmentID: HornedHelm
+    _equipmentID: KageArmor
     _goldAmount: 0
     _chance: 0.1
   - _type: 0
-    _equipmentID: ChainMail
+    _equipmentID: AldricCoat
     _goldAmount: 0
     _chance: 0.1
   - _type: 0

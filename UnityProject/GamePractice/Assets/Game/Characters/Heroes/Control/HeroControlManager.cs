@@ -10,11 +10,11 @@ namespace Sayne
         private readonly PauseManager _pauseManager;
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
-        private readonly BattlePhaseUIPanel _battlePanel;
+        private readonly BattlePanel _battlePanel;
         private readonly IMoveInputSource _moveSource;
         private readonly List<HeroController> _controllers = new List<HeroController>();
 
-        public HeroControlManager(PauseManager pauseManager, HeroManager heroManager, EnemyManager enemyManager, BattlePhaseUIPanel battlePanel)
+        public HeroControlManager(PauseManager pauseManager, HeroManager heroManager, EnemyManager enemyManager, BattlePanel battlePanel)
         {
             _pauseManager = pauseManager;
             _heroManager = heroManager;

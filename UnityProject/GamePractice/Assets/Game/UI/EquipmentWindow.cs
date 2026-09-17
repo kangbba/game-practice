@@ -8,7 +8,8 @@ namespace Sayne
 {
     /// <summary>
     /// 좌우 반반 장비창. 좌측 = 캐릭터 프리뷰 + 스탯 줄 + 자리별 장착 슬롯, 우측 = 설명 칸 + 탭 + 칸 수가 정해진 가방.
-    /// 장착 표시의 진실의 원천은 캐릭터의 CharacterEquipment 이고, 이 창은 SetEquipped 로 따라 그릴 뿐이다.
+    /// 장착 표시의 진실의 원천은 캐릭터의 CharacterEquipment 이고, 이 창은 그걸 구독해 따라 그릴 뿐이다.
+    /// 히어로가 바뀌는 것도 스스로 듣는다 — 부르는 쪽은 Init 으로 "이 매니저들을 봐라" 만 알려준다.
     ///
     /// 상태는 둘뿐이다 — 무엇을 골랐나(_selected), 무엇을 입고 있나(_equipped).
     /// 설명 칸·장착 버튼·장착중 표식·슬롯 표시는 전부 이 둘에서 파생되어 리액티브로 따라간다.
@@ -58,6 +59,10 @@ namespace Sayne
 
         /// <summary>무엇을 입고 있나. 진실의 원천(캐릭터)을 따라 적는 사본이다.</summary>
         private readonly Dictionary<EquipmentSlot, string> _equipped = new Dictionary<EquipmentSlot, string>();
+
+        /// <summary>자리별로 실제 얹히고 있는 스탯. 빈 자리도 0 이 아닐 수 있다 — 무기 자리가 비면 맨손 몫이 얹힌다.</summary>
+        private readonly Dictionary<EquipmentSlot, CharacterStats> _equippedStats =
+            new Dictionary<EquipmentSlot, CharacterStats>();
         private readonly Subject<Unit> _equippedChanged = new Subject<Unit>();
 
         /// <summary>보고 있는 탭. -1 = 전체, 그 외 = EquipmentSlots.All 의 인덱스.</summary>
@@ -66,11 +71,12 @@ namespace Sayne
         private readonly Subject<string> _equipRequested = new Subject<string>();
         private readonly Subject<EquipmentSlot> _unequipRequested = new Subject<EquipmentSlot>();
 
-        /// <summary>이 장비를 입혀 달라. 즉시 적용된다.</summary>
-        public Observable<string> EquipRequested => _equipRequested;
+        private EquipmentManager _equipmentManager;
+        private HeroManager _heroManager;
+        private IAssets<Hero> _heroAssets;
 
-        /// <summary>이 자리를 벗겨 달라. 무기 자리면 정책(맨손 장착)은 매니저가 정한다.</summary>
-        public Observable<EquipmentSlot> UnequipRequested => _unequipRequested;
+        /// <summary>창 안에서 장비를 입혀 보는 인형 무대. 창이 만들고 창이 치운다.</summary>
+        private CharacterPreviewStage _previewStage;
 
         private void Awake()
         {
@@ -115,9 +121,150 @@ namespace Sayne
                 .AddTo(this);
         }
 
+        public void Init(EquipmentManager equipmentManager, HeroManager heroManager, IAssets<Hero> heroAssets)
+        {
+            _equipmentManager = equipmentManager;
+            _heroManager = heroManager;
+            _heroAssets = heroAssets;
+
+            _previewStage = new CharacterPreviewStage();
+            SetPreview(_previewStage.Texture);
+
+            // 인형은 창이 열려 있는 동안만 돌린다.
+            IsOpen
+                .Subscribe(this, (isOpen, self) => self._previewStage.SetActive(isOpen))
+                .AddTo(this);
+
+            _equipRequested
+                .Subscribe(this, (equipmentID, self) => self.Equip(equipmentID))
+                .AddTo(this);
+
+            _unequipRequested
+                .Subscribe(this, (slot, self) => self.Unequip(slot))
+                .AddTo(this);
+
+            // 가방은 영웅들이 함께 쓰는 하나다. 바뀔 때마다 후보를 다시 그린다. 시작 장비는 이미 들어 있으므로 한 번 그려 두고 시작한다.
+            heroManager.Inventory.Changed
+                .Subscribe(this, (_, self) => self.DrawCandidates())
+                .AddTo(this);
+
+            DrawCandidates();
+
+            heroManager.Spawned
+                .Subscribe(this, (character, self) =>
+                {
+                    if (character is Hero hero)
+                    {
+                        self.SetHero(hero);
+                    }
+                })
+                .AddTo(this);
+        }
+
+        /// <summary>장비 메뉴 버튼이 누르는 문. 열려 있으면 닫고, 닫혀 있으면 연다.</summary>
+        public void Toggle()
+        {
+            if (IsOpen.CurrentValue)
+            {
+                Hide();
+            }
+            else
+            {
+                Show();
+            }
+        }
+
+        private void SetHero(Hero hero)
+        {
+            // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 입은 한 벌이 그대로 입혀진다.
+            _previewStage.SetDoll(_heroAssets.Get(hero.ID));
+
+            // 장비 상태가 후보보다 먼저다. 부활하면 창에는 죽은 히어로가 입던 게 남아 있다.
+            foreach (var slot in EquipmentSlots.All)
+            {
+                hero.Equipment.Observe(slot)
+                    .Subscribe((self: this, slot), (part, state) => state.self.DrawPart(state.slot, part))
+                    .AddTo(hero);
+            }
+
+            // 창엔 몸 스탯(기본 + 성장 합)만 준다. 장비 몫은 창이 입은 것·고른 것을 보고 직접 얹어 비교한다.
+            hero.CurrentStats
+                .Subscribe((self: this, hero), (_, state) =>
+                    state.self.SetBodyStats(state.hero.BaseStats.Add(state.hero.GrowthBonus)))
+                .AddTo(hero);
+        }
+
+        private void DrawPart(EquipmentSlot slot, EquipmentPart part)
+        {
+            // 맨손은 싸움에선 무기지만 창에선 빈 자리다. 스탯만은 실제로 얹히는 값이라 그대로 넘긴다.
+            var isEmpty = part == null || part is Weapon { IsBareHands: true };
+
+            SetEquipped(slot, isEmpty ? string.Empty : part.ID, part?.Stats ?? default);
+            _previewStage.Wear(slot, part?.Visual);
+        }
+
+        /// <summary>
+        /// 가방에 든 것만 후보다 — 드랍으로 주운 장비가 그대로 여기 뜬다.
+        /// 순서는 가방이 아니라 설계값 에셋 테이블을 따른다. 줍는 순서대로 목록이 뒤섞이면 안 된다.
+        /// 벗기는 후보가 아니라 해제 버튼이 맡는다.
+        /// </summary>
+        private void DrawCandidates()
+        {
+            var candidates = new List<(string, EquipmentSlot, string, Sprite, string, CharacterStats)>();
+
+            foreach (var equipmentID in _equipmentManager.IDs)
+            {
+                if (!_heroManager.Inventory.Contains(equipmentID))
+                {
+                    continue;
+                }
+
+                var plan = _equipmentManager.GetPlan(equipmentID);
+                candidates.Add((equipmentID, plan.Slot, plan.DisplayName, _equipmentManager.GetIcon(equipmentID),
+                    plan.Description, plan.Stats));
+            }
+
+            SetCandidates(candidates);
+        }
+
+        private void Equip(string equipmentID)
+        {
+            var hero = FirstAliveHero();
+
+            if (hero != null)
+            {
+                _equipmentManager.Wear(hero, equipmentID);
+            }
+        }
+
+        private void Unequip(EquipmentSlot slot)
+        {
+            var hero = FirstAliveHero();
+
+            if (hero != null)
+            {
+                _equipmentManager.TakeOff(hero, slot);
+            }
+        }
+
+        private Hero FirstAliveHero()
+        {
+            foreach (var hero in _heroManager.CurrentHeroes)
+            {
+                if (hero != null && hero.IsAlive)
+                {
+                    return hero;
+                }
+            }
+
+            return null;
+        }
+
         protected override void OnDestroy()
         {
             base.OnDestroy();
+
+            _previewStage?.Dispose();
 
             _selected.Dispose();
             _equippedChanged.Dispose();
@@ -132,10 +279,11 @@ namespace Sayne
             SelectEquippedOf(EquipmentSlot.MainHand);
         }
 
-        /// <summary>장비 상태(진실의 원천)가 바뀌면 여기로 들어온다. 빈 ID = 벗은 자리.</summary>
-        public void SetEquipped(EquipmentSlot slot, string equipmentID)
+        /// <summary>장비 상태(진실의 원천)가 바뀌면 여기로 들어온다. 빈 ID = 벗은 자리. stats = 그 자리가 지금 얹는 스탯.</summary>
+        public void SetEquipped(EquipmentSlot slot, string equipmentID, CharacterStats stats)
         {
-            _equipped[slot] = equipmentID ?? string.Empty;
+            _equipped[slot] = equipmentID;
+            _equippedStats[slot] = stats;
             _equippedChanged.OnNext(Unit.Default);
         }
 
@@ -194,9 +342,13 @@ namespace Sayne
             _bodyStats = bodyStats;
             _selected.Value = selectedID;
 
-            foreach (var (slot, id) in equipped)
+            foreach (var (equipmentID, slot, _, _, _, stats) in items)
             {
-                _equipped[slot] = id;
+                if (equipped.TryGetValue(slot, out var worn) && worn == equipmentID)
+                {
+                    _equipped[slot] = equipmentID;
+                    _equippedStats[slot] = stats;
+                }
             }
 
             SetCandidates(items);
@@ -260,11 +412,11 @@ namespace Sayne
         {
             var total = default(CharacterStats);
 
-            foreach (var (slot, id) in _equipped)
+            foreach (var (slot, stats) in _equippedStats)
             {
-                if (slot != swapSlot && !string.IsNullOrEmpty(id))
+                if (slot != swapSlot)
                 {
-                    total = total.Add(_catalog[id].stats);
+                    total = total.Add(stats);
                 }
             }
 
@@ -324,7 +476,7 @@ namespace Sayne
             }
         }
 
-        /// <summary>장착 버튼은 선택·장비 상태의 파생값이다: 미장착 → 장착, 장착중 → 해제(맨손은 해제 불가).</summary>
+        /// <summary>장착 버튼은 선택·장비 상태의 파생값이다: 미장착 → 장착, 장착중 → 해제.</summary>
         private void RenderActionButton()
         {
             var id = _selected.Value;
@@ -341,14 +493,6 @@ namespace Sayne
             {
                 _actionBtnLabel.text = "장착";
                 _actionBtn.interactable = true;
-                return;
-            }
-
-            // 맨손은 무기의 바닥 상태라 벗을 수 없다.
-            if (id == EquipmentID.Weapon.BareHands)
-            {
-                _actionBtnLabel.text = "장착중";
-                _actionBtn.interactable = false;
                 return;
             }
 

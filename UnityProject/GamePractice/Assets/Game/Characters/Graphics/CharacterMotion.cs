@@ -21,6 +21,9 @@ namespace Sayne
 
         private readonly Dictionary<int, float> _clipLengths = new Dictionary<int, float>();
 
+        /// <summary>이 몸이 실제로 가진 평타 모션들. 적처럼 하나뿐인 몸도 있다.</summary>
+        private readonly List<int> _comboStates = new List<int>();
+
         private Animator _animator;
         private Character _character;
         private IDisposable _oneShotReturn;
@@ -40,6 +43,16 @@ namespace Sayne
             foreach (var clip in _animator.runtimeAnimatorController.animationClips)
             {
                 _clipLengths[Animator.StringToHash(clip.name)] = clip.length;
+            }
+
+            foreach (var name in CharacterAnimations.ComboNames)
+            {
+                var hash = Animator.StringToHash(name);
+
+                if (_clipLengths.ContainsKey(hash) && _animator.HasState(CharacterAnimations.BaseLayer, hash))
+                {
+                    _comboStates.Add(hash);
+                }
             }
         }
 
@@ -61,8 +74,19 @@ namespace Sayne
                 .AddTo(this);
 
             character.Combat.Attacked
-                .Subscribe(this, (attack, self) => self.PlayOnce(attack.AnimationHash))
+                .Subscribe(this, (attack, self) => self.PlayOnce(self.ResolveCombo(attack.AnimationHash)))
                 .AddTo(this);
+        }
+
+        /// <summary>
+        /// 무기가 정한 타수만큼 모션이 없을 수 있다 — 적은 평타 모션이 하나뿐이다.
+        /// 그때는 가진 것 안에서 되감아 쓴다. 평타가 아닌 모션(기술)은 그대로 둔다.
+        /// </summary>
+        private int ResolveCombo(int stateHash)
+        {
+            var index = CharacterAnimations.ComboIndexOf(stateHash);
+
+            return index < 0 || _comboStates.Count == 0 ? stateHash : _comboStates[index % _comboStates.Count];
         }
 
         /// <summary>한 번짜리 모션을 전신으로 재생하고, 끝나면 현재 상태 모션으로 돌아간다.</summary>

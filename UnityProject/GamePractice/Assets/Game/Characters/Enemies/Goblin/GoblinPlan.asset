@@ -47,15 +47,15 @@ MonoBehaviour:
     _goldAmount: 0
     _chance: 0.15
   - _type: 0
-    _equipmentID: LeatherHood
+    _equipmentID: AldricBoots
     _goldAmount: 0
     _chance: 0.1
   - _type: 0
-    _equipmentID: WoodenShield
+    _equipmentID: AldricCoat
     _goldAmount: 0
     _chance: 0.08
   - _type: 0
-    _equipmentID: LeatherGreaves
+    _equipmentID: NyxBoots
     _goldAmount: 0
     _chance: 0.1
   - _type: 0

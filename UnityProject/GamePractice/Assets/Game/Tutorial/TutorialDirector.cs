@@ -29,8 +29,11 @@ namespace Sayne
             _enemyManager.Spawned
                 .Where(this, (enemy, self) =>
                 {
-                    var wave = self._waveManager.CurrentWave.CurrentValue;
-                    return wave.IsBoss && wave.Stage == TestBossTalkStage && enemy.ID == EnemyID.OgreBoss;
+                    var stage = self._waveManager.CurrentStageNumber.CurrentValue;
+                    var wave = self._waveManager.CurrentWaveNumber.CurrentValue;
+                    var isBossWave = self._waveManager.GetStagePlan(stage).IsBossWave(wave);
+
+                    return isBossWave && stage == TestBossTalkStage && enemy.ID == EnemyID.OgreBoss;
                 })
                 .Subscribe(this, (boss, self) => self.PlayBossTalkAsync(boss).Forget())
                 .RegisterTo(LifeToken);

@@ -51,23 +51,23 @@ MonoBehaviour:
     _goldAmount: 0
     _chance: 0.35
   - _type: 0
-    _equipmentID: PlateArmor
+    _equipmentID: KageArmor
     _goldAmount: 0
     _chance: 0.4
   - _type: 0
-    _equipmentID: TowerShield
+    _equipmentID: AldricCoat
     _goldAmount: 0
     _chance: 0.3
   - _type: 0
-    _equipmentID: SwiftBoots
+    _equipmentID: NyxBoots
     _goldAmount: 0
     _chance: 0.3
   - _type: 0
-    _equipmentID: BloodTalisman
+    _equipmentID: NyxDress
     _goldAmount: 0
     _chance: 0.2
   - _type: 0
-    _equipmentID: PlatedBoots
+    _equipmentID: KageBoots
     _goldAmount: 0
     _chance: 0.3
   - _type: 0

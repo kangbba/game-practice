@@ -27,7 +27,6 @@ namespace Sayne
             var equipmentAssetManager = AddManager(new EquipmentAssetManager());
             var uiAssetManager = AddManager(new UIAssetManager());
             var profileAssetManager = AddManager(new ProfileAssetManager());
-            var equipmentPortraitAssetManager = AddManager(new EquipmentPortraitAssetManager());
             var enemyPlanAssetManager = AddManager(new EnemyPlanAssetManager());
             var heroPlanAssetManager = AddManager(new HeroPlanAssetManager());
             var equipmentPlanAssetManager = AddManager(new EquipmentPlanAssetManager());
@@ -49,34 +48,33 @@ namespace Sayne
             var heroManager = AddManager(new HeroManager(heroAssetManager, heroPlanAssetManager, equipmentManager, growthManager));
             var particleManager = AddManager(new ParticleManager(particleAssetManager, heroManager, enemyManager));
             var dropManager = AddManager(new DropManager(enemyManager, heroManager, currencyManager,
-                equipmentPortraitAssetManager, dropPortraitAssetManager, uiAssetManager.DropItemPrefab));
+                equipmentManager, dropPortraitAssetManager, uiAssetManager.DropItemPrefab));
             var waveManager = AddManager(new WaveManager(enemyManager));
-            var questManager = AddManager(new QuestManager(enemyManager));
+            var questManager = AddManager(new QuestManager(enemyManager, growthManager, currencyManager));
 
             var cameraManager = AddManager(new CameraManager());
             var cameraDirector = AddManager(new CameraDirector(cameraManager, heroManager));
-            var worldUIManager = AddManager(new WorldUIManager(cameraManager, heroManager, enemyManager,
+
+            var screenUIManager = AddManager(new ScreenUIManager(pauseManager, cameraManager,
+                heroManager, enemyManager, waveManager, questManager, currencyManager, growthManager,
+                equipmentManager, profileAssetManager, heroAssetManager,
+                uiAssetManager.BattlePanelPrefab,
                 uiAssetManager.OverlayHPBarPrefab, uiAssetManager.DamageTextPrefab));
 
-            var phaseUIManager = AddManager(new PhaseUIManager(phaseManager));
-            var screenUIManager = AddManager(new ScreenUIManager(pauseManager, phaseUIManager, heroManager,
-                waveManager, currencyManager, growthManager, profileAssetManager,
-                uiAssetManager.BattlePanelPrefab));
-
-            var cutsceneManager = AddManager(new CutsceneManager(pauseManager, heroManager, profileAssetManager,
-                uiAssetManager.UltimateCutscenePanelPrefab));
+            var uiDirectionManager = AddManager(new UIDirectionManager(pauseManager, heroManager, waveManager,
+                profileAssetManager, uiAssetManager.UltimateCutscenePanelPrefab, uiAssetManager.WaveStartPanelPrefab,
+                uiAssetManager.LowHealthPanelPrefab));
 
             var tutorialManager = AddManager(new TutorialManager(pauseManager, cameraManager,
                 uiAssetManager.TutorialWidgetPrefab, uiAssetManager.OverlaySpeechBubblePrefab));
 
             var heroControlManager = AddManager(new HeroControlManager(pauseManager, heroManager, enemyManager, screenUIManager.BattlePanel));
-            var equipmentUIManager = AddManager(new EquipmentUIManager(screenUIManager.BattlePanel, heroManager,
-                equipmentManager, equipmentPortraitAssetManager, heroAssetManager));
             var enemyAIManager = AddManager(new EnemyAIManager(pauseManager, heroManager, enemyManager));
 
             var tutorialDirector = AddManager(new TutorialDirector(tutorialManager, heroManager, enemyManager, waveManager));
 
-            phaseManager.RunAsync(new InGamePhase(mapManager, heroManager, enemyManager, waveManager)).Forget();
+            var inGamePhase = new InGamePhase(mapManager, heroManager, enemyManager, waveManager);
+            phaseManager.RunAsync(new LoadingPhase(inGamePhase)).Forget();
         }
 
         private void OnDestroy()

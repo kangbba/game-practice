@@ -47,14 +47,14 @@ MonoBehaviour:
     _goldAmount: 0
     _chance: 0.1
   - _type: 0
-    _equipmentID: LeatherArmor
+    _equipmentID: NyxDress
     _goldAmount: 0
     _chance: 0.1
   - _type: 0
-    _equipmentID: TravelerBoots
+    _equipmentID: AldricBoots
     _goldAmount: 0
     _chance: 0.08
   - _type: 0
-    _equipmentID: BoneGreaves
+    _equipmentID: KageBoots
     _goldAmount: 0
     _chance: 0.08

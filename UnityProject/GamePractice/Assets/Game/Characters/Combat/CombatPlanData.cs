@@ -27,9 +27,6 @@ namespace Sayne
             }
         }
 
-        /// <summary>평타 한 타마다의 배수. 칸 수가 곧 콤보 타수다.</summary>
-        [SerializeField] private float[] _comboPowerMultipliers = { 1f, 1f, 1.2f, 1.2f };
-
         /// <summary>
         /// 맞은 쪽을 움찔하게 할지. 적의 평타는 안 움찔하게 둔다 —
         /// 계속 얻어맞는 동안 조작이 막히면 안 되기 때문이다.
@@ -44,18 +41,7 @@ namespace Sayne
 
         public CombatPlan ToPlan()
         {
-            var combo = new BasicAttack[_comboPowerMultipliers.Length];
-
-            for (var i = 0; i < combo.Length; i++)
-            {
-                // 마지막 타가 조금 더 오래 움찔하게 해서 묶음의 맺음을 준다.
-                var stagger = _comboStaggers ? (i == combo.Length - 1 ? 0.28f : 0.16f) : 0f;
-
-                combo[i] = new BasicAttack($"평타{i + 1}", CharacterAnimations.ComboNames[i],
-                    _comboPowerMultipliers[i], staggerSeconds: stagger);
-            }
-
-            return new CombatPlan(combo,
+            return new CombatPlan(_comboStaggers,
                 _skill.ToSkill(CharacterAnimations.SkillName),
                 _ultimate.ToSkill(CharacterAnimations.UltimateName),
                 string.IsNullOrEmpty(_ultimateParticleID) ? null : _ultimateParticleID);

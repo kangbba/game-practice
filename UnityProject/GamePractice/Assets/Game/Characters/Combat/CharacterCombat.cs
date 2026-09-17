@@ -25,6 +25,7 @@ namespace Sayne
         private bool _castHitPending;
         private readonly Character _owner;
         private readonly CharacterEquipment _equipment;
+        private readonly CombatPlan _plan;
 
         /// <summary>평타 4콤보가 도는 사이클.</summary>
         public AttackCycle Cycle { get; }
@@ -92,10 +93,24 @@ namespace Sayne
         {
             _owner = owner;
             _equipment = equipment;
-            Cycle = new AttackCycle(plan.Combo);
+            _plan = plan;
+            Cycle = new AttackCycle();
             Skill = plan.Skill;
             Ultimate = plan.Ultimate;
             UltimateParticleID = plan.UltimateParticleID;
+
+            // 태어나자마자 기술부터 쏘지 않게, 방금 쓴 것과 같은 상태로 시작한다.
+            StartOnCooldown(Skill, SkillCooldown);
+            StartOnCooldown(Ultimate, UltimateCooldown);
+        }
+
+        /// <summary>쿨이 다 찬 상태가 아니라, 한 번 쓰고 난 직후와 똑같이 쿨타임 전체가 남은 상태로 둔다.</summary>
+        private static void StartOnCooldown(CharacterSkill skill, CooldownTimer cooldown)
+        {
+            if (skill != null)
+            {
+                cooldown.Begin(skill.Cooldown);
+            }
         }
 
         /// <summary>사이클에서 다음 평타를 꺼내 휘두른다. 맞히는 건 HitMoment 를 받는 쪽이 한다.</summary>
@@ -108,9 +123,25 @@ namespace Sayne
 
             // 묶음의 마지막 타를 내면 다음 묶음까지 길게 쉰다. 그 사이는 짧게 이어 친다.
             var info = Weapon;
-            var interval = Cycle.IsAtLast ? info.CycleInterval : info.ComboInterval;
+            var interval = Cycle.IsAtLast(info.ComboCount) ? info.CycleInterval : info.ComboInterval;
 
-            Swing(Cycle.Draw(), interval);
+            Swing(ComboAttack(Cycle.Draw(info.ComboCount), info.ComboCount), interval);
+        }
+
+        /// <summary>
+        /// 이번에 나갈 평타 한 타. 위력은 무기 공격력 그대로고, 타마다 다르게 주지 않는다.
+        /// 모션은 네 개뿐이라 그보다 긴 묶음은 앞으로 되감아 쓴다.
+        /// </summary>
+        private BasicAttack ComboAttack(int step, int comboCount)
+        {
+            // 선언한 이름은 네 개뿐이라 그보다 긴 묶음은 이름을 되감는다.
+            // 몸이 그 모션을 실제로 가졌는지는 CharacterMotion 이 다시 한 번 추린다.
+            var animation = CharacterAnimations.ComboNames[step % CharacterAnimations.ComboNames.Length];
+
+            // 마지막 타가 조금 더 오래 움찔하게 해서 묶음의 맺음을 준다.
+            var stagger = _plan.ComboStaggers ? (step == comboCount - 1 ? 0.28f : 0.16f) : 0f;
+
+            return new BasicAttack($"평타{step + 1}", animation, 1f, staggerSeconds: stagger);
         }
 
         /// <summary>스킬을 휘두른다. 쿨이 안 돌았거나 스킬이 없으면 아무 일도 없다.</summary>

@@ -31,7 +31,26 @@ namespace Sayne
             _currentPhase.Dispose();
         }
 
-        public void SetPhase(PhaseBase phase)
+        /// <summary>페이즈가 돌려준 다음 페이즈를 따라 끝까지 흐른다. null 이 나오면 거기서 끝이다.</summary>
+        public async UniTask RunAsync(PhaseBase phase)
+        {
+            while (phase != null)
+            {
+                SetPhase(phase);
+
+                var result = await phase.MainLogicAsync(_phaseCts.Token).SuppressCancellationThrow();
+                if (result.IsCanceled)
+                {
+                    return;
+                }
+
+                phase = result.Result;
+            }
+
+            ClearPhase();
+        }
+
+        private void SetPhase(PhaseBase phase)
         {
             Debug.Log($"{_name}: {_currentPhase.Value?.Key ?? "(none)"} -> {phase.Key}");
 
@@ -41,18 +60,6 @@ namespace Sayne
             _currentPhase.Value = phase;
 
             phase.Enter(_phaseCts.Token);
-        }
-
-        public async UniTask RunAsync(PhaseBase phase)
-        {
-            SetPhase(phase);
-
-            await phase.MainLogicAsync(_phaseCts.Token).SuppressCancellationThrow();
-
-            if (_currentPhase.Value == phase)
-            {
-                ClearPhase();
-            }
         }
 
         private void ClearPhase()

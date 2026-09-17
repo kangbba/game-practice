@@ -15,7 +15,14 @@ namespace Sayne
         {
             [SerializeField] private EquipmentSlot _slot;
             [SerializeField] private Transform _transform;
+            /// <summary>입으면 가려지는 몸 그림. 투구를 쓰면 머리카락이 빠지는 식이다.</summary>
             [SerializeField] private SpriteRenderer[] _coveredSprites = Array.Empty<SpriteRenderer>();
+
+            /// <summary>
+            /// 한 장비가 자리마다 다른 그림을 쓸 때 고르는 이름 — 신발의 앞발·뒷발.
+            /// 적혀 있으면 장비 프리팹의 자식 중 이 이름만 남긴다. 비어 있으면 통째로 단다.
+            /// </summary>
+            [SerializeField] private string _variant;
             [SerializeField] private bool _overrideSortingOrder;
             [SerializeField] private int _sortingOrder;
 
@@ -29,8 +36,10 @@ namespace Sayne
                 TakeOff();
 
                 _worn = UnityEngine.Object.Instantiate(visual, _transform, false);
-                foreach (var sprite in _coveredSprites)
-                    if (sprite != null) sprite.enabled = false;
+                if (!string.IsNullOrEmpty(_variant))
+                    foreach (Transform child in _worn.transform)
+                        child.gameObject.SetActive(child.name == _variant);
+                foreach (var sprite in _coveredSprites) sprite.enabled = false;
                 if (_overrideSortingOrder)
                     foreach (var sprite in _worn.GetComponentsInChildren<SpriteRenderer>())
                         sprite.sortingOrder = _sortingOrder;
@@ -47,8 +56,7 @@ namespace Sayne
 
                 UnityEngine.Object.Destroy(_worn);
                 _worn = null;
-                foreach (var sprite in _coveredSprites)
-                    if (sprite != null) sprite.enabled = true;
+                foreach (var sprite in _coveredSprites) sprite.enabled = true;
             }
         }
 
@@ -58,9 +66,41 @@ namespace Sayne
         /// <summary>타격 시점 뒤에 궤적이 이어지는 시간. 휘두른 뒤의 잔상이다.</summary>
         private const float TrailFollowThrough = 0.15f;
 
+        /// <summary>머리 그림이 달린 본 이름. 영웅·적 모두 이 이름의 본을 가진다.</summary>
+        private const string HeadBoneName = "Head";
+
         private Dictionary<EquipmentSlot, List<SlotEntry>> _table;
         private Character _character;
         private WeaponTrail _weaponTrail;
+
+        /// <summary>
+        /// 발에서 머리 그림 꼭대기까지의 키. 캐릭터마다 키와 배율이 달라 고정값을 못 쓴다.
+        /// 그림이 카메라 쪽으로 누워 있어도 재는 건 그림 자신의 위쪽 기준이라 카메라를 몰라도 된다 —
+        /// 기울어진 만큼은 보는 쪽에서 화면 위로 올리면 그만이다.
+        /// </summary>
+        public float GetHeight()
+        {
+            var height = 0f;
+
+            foreach (var bone in GetComponentsInChildren<Transform>())
+            {
+                if (bone.name != HeadBoneName)
+                {
+                    continue;
+                }
+
+                foreach (var sprite in bone.GetComponentsInChildren<SpriteRenderer>())
+                {
+                    var bounds = sprite.sprite.bounds;
+                    var corner = sprite.transform.TransformPoint(new Vector3(bounds.center.x, bounds.max.y, 0f));
+
+                    // 그림의 위쪽으로 얼마나 높은가. 누운 각도는 이 축에 이미 들어 있다.
+                    height = Mathf.Max(height, Vector3.Dot(sprite.transform.up, corner - transform.position));
+                }
+            }
+
+            return height;
+        }
 
         /// <summary>Init 이 끝난 캐릭터가 불러준다. 이 몸이 가진 자리만 따라간다.</summary>
         public void Bind(Character character)

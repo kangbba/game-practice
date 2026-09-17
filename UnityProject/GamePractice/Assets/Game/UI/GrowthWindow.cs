@@ -7,8 +7,9 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
-    /// 성장 모달. 계산하지 않는다 — 항목별 레벨·값·살 수 있는지를 패널이 구독해서 넣어 주고,
-    /// 이 창은 받은 대로 그리고 "이 항목을 올려달라" 만 흘린다.
+    /// 성장 모달. 성장과 재화를 구독해서 스스로 다시 그리고, 강화 버튼도 스스로 성장 매니저에게 넘긴다.
+    /// 값은 열려 있든 닫혀 있든 늘 맞춰져 있다 — 열리는 순간 이미 그려져 있다.
+    /// 성장은 저절로 오르지 않는다. 버튼을 눌러 골드를 내면 그때 한 칸 오른다.
     /// 줄 순서는 GrowthPlan.All 과 같다 — 빌더가 그 순서로 꽂는다.
     /// </summary>
     public class GrowthWindow : PopupWindow
@@ -19,8 +20,11 @@ namespace Sayne
 
         private readonly Subject<GrowthStatType> _upgradeRequested = new Subject<GrowthStatType>();
 
-        /// <summary>강화를 요청한 항목. 실제로 살 수 있는지는 성장 매니저가 마지막으로 판단한다.</summary>
-        public Observable<GrowthStatType> UpgradeRequested => _upgradeRequested;
+        private GrowthManager _growthManager;
+        private CurrencyManager _currencyManager;
+
+        /// <summary>"기본 + 성장" 을 그릴 때 보는 히어로. 부활하면 새 히어로로 갈린다.</summary>
+        private Character _hero;
 
         private void Awake()
         {
@@ -45,30 +49,59 @@ namespace Sayne
             _upgradeRequested.Dispose();
         }
 
-        /// <summary>가진 골드. 값을 보면서 살지 말지 정하는 창이라 액수가 창 안에 있어야 한다.</summary>
-        public void SetGold(long gold)
+        public void Init(GrowthManager growthManager, CurrencyManager currencyManager, HeroManager heroManager)
         {
-            _goldText.text = $"보유 골드  <color=#F0C776>{gold:N0}</color>";
+            _growthManager = growthManager;
+            _currencyManager = currencyManager;
+
+            // 살 수 있는지는 성장 매니저가 마지막으로 판단한다 — 여기는 눌렸다는 사실만 넘긴다.
+            _upgradeRequested
+                .Subscribe(growthManager, (stat, manager) => manager.TryUpgrade(stat))
+                .AddTo(this);
+
+            // 한 줄을 사면 골드가 줄어 다른 줄의 버튼도 같이 흔들린다 — 그래서 늘 창 전체를 다시 그린다.
+            currencyManager.Gold
+                .Subscribe(this, (_, self) => self.Redraw())
+                .AddTo(this);
+
+            growthManager.Bonus
+                .Subscribe(this, (_, self) => self.Redraw())
+                .AddTo(this);
+
+            heroManager.Spawned
+                .Subscribe(this, (hero, self) => self.SetHero(hero))
+                .AddTo(this);
         }
 
-        public void SetStat(GrowthStatType stat, int level, int baseValue, int growth)
+        /// <summary>성장 모달은 캐릭터 자체(기본 + 성장)만 다룬다 — 장비 몫은 장비창이 보여준다.</summary>
+        private void SetHero(Character hero)
         {
-            var widget = Widget(stat);
+            _hero = hero;
 
-            if (widget != null)
-            {
-                widget.SetLevel(GrowthPlan.DisplayName(stat), level);
-                widget.SetValue(baseValue, growth);
-            }
+            hero.CurrentStats
+                .Subscribe(this, (_, self) => self.Redraw())
+                .AddTo(hero);
         }
 
-        public void SetCost(GrowthStatType stat, long cost, bool affordable, bool maxed)
+        private void Redraw()
         {
-            var widget = Widget(stat);
+            _goldText.text = $"보유 골드  <color=#F0C776>{_currencyManager.Gold.CurrentValue:N0}</color>";
 
-            if (widget != null)
+            foreach (var stat in GrowthPlan.All)
             {
-                widget.SetCost(cost, affordable, maxed);
+                var widget = Widget(stat);
+
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                widget.SetLevel(GrowthPlan.DisplayName(stat), _growthManager.StatLevel(stat).CurrentValue);
+                widget.SetValue(
+                    _hero != null ? GrowthPlan.ValueOf(stat, _hero.BaseStats) : 0,
+                    _hero != null ? GrowthPlan.ValueOf(stat, _hero.GrowthBonus) : 0);
+                widget.SetCost(_growthManager.CostToUpgrade(stat),
+                    _growthManager.CanUpgrade(stat), _growthManager.IsMaxLevel(stat));
             }
         }
 

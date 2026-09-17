@@ -20,7 +20,7 @@ namespace Sayne
         private readonly EnemyManager _enemyManager;
         private readonly HeroManager _heroManager;
         private readonly CurrencyManager _currencyManager;
-        private readonly IAssets<Sprite> _equipmentPortraits;
+        private readonly EquipmentManager _equipmentManager;
         private readonly IAssets<Sprite> _dropPortraits;
         private readonly DropItem _dropItemPrefab;
 
@@ -36,12 +36,12 @@ namespace Sayne
         public Observable<DropReward> Collected => _collected;
 
         public DropManager(EnemyManager enemyManager, HeroManager heroManager, CurrencyManager currencyManager,
-            IAssets<Sprite> equipmentPortraits, IAssets<Sprite> dropPortraits, DropItem dropItemPrefab)
+            EquipmentManager equipmentManager, IAssets<Sprite> dropPortraits, DropItem dropItemPrefab)
         {
             _enemyManager = enemyManager;
             _heroManager = heroManager;
             _currencyManager = currencyManager;
-            _equipmentPortraits = equipmentPortraits;
+            _equipmentManager = equipmentManager;
             _dropPortraits = dropPortraits;
             _dropItemPrefab = dropItemPrefab;
         }
@@ -132,7 +132,7 @@ namespace Sayne
             return null;
         }
 
-        /// <summary>구슬 속 그림. 장비는 자기 초상화를, 골드는 동전 그림을 쓴다.</summary>
+        /// <summary>구슬 속 그림. 장비는 실제로 걸치는 그림을, 골드는 동전 그림을 쓴다.</summary>
         private Sprite PortraitFor(DropReward reward)
         {
             if (reward.Type == DropType.Gold)
@@ -140,10 +140,7 @@ namespace Sayne
                 return _dropPortraits.Get(AssetAddresses.GoldPortrait);
             }
 
-            // 초상화가 없는 장비는 빈 구슬로 떨어진다 — 줍는 것 자체는 막지 않는다.
-            return _equipmentPortraits.Contains(reward.EquipmentID)
-                ? _equipmentPortraits.Get(reward.EquipmentID)
-                : null;
+            return _equipmentManager.GetIcon(reward.EquipmentID);
         }
 
         /// <summary>구슬이 닿았다. 받는 건 흡수를 건 그 히어로다 — 도중에 죽었으면 아무도 못 받는다.</summary>
@@ -167,7 +164,7 @@ namespace Sayne
             }
             else
             {
-                entry.Taker.Inventory.Add(entry.Reward.EquipmentID);
+                _heroManager.Inventory.Add(entry.Reward.EquipmentID);
             }
 
             _collected.OnNext(entry.Reward);

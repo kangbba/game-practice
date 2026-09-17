@@ -14,6 +14,9 @@ namespace Sayne
 
         public float Range { get; }
 
+        /// <summary>평타 묶음이 몇 타인가. 무기를 바꾸면 타수도 같이 바뀐다.</summary>
+        public int ComboCount { get; }
+
         /// <summary>묶음 안에서 다음 타까지의 간격. 짧아야 3콤보가 이어진 느낌이 난다.</summary>
         public float ComboInterval { get; }
 
@@ -35,12 +38,14 @@ namespace Sayne
         /// </summary>
         public bool IsRanged => Type == WeaponType.Ranged;
 
-        public WeaponInfo(WeaponType type, int power, float range, float comboInterval, float cycleInterval,
+        public WeaponInfo(WeaponType type, int power, float range, int comboCount,
+            float comboInterval, float cycleInterval,
             bool useTrail = false, Projectile projectile = null, params Debuff[] hitDebuffs)
         {
             Type = type;
             Power = power;
             Range = range;
+            ComboCount = comboCount;
             ComboInterval = comboInterval;
             CycleInterval = cycleInterval;
             UseTrail = useTrail;

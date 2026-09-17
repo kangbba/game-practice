@@ -11,6 +11,9 @@ namespace Sayne
     {
         private readonly IAssets<GameObject> _visuals;
         private readonly IAssets<EquipmentPlan> _plans;
+        private readonly Dictionary<string, Sprite> _icons = new Dictionary<string, Sprite>();
+
+        private EquipmentIconStage _iconStage;
 
         public EquipmentManager(IAssets<GameObject> visuals, IAssets<EquipmentPlan> plans)
         {
@@ -23,15 +26,38 @@ namespace Sayne
 
         protected override void OnInit()
         {
+            _iconStage = new EquipmentIconStage();
         }
 
         protected override void OnRelease()
         {
+            foreach (var icon in _icons.Values)
+            {
+                Object.Destroy(icon.texture);
+                Object.Destroy(icon);
+            }
+
+            _icons.Clear();
+            _iconStage.Dispose();
         }
 
         public EquipmentPlan GetPlan(string equipmentID)
         {
             return _plans.Get(equipmentID);
+        }
+
+        /// <summary>
+        /// 장비창·드랍 구슬에 보이는 그림. 따로 그린 초상화는 없다 — 캐릭터가 실제로 걸치는 장비 프리팹을 아이콘 무대에서 찍은 것이다.
+        /// 처음 물어볼 때 한 번 찍어 두고 다시 쓴다.
+        /// </summary>
+        public Sprite GetIcon(string equipmentID)
+        {
+            if (!_icons.TryGetValue(equipmentID, out var icon))
+            {
+                _icons[equipmentID] = icon = _iconStage.Shoot(_visuals.Get(equipmentID));
+            }
+
+            return icon;
         }
 
         public EquipmentPart CreatePart(string equipmentID)
@@ -46,10 +72,10 @@ namespace Sayne
                 : new Cosmetic(equipmentID, visual, plan.Slot, plan.Stats);
         }
 
-        /// <summary>자리별 ID 묶음을 실제 파츠 한 벌로 바꾼다. 비어 있는 자리는 벗은 채로 둔다.</summary>
+        /// <summary>자리별 ID 묶음을 실제 파츠 한 벌로 바꾼다. 비어 있는 자리는 벗은 채로 둔다 — 무기 자리만 맨손이 든다.</summary>
         public EquipmentSet CreateSet(EquipmentIDs ids)
         {
-            var set = new EquipmentSet();
+            var set = new EquipmentSet().Put(CreatePart(EquipmentID.Weapon.BareHands));
 
             foreach (var slot in EquipmentSlots.All)
             {
@@ -72,8 +98,18 @@ namespace Sayne
             character.Equipment.Wear(CreatePart(equipmentID));
         }
 
+        /// <summary>
+        /// 어느 자리든 벗을 수 있다. 몸 자리는 맨몸이 되고, 무기 자리만 비지 않는다 — 벗기면 맨손이 든다.
+        /// 맨손은 가방에 든 아이템이 아니라 "무기 없음" 의 실체라서, 무기를 벗기는 길은 어디서 오든 여기서 맨손으로 끝난다.
+        /// </summary>
         public void TakeOff(Character character, EquipmentSlot slot)
         {
+            if (slot == EquipmentSlot.MainHand)
+            {
+                Wear(character, EquipmentID.Weapon.BareHands);
+                return;
+            }
+
             character.Equipment.TakeOff(slot);
         }
     }

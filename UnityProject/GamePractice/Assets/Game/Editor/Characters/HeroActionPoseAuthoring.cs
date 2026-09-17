@@ -217,7 +217,7 @@ namespace Sayne
 
         private static Vector3 GetWeaponTip(string hero)
         {
-            var name = hero == "Kage" ? "Scythe" : hero == "Aldric" ? "Sword" : "Staff";
+            var name = hero == "Kage" ? "Sword" : hero == "Aldric" ? "Scythe" : "Staff";
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/Weapon/{name}.prefab");
             var sprite = prefab.GetComponent<SpriteRenderer>();
             var bounds = sprite.sprite.bounds;

@@ -22,8 +22,8 @@ namespace Sayne.Editor
 
         private static readonly TrailSpec[] Specs =
         {
-            new TrailSpec { Prefab = "Sword", Color = new Color(1f, 0.93f, 0.72f), Seconds = 0.16f, Width = 0.6f },
-            new TrailSpec { Prefab = "Scythe", Color = new Color(0.72f, 0.9f, 0.62f), Seconds = 0.2f, Width = 0.7f },
+            new TrailSpec { Prefab = "Scythe", Color = new Color(1f, 0.93f, 0.72f), Seconds = 0.16f, Width = 0.6f },
+            new TrailSpec { Prefab = "Sword", Color = new Color(0.72f, 0.9f, 0.62f), Seconds = 0.2f, Width = 0.7f },
             new TrailSpec { Prefab = "Staff", Color = new Color(0.62f, 0.4f, 0.95f), Seconds = 0.18f, Width = 0.5f },
         };
 

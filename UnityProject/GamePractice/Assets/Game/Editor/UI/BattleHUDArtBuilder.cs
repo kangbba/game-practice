@@ -18,6 +18,42 @@ namespace Sayne.Editor
             // 게이지는 9슬라이스로 폭만 늘어난다. 모서리 사선(6px)이 border(10px) 안에 온전히 들어가야
             // 늘어나는 가운데 영역에 사선이 안 걸린다. 사선 12px + border 8px 조합은 양끝이 길게 뭉개졌다.
             Write("Gauge", 64, 32, false, true, new Vector4(10, 10, 10, 10), 6f);
+
+            WriteVignette();
+        }
+
+        /// <summary>
+        /// 가장자리만 짙고 가운데로 갈수록 투명해지는 막. 저체력 경고가 이걸 붉게 물들여 쓴다.
+        /// 화면 비율이 제각각이라 늘여 쓰는 그림이다 — 네모난 테두리가 아니라 부드러운 그라디언트로 둔다.
+        /// </summary>
+        private static void WriteVignette()
+        {
+            const int size = 256;
+
+            // 이 비율 안쪽은 완전히 투명하다. 시야를 가리지 않으려면 가운데가 넓게 비어야 한다.
+            const float clearRatio = 0.55f;
+
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var pixels = new Color[size * size];
+            var center = new Vector2(size, size) * 0.5f;
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    // 가운데에서 얼마나 멀리 왔나를 0~1 로. 모서리가 1 을 넘으므로 잘라 쓴다.
+                    var distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), center) / (size * 0.5f);
+                    var edge = Mathf.InverseLerp(clearRatio, 1f, Mathf.Clamp01(distance));
+
+                    // 제곱해서 가장자리에 몰아준다. 선형으로 두면 가운데까지 뿌옇다.
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, edge * edge);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+
+            Save("Vignette", texture, Vector4.zero);
         }
 
         /// <param name="corner">사각형 모서리를 깎는 45도 사선의 크기(px). 9슬라이스 border 보다 작아야 한다.</param>
@@ -53,6 +89,11 @@ namespace Sayne.Editor
             }
             texture.SetPixels(pixels);
             texture.Apply();
+            Save(name, texture, border);
+        }
+
+        private static void Save(string name, Texture2D texture, Vector4 border)
+        {
             var path = $"{ArtFolder}/Frames/{name}.png";
             File.WriteAllBytes(path, texture.EncodeToPNG());
             Object.DestroyImmediate(texture);

@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using R3;
 using UnityEngine;
 
 namespace Sayne
@@ -30,33 +30,31 @@ namespace Sayne
             _heroManager.SpawnHero(HeroID.Aldric, Vector3.zero);
         }
 
-        public override async UniTask MainLogicAsync(CancellationToken token)
+        /// <summary>끝이 없다. 웨이브는 스테이지를 넘어가며 계속 돈다.</summary>
+        public override async UniTask<PhaseBase> MainLogicAsync(CancellationToken token)
         {
-            var stage = 1;
+            var initialStage = 1;
+            var initialWave = 1;
+
+            var stage = initialStage;
+            var wave = initialWave;
+
             while (true)
             {
                 var stagePlan = _waveManager.GetStagePlan(stage);
 
-                for (var i = 0; i < stagePlan.Waves.Count; i++)
+                while (wave <= stagePlan.Waves.Count)
                 {
-                    var number = new WaveNumber(stage, i + 1);
-                    var spawned = _enemyManager.SpawnEnemies(stagePlan.Waves[i]);
+                    _waveManager.SetWave(stage, wave);
+                    await FightAsync(stagePlan.GetEnemies(wave), token);
 
-                    Debug.Log($"{number.Label} 시작 — {spawned}마리");
-                    _waveManager.ResetWave(number, spawned);
-
-                    await WaitUntilClearedAsync(token);
+                    wave++;
                 }
 
-                var bossNumber = WaveNumber.Boss(stage);
-                _enemyManager.SpawnEnemy(stagePlan.BossEnemyID);
-
-                Debug.Log($"{bossNumber.Label} 시작");
-                _waveManager.ResetWave(bossNumber, 1);
-
-                await WaitUntilClearedAsync(token);
+                Debug.Log($"{stage}스테이지 클리어");
 
                 stage++;
+                wave = 1;
             }
         }
 
@@ -65,12 +63,15 @@ namespace Sayne
             _enemyManager.DestroyAllEnemies();
         }
 
-        /// <summary>내보낸 적이 다 죽을 때까지 기다렸다가 시체를 치운다.</summary>
-        private async UniTask WaitUntilClearedAsync(CancellationToken token)
+        /// <summary>적을 내보내고, 다 죽을 때까지 기다렸다가 판을 비운다.</summary>
+        private async UniTask FightAsync(IReadOnlyDictionary<string, int> enemies, CancellationToken token)
         {
-            await _enemyManager.AliveCount.Where(count => count == 0).FirstAsync(cancellationToken: token);
+            _enemyManager.SpawnEnemies(enemies);
+
+            await UniTask.WaitUntil(_enemyManager.IsAliveEnemyNone, cancellationToken: token);
 
             _enemyManager.DestroyAllEnemies();
         }
+
     }
 }

@@ -9,7 +9,6 @@ namespace Sayne
         public const string MapsLabel = "Maps";
         public const string EquipmentLabel = "Equipment";
         public const string ProfilesLabel = "Profiles";
-        public const string EquipmentPortraitsLabel = "EquipmentPortraits";
         public const string EnemyPlansLabel = "EnemyPlans";
         public const string HeroPlansLabel = "HeroPlans";
         public const string EquipmentPlansLabel = "EquipmentPlans";
@@ -18,7 +17,9 @@ namespace Sayne
         public const string OverlayHPBar = "OverlayHPBar";
         public const string UltimateCutscenePanel = "UltimateCutscenePanel";
         public const string DamageText = "DamageText";
-        public const string BattlePhaseUIPanel = "BattlePhaseUIPanel";
+        public const string BattlePanel = "BattlePanel";
+        public const string UIPrefab_WaveStart = "UIPrefab_WaveStart";
+        public const string UIPrefab_LowHealth = "UIPrefab_LowHealth";
         public const string DropItem = "DropItem";
         public const string TutorialWidget = "TutorialWidget";
         public const string OverlaySpeechBubble = "OverlaySpeechBubble";

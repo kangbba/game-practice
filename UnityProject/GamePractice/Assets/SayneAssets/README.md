@@ -11,20 +11,20 @@
 
 ## PhaseSystem
 
-계층형 상태 머신 + 페이즈 연동 UI. 기계는 게임 의미(전투, 상점 등)를 모른다.
+계층형 상태 머신. 기계는 게임 의미(전투, 상점 등)를 모른다. 의존: R3, UniTask.
 
 | 파일 | 역할 |
 |---|---|
-| `PhaseBase` | 페이즈 한 장면. `Key`(식별 문자열), `OnEnter` / `OnExit`. 프로젝트에서 상속해 구체 페이즈를 만든다. |
-| `PhaseManager` | 상태 전환만 담당. `ChangePhase(PhaseBase)`로 전환(이전 `OnExit` → 다음 `OnEnter`), 현재 페이즈를 `CurrentPhase`(ReadOnlyReactiveProperty)로 노출한다. |
-| `PhaseUIBase` | 페이즈와 짝을 이루는 UI 한 장. `PhaseKey`가 현재 페이즈의 `Key`와 일치하면 보이고 아니면 숨는다. MonoBehaviour — 씬의 패널에 붙인다. |
-| `PhaseUIManager` | `PhaseManager.CurrentPhase`를 구독해 등록된 `PhaseUIBase`들의 표시를 갱신한다. `RegisterView`로 뷰를 등록한다. |
+| `PhaseBase` | 페이즈 한 장면. `Key`(식별 문자열), `Enter(token)` / `MainLogicAsync(token)` / `Exit()`. 프로젝트에서 상속해 구체 페이즈를 만든다. |
+| `PhaseManager` | 페이즈를 갈아끼우고 흐름을 돌린다. `RunAsync(PhaseBase)`로 시작하면 각 페이즈가 돌려준 다음 페이즈를 따라 끝까지 흐른다. 현재 페이즈는 `CurrentPhase`(ReadOnlyReactiveProperty)로 노출한다. |
 
 ### 사용 규칙
 
-- 전환은 객체로: `ChangePhase(new BattlePhase(...))`. 문자열 `Key`는 식별·로그·저장용이다.
+- **전환은 반환값으로.** `MainLogicAsync`가 반환하는 것이 곧 "내 일은 끝났다"이고, 돌려준 페이즈가 다음 차례다. `null`이면 거기서 흐름이 끝난다. 페이즈가 매니저를 붙잡고 직접 갈아끼우지 않는다 — 아직 안 끝난 자기를 끝내는 꼴이라 자기 토큰이 취소된다.
+- **토큰은 페이즈마다 새로 난다.** `Enter`와 `MainLogicAsync`가 받는 토큰은 그 페이즈가 나가는 순간 취소된다. 구독과 비동기 작업에 그대로 넘기면 정리가 따라온다.
+- 전환은 객체로: `return new BattlePhase(...)`. 문자열 `Key`는 식별·로그·저장용이다.
 - 키는 프로젝트에서 상수 문서(예: `PhaseID`)로 관리한다. 값은 `"Battle/Prepare"`처럼 경로 형태로 계층을 드러낸다.
-- 계층(HSM): 페이즈가 자식 `PhaseManager`를 소유하면 서브 상태 머신이 된다. 소유한 페이즈는 반드시 `OnEnter`에서 자식 `Init()`, `OnExit`에서 자식 `Release()`를 부른다. 이 두 줄로 정리 연쇄가 바깥에서 안쪽까지 전파된다.
+- 계층(HSM): 페이즈가 자식 `PhaseManager`를 소유하면 서브 상태 머신이 된다. 소유한 페이즈는 반드시 `Enter`에서 자식 `Init()`, `Exit`에서 자식 `Release()`를 부른다. 이 두 줄로 정리 연쇄가 바깥에서 안쪽까지 전파된다.
 - 부모의 생명주기가 자식을 소유한다. 자식 머신을 바깥에서 직접 만지지 않는다.
 
 ## UI / Tutorial
@@ -63,73 +63,74 @@ await bubble.PlayAsync("저 고블린부터 잡자!", token);
 
 ### 2. 페이즈 만들기
 
-`PhaseBase`를 상속한다. `OnEnter`에서 만든 것은 `OnExit`에서 치운다.
+`PhaseBase`를 상속한다. `Enter`에서 만든 것은 `Exit`에서 치운다. 할 일은 `MainLogicAsync`에 쓰고, 끝나면서 다음 페이즈를 돌려준다.
 
 ```csharp
 public class PreparePhase : PhaseBase
 {
     public override string Key => PhaseID.BattleSub.Prepare;
 
-    public override void OnEnter() { }
-    public override void OnExit() { }
+    public override void Enter(CancellationToken token) { }
+
+    public override async UniTask<PhaseBase> MainLogicAsync(CancellationToken token)
+    {
+        await UniTask.Delay(TimeSpan.FromSeconds(1f), cancellationToken: token);
+
+        return new CombatPhase();   // 내 일은 끝났고, 다음은 얘다
+    }
+
+    public override void Exit() { }
 }
 ```
+
+끝이 없는 페이즈(예: 무한히 도는 전투)는 `while (true)` 로 돌면 된다. 반환할 일이 없다.
 
 ### 3. 조립하고 시작하기 (컴포지션 루트)
 
 ```csharp
-var phaseManager = new PhaseManager();
+var phaseManager = new PhaseManager("RootPhase", destroyCancellationToken);
 phaseManager.Init();
-phaseManager.ChangePhase(new BattlePhase(context));   // 시작 페이즈
+
+phaseManager.RunAsync(new LoadingPhase(inGamePhase)).Forget();   // 시작 페이즈
 
 // 끝날 때 (OnDestroy 등)
-phaseManager.Release();   // 현재 페이즈 OnExit까지 연쇄 정리
+phaseManager.Release();   // 현재 페이즈 Exit까지 연쇄 정리
 ```
 
-전환할 때마다 `PhaseManager: Battle/Prepare -> Battle/Combat` 형식의 로그가 찍힌다.
+생성자의 이름은 로그에 찍히는 머신 이름이고, 토큰은 이 머신의 수명이다. 그 토큰이 취소되면 돌던 페이즈도 같이 멈춘다.
 
-### 4. 페이즈 UI 붙이기
+첫 페이즈만 넘기면 된다. 그 뒤로는 각 페이즈가 돌려주는 대로 흐른다 — 조립하는 쪽이 순서를 알 필요가 없다.
 
-1. 씬의 패널 오브젝트에 `PhaseUIBase`를 상속한 스크립트를 붙이고 `PhaseKey`로 짝이 되는 페이즈 키를 돌려준다.
+전환할 때마다 `RootPhase: Loading -> InGame` 형식의 로그가 찍힌다.
 
-```csharp
-public class PrepareUI : PhaseUIBase
-{
-    public override string PhaseKey => PhaseID.BattleSub.Prepare;
-}
-```
+### 4. 계층 만들기 (복합 페이즈)
 
-2. `PhaseUIManager`를 만들고 뷰를 등록한다. 이후는 자동이다 — 페이즈가 바뀌면 키가 일치하는 뷰만 켜진다.
-
-```csharp
-var phaseUIManager = new PhaseUIManager(phaseManager);
-phaseUIManager.Init();
-phaseUIManager.RegisterView(prepareUI);   // [SerializeField]로 바인딩해서 전달
-```
-
-표시 방식을 바꾸고 싶으면(페이드 등) `SetVisible`을 재정의한다.
-
-### 5. 계층 만들기 (복합 페이즈)
-
-페이즈가 자식 `PhaseManager`를 소유하면 그 안이 서브 상태 머신이 된다. `OnEnter`에서 `Init`, `OnExit`에서 `Release` — 이 두 줄이 규약의 전부다.
+페이즈가 자식 `PhaseManager`를 소유하면 그 안이 서브 상태 머신이 된다. `Enter`에서 `Init`, `Exit`에서 `Release` — 이 두 줄이 규약의 전부다.
 
 ```csharp
 public class BattlePhase : PhaseBase
 {
-    private readonly PhaseManager _sub = new PhaseManager();
+    private PhaseManager _sub;
+
     public override string Key => PhaseID.Battle;
 
-    public override void OnEnter()
+    public override void Enter(CancellationToken token)
     {
+        // 자식 머신의 수명은 내 토큰이다. 내가 나가면 자식도 같이 멈춘다.
+        _sub = new PhaseManager("BattlePhase", token);
         _sub.Init();
-        _sub.ChangePhase(new PreparePhase());
     }
 
-    public override void OnExit()
+    public override async UniTask<PhaseBase> MainLogicAsync(CancellationToken token)
     {
-        _sub.Release();   // 자식의 현재 페이즈 OnExit까지 전파
+        await _sub.RunAsync(new PreparePhase());   // 준비 → 전투 → 정산 이 다 끝날 때까지
+
+        return new ResultPhase();
+    }
+
+    public override void Exit()
+    {
+        _sub.Release();   // 자식의 현재 페이즈 Exit까지 전파
     }
 }
 ```
-
-서브 머신의 UI가 필요하면 `new PhaseUIManager(_sub)`를 같은 페이즈 안에서 소유하면 된다.

@@ -21,7 +21,8 @@ MonoBehaviour:
   _attackPower: 10
   _weaponType: 0
   _range: 4
-  _comboInterval: 0.3
-  _cycleInterval: 1.4
+  _comboCount: 3
+  _comboInterval: 0.25
+  _cycleInterval: 1.0
   _useTrail: 1
   _hitDebuffs: []

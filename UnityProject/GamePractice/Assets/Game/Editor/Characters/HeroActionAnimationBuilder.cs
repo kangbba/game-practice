@@ -246,19 +246,26 @@ namespace Sayne
         internal static void DressPreview(Transform graphic, string hero)
         {
             // 머리·머리카락·망토·스카프는 프리팹에 이미 구워져 있다. 여기서 입히는 건 갈아입는 장비뿐이다.
+            // 프리팹은 벗은 몸이라 시작 차림(무기·몸통·신발)을 전부 입혀야 게임에서 보던 모습이 된다.
             var parts = hero switch
             {
                 "Kage" => new List<(EquipmentSlot Slot, string Folder, string Name)>
                 {
-                    (EquipmentSlot.MainHand, "Weapon", "Scythe"),
+                    (EquipmentSlot.MainHand, "Weapon", "Sword"),
+                    (EquipmentSlot.Chest, "Chest", "KageArmor"),
+                    (EquipmentSlot.Boots, "Boots", "KageBoots"),
                 },
                 "Aldric" => new List<(EquipmentSlot Slot, string Folder, string Name)>
                 {
-                    (EquipmentSlot.MainHand, "Weapon", "Sword"),
+                    (EquipmentSlot.MainHand, "Weapon", "Scythe"),
+                    (EquipmentSlot.Chest, "Chest", "AldricCoat"),
+                    (EquipmentSlot.Boots, "Boots", "AldricBoots"),
                 },
                 _ => new List<(EquipmentSlot Slot, string Folder, string Name)>
                 {
                     (EquipmentSlot.MainHand, "Weapon", "Staff"),
+                    (EquipmentSlot.Chest, "Chest", "NyxDress"),
+                    (EquipmentSlot.Boots, "Boots", "NyxBoots"),
                 },
             };
 

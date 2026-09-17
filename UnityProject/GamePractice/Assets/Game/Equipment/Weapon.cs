@@ -9,6 +9,9 @@ namespace Sayne
 
         public override EquipmentSlot Slot => EquipmentSlot.MainHand;
 
+        /// <summary>무기를 안 든 상태인가. 싸움에선 무기지만 장비창에선 빈 자리로 보인다.</summary>
+        public bool IsBareHands => ID == EquipmentID.Weapon.BareHands;
+
         /// <summary>휘두를 때 트레일을 쓸지. 프리팹에 트레일이 있어도 여기서 끄면 안 나온다.</summary>
         public bool UseTrail => Info.UseTrail;
 

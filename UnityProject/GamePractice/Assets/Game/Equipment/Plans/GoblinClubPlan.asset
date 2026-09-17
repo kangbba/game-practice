@@ -20,7 +20,8 @@ MonoBehaviour:
   _moveSpeed: 0
   _attackPower: 5
   _weaponType: 1
-  _range: 2.5
+  _range: 4
+  _comboCount: 1
   _comboInterval: 0.5
   _cycleInterval: 1.8
   _useTrail: 0

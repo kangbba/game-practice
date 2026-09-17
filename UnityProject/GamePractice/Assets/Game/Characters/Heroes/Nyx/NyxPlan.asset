@@ -19,9 +19,9 @@ MonoBehaviour:
   _mainHand: Staff
   _offHand: 
   _helmet: 
-  _chest: 
+  _chest: NyxDress
   _greaves: 
-  _boots: 
+  _boots: NyxBoots
   _combat:
     _comboPowerMultipliers:
     - 1

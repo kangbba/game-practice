@@ -16,12 +16,12 @@ MonoBehaviour:
   _maxHP: 100
   _moveSpeed: 4.5
   _attackPower: 5
-  _mainHand: Sword
+  _mainHand: Scythe
   _offHand: 
   _helmet: 
-  _chest: 
+  _chest: AldricCoat
   _greaves: 
-  _boots: 
+  _boots: AldricBoots
   _combat:
     _comboPowerMultipliers:
     - 1

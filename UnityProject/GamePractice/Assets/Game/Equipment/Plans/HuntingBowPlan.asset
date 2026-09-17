@@ -20,9 +20,10 @@ MonoBehaviour:
   _moveSpeed: 0.3
   _attackPower: 9
   _weaponType: 2
-  _range: 6
-  _comboInterval: 0.28
-  _cycleInterval: 1.3
+  _range: 14
+  _comboCount: 3
+  _comboInterval: 0.22
+  _cycleInterval: 1.0
   _useTrail: 0
   _projectile: {fileID: 7700000000000000004, guid: 9787db3211e4446d9c1d4d7b2126ca72, type: 3}
   _hitDebuffs: []

@@ -39,20 +39,17 @@ namespace Sayne
         /// <summary>낀 장비 전부가 얹은 몫. 무기 공격력도 여기로 들어온다.</summary>
         public CharacterStats EquipmentBonus => _equipmentBonus;
 
-        /// <summary>최종 공격력 = 기본 + 성장 + 장비.</summary>
-        public int FinalAttackPower => _baseStats.AttackPower + _growthBonus.AttackPower + _equipmentBonus.AttackPower;
-
-        /// <summary>최종 체력 = 기본 + 성장 + 장비.</summary>
-        public int FinalMaxHP => _baseStats.MaxHP + _growthBonus.MaxHP + _equipmentBonus.MaxHP;
-
-        /// <summary>최종 스탯. 언제나 기본 + 성장 합성으로만 나온다 — 직접 쓰는 값이 아니라 파생값이다.</summary>
+        /// <summary>최종 스탯. 기본 + 성장 + 장비 합성 하나뿐이다 — 직접 쓰는 값이 아니라 파생값이다.</summary>
         public ReadOnlyReactiveProperty<CharacterStats> CurrentStats => _currentStats;
+
+        /// <summary>최종 공격력. 합성은 CurrentStats 가 이미 했다.</summary>
+        public int FinalAttackPower => _currentStats.Value.AttackPower;
+
+        /// <summary>최종 체력. 합성은 CurrentStats 가 이미 했다.</summary>
+        public int FinalMaxHP => _currentStats.Value.MaxHP;
 
         /// <summary>뭘 입고 있나. 입기·벗기·구독은 전부 여기 있다.</summary>
         public CharacterEquipment Equipment { get; } = new CharacterEquipment();
-
-        /// <summary>뭘 갖고 있나. 주운 장비가 쌓이는 가방이다 — 입고 있는 것과는 별개다.</summary>
-        public CharacterInventory Inventory { get; } = new CharacterInventory();
 
         /// <summary>지금 걸린 상태이상. 경직·기절 같은 것들.</summary>
         public CharacterDebuffs Debuffs { get; } = new CharacterDebuffs();
@@ -62,6 +59,9 @@ namespace Sayne
 
         /// <summary>무엇으로 어떻게 때리는가.</summary>
         public CharacterCombat Combat { get; private set; }
+
+        /// <summary>발에서 머리 꼭대기까지의 키. 머리 위에 무언가 띄우는 쪽이 이걸 쓴다.</summary>
+        public float GetHeight() => _skin.GetHeight();
 
         public ReadOnlyReactiveProperty<int> CurrentHP => _currentHP;
         public ReadOnlyReactiveProperty<CharacterStateType> State => _state;
@@ -98,55 +98,52 @@ namespace Sayne
         {
             _baseStats = stats;
             _growthBonus = default;
-            _equipmentBonus = default;
 
             Equipment.Wear(equipment);
             Combat = new CharacterCombat(this, Equipment, combatPlan);
 
-            // 장비가 바뀔 때마다 장비 몫을 다시 합산한다. 구독 즉시 한 번 돌아서 방금 입은 한 벌도 반영된다.
+            // 방금 입은 한 벌은 여기서 직접 반영한다. 구독은 그 다음에 바뀌는 것만 받는다.
+            _equipmentBonus = Equipment.TotalStats();
+            RefreshStats();
+
             foreach (var slot in EquipmentSlots.All)
             {
                 Equipment.Observe(slot)
-                    .Subscribe(this, (_, self) => self.RecalcEquipmentBonus())
+                    .Skip(1)
+                    .Subscribe(this, (_, self) => self.SetEquipmentBonus(self.Equipment.TotalStats()))
                     .AddTo(this);
             }
 
             _currentHP.Value = FinalMaxHP;
             _state.Value = CharacterStateType.Idle;
 
-
-
             _motion.Bind(this);
             _skin.Bind(this);
         }
 
-        /// <summary>성장 몫을 갈아끼운다. 최종 스탯은 언제나 재합성이라 누적 오차가 없다.</summary>
+        /// <summary>성장 몫을 갈아끼운다. 성장은 오르기만 하고, 늘어난 MaxHP 만큼 현재 HP 도 같이 차오른다 — 성장이 벌점이 되지 않게.</summary>
         public void SetGrowthBonus(CharacterStats bonus)
         {
+            var maxHPGain = bonus.MaxHP - _growthBonus.MaxHP;
+
             _growthBonus = bonus;
-            OnBonusChanged();
-        }
-
-        private void RecalcEquipmentBonus()
-        {
-            _equipmentBonus = Equipment.TotalStats();
-            OnBonusChanged();
-        }
-
-        /// <summary>어느 근원이든 몫이 바뀌면 여기로 모인다. MaxHP 가 늘어난 만큼 현재 HP 도 같이 찬다 — 성장·장착이 벌점이 되지 않게.</summary>
-        private void OnBonusChanged()
-        {
-            var oldMaxHP = _currentStats.Value.MaxHP;
             RefreshStats();
 
-            var maxHPGain = FinalMaxHP - oldMaxHP;
-            _currentHP.Value = Mathf.Clamp(_currentHP.Value + Mathf.Max(maxHPGain, 0), 0, FinalMaxHP);
+            _currentHP.Value = Mathf.Clamp(_currentHP.Value + maxHPGain, 0, FinalMaxHP);
         }
 
-        /// <summary>최종 스탯 = 기본 + 성장 + 장비. 이 한 줄 밖에서 _currentStats 를 채우는 곳은 없다.</summary>
+        /// <summary>장비 몫을 갈아끼운다. 입고 벗는 건 회복이 아니라서 현재 HP 는 건드리지 않는다.</summary>
+        private void SetEquipmentBonus(CharacterStats bonus)
+        {
+            _equipmentBonus = bonus;
+            RefreshStats();
+        }
+
+        /// <summary>최종 스탯 = 기본 + 성장 + 장비. _currentStats 를 채우는 곳은 여기 하나뿐이고, 현재 HP 도 여기서 새 최대치 안으로 들어온다.</summary>
         private void RefreshStats()
         {
             _currentStats.Value = _baseStats.Add(_growthBonus).Add(_equipmentBonus);
+            _currentHP.Value = Mathf.Min(_currentHP.Value, FinalMaxHP);
         }
 
         /// <summary>이 방향으로 걷는다. 멈추려면 StopMove 를 부른다.</summary>
@@ -267,7 +264,6 @@ namespace Sayne
             _stagger?.Dispose();
             Combat?.Dispose();
             Equipment.Dispose();
-            Inventory.Dispose();
             Debuffs.Dispose();
         }
     }

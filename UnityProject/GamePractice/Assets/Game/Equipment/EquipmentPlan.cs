@@ -41,6 +41,9 @@ namespace Sayne
         [SerializeField] private WeaponType _weaponType;
         [SerializeField] private float _range = 2f;
 
+        /// <summary>평타 묶음이 몇 타인가. 모션이 모자라면 앞으로 되감아 쓴다.</summary>
+        [SerializeField] private int _comboCount = 4;
+
         /// <summary>묶음 안에서 다음 타까지의 간격.</summary>
         [SerializeField] private float _comboInterval = 0.35f;
 
@@ -70,8 +73,8 @@ namespace Sayne
         public bool IsWeapon => _slot == EquipmentSlot.MainHand;
 
         /// <summary>무기 한 자루의 싸움 방식. 위력은 스탯의 공격력을 그대로 쓴다.</summary>
-        public WeaponInfo Weapon => new WeaponInfo(_weaponType, _attackPower, _range, _comboInterval,
-            _cycleInterval, _useTrail, _projectile, BuildHitDebuffs());
+        public WeaponInfo Weapon => new WeaponInfo(_weaponType, _attackPower, _range, _comboCount,
+            _comboInterval, _cycleInterval, _useTrail, _projectile, BuildHitDebuffs());
 
         private Debuff[] BuildHitDebuffs()
         {

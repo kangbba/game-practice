@@ -59,7 +59,7 @@ namespace Sayne.Editor
                 canvas.renderMode = RenderMode.WorldSpace;
                 canvas.worldCamera = camera;
                 ((RectTransform)canvas.transform).sizeDelta = new Vector2(1920f, 1920f * height / width);
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/UI/BattlePhaseUIPanel.prefab");
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/UI/BattlePanel.prefab");
                 var panel = Object.Instantiate(prefab, canvas.transform, false);
                 var safeArea = panel.GetComponentInChildren<BattleHUDSafeArea>();
                 safeArea.enabled = false;
@@ -72,8 +72,7 @@ namespace Sayne.Editor
                     safeRect.anchorMin = new Vector2(80f / width, 24f / height);
                     safeRect.anchorMax = new Vector2(1f - 80f / width, 1f);
                     var ultimate = panel.GetComponentsInChildren<SkillButtonWidget>()[1];
-                    ultimate.SetCooldownRatio(0.65f);
-                    ultimate.SetCooldownRemain(5.4f);
+                    ultimate.Preview("궁극기", cooldownRatio: 0.65f, cooldownRemain: 5.4f);
                 }
                 ValidateBindings(panel);
                 Canvas.ForceUpdateCanvases();
@@ -108,47 +107,43 @@ namespace Sayne.Editor
 
         /// <summary>
         /// 장비창에 설계값 에셋 전부를 후보로 넣고 찍는다 — 가방이 거의 찬 상태다.
-        /// 가죽 갑옷을 입은 채 판금 갑옷을 고른 장면이라 체력은 오르고(초록) 이동속도는 내리는(빨강) 비교가 함께 나온다.
+        /// 드레스를 입은 채 미늘 갑옷을 고른 장면이라 체력은 오르고(초록) 이동속도는 내리는(빨강) 비교가 함께 나온다.
+        /// 아이콘은 게임과 같이 장비 프리팹을 아이콘 무대에서 찍은 것이다.
         /// </summary>
         private static void PreviewEquipment(EquipmentWindow window)
         {
-            var portraits = new FolderSprites("Assets/Game/Equipment/Portraits");
+            // 게임과 같은 아이콘 무대로 찍는다. 찍은 그림은 미리보기 창이 살아 있는 동안 쓰이므로 여기서 치우지 않는다.
+            var icons = new Dictionary<string, Sprite>();
+            var stage = new EquipmentIconStage();
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Game/Equipment" }))
+            {
+                var visual = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+                if (visual.GetComponentInChildren<SpriteRenderer>(true) != null) icons[visual.name] = stage.Shoot(visual);
+            }
+
+            stage.Dispose();
+
             var items = new List<(string, EquipmentSlot, string, Sprite, string, CharacterStats)>();
 
             foreach (var guid in AssetDatabase.FindAssets("t:EquipmentPlan", new[] { "Assets/Game/Equipment/Plans" }))
             {
                 var plan = AssetDatabase.LoadAssetAtPath<EquipmentPlan>(AssetDatabase.GUIDToAssetPath(guid));
-                var portrait = portraits.Contains(plan.EquipmentID) ? portraits.Get(plan.EquipmentID) : null;
-                items.Add((plan.EquipmentID, plan.Slot, plan.DisplayName, portrait, plan.Description, plan.Stats));
+
+                // 맨손은 가방에 드는 아이템이 아니다.
+                if (plan.EquipmentID == EquipmentID.Weapon.BareHands) continue;
+
+                icons.TryGetValue(plan.EquipmentID, out var icon);
+                items.Add((plan.EquipmentID, plan.Slot, plan.DisplayName, icon, plan.Description, plan.Stats));
             }
 
             var equipped = new Dictionary<EquipmentSlot, string>
             {
                 [EquipmentSlot.MainHand] = "Sword",
-                [EquipmentSlot.Chest] = "LeatherArmor",
-                [EquipmentSlot.Boots] = "TravelerBoots",
+                [EquipmentSlot.Chest] = EquipmentID.Armor.NyxDress,
+                [EquipmentSlot.Boots] = EquipmentID.Armor.AldricBoots,
             };
 
-            window.Preview(items, equipped, new CharacterStats(maxHP: 120, moveSpeed: 4f, attackPower: 10), "PlateArmor");
-        }
-
-        /// <summary>미리보기 전용 초상화 창고. 실제 게임은 어드레서블로 받지만 에디터에서는 폴더를 그대로 읽는다.</summary>
-        private class FolderSprites : IAssets<Sprite>
-        {
-            private readonly Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>();
-
-            public FolderSprites(string folder)
-            {
-                foreach (var guid in AssetDatabase.FindAssets("t:Sprite", new[] { folder }))
-                {
-                    var path = AssetDatabase.GUIDToAssetPath(guid);
-                    _sprites[Path.GetFileNameWithoutExtension(path)] = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                }
-            }
-
-            public IReadOnlyCollection<string> IDs => _sprites.Keys;
-            public bool Contains(string id) => _sprites.ContainsKey(id);
-            public Sprite Get(string id) => _sprites[id];
+            window.Preview(items, equipped, new CharacterStats(maxHP: 120, moveSpeed: 4f, attackPower: 10), EquipmentID.Armor.KageArmor);
         }
 
         private static void ValidateBindings(GameObject root)

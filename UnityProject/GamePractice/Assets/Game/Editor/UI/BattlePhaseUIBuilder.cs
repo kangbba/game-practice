@@ -7,12 +7,14 @@ namespace Sayne.Editor
 {
     /// <summary>
     /// 전투 HUD 를 만든다. 데이터를 가지는 UI 는 전용 위젯 프리팹으로 먼저 만들고,
-    /// BattlePhaseUIPanel 프리팹은 위젯들을 중첩 프리팹으로 배치만 한다.
+    /// BattlePanel 프리팹은 위젯들을 중첩 프리팹으로 배치만 한다.
     /// 장식은 레이캐스트를 끄고 실제 버튼만 입력을 받는다.
     /// </summary>
     public static class BattlePhaseUIBuilder
     {
-        private const string PanelPath = "Assets/Game/UI/BattlePhaseUIPanel.prefab";
+        private const string PanelPath = "Assets/Game/UI/BattlePanel.prefab";
+        private const string WaveStartPanelPath = "Assets/Game/UIDirection/UIPrefab_WaveStart.prefab";
+        private const string LowHealthPanelPath = "Assets/Game/UIDirection/UIPrefab_LowHealth.prefab";
         private const string WidgetFolder = "Assets/Game/UI/Widgets";
         private const string SayneSpriteFolder = "Assets/SayneAssets/UI/Sprites";
         /// <summary>정산 화면에 늘어놓을 전리품 칸 수. 넘치면 "+N" 으로 접힌다.</summary>
@@ -44,7 +46,7 @@ namespace Sayne.Editor
         private static Sprite _circleSolid;
         private static Sprite _circleOutline;
 
-        // 돌릴 일이 끝나서 메뉴에서 내렸다. 빌더를 고쳐 다시 돌려야 하면 번호를 붙여 MenuItem 을 다시 단다.
+        [MenuItem("★Sayne★/1. 전투 HUD 빌드", false, 1)]
         public static void Build()
         {
             BattleHUDArtBuilder.Build();
@@ -63,9 +65,9 @@ namespace Sayne.Editor
                 AssetDatabase.CreateFolder("Assets/Game/UI", "Widgets");
             }
 
-            var heroStatusPrefab = BuildHeroStatusWidget();
+            var heroProfilePrefab = BuildHeroProfileWidget();
             var currencyPrefab = BuildCurrencyWidget();
-            var guidePrefab = BuildGuideWidget();
+            var questPrefab = BuildQuestWidget();
             var stagePrefab = BuildStageWidget();
             var iconMenuPrefab = BuildIconMenuWidget();
             var circleButtonPrefab = BuildCircleButtonWidget();
@@ -77,17 +79,20 @@ namespace Sayne.Editor
             var growthStatPrefab = BuildGrowthStatWidget();
             var growthWindowPrefab = BuildGrowthWindow(growthStatPrefab);
 
-            ComposePanel(heroStatusPrefab, currencyPrefab, guidePrefab, stagePrefab, iconMenuPrefab, circleButtonPrefab,
+            ComposePanel(heroProfilePrefab, currencyPrefab, questPrefab, stagePrefab, iconMenuPrefab, circleButtonPrefab,
                 skillButtonPrefab, equipWindowPrefab, growthWindowPrefab);
 
-            Debug.Log("BattlePhaseUIBuilder: 위젯 프리팹 12종 + 전투 HUD 재구성 완료");
+            ComposeWaveStartPanel();
+            ComposeLowHealthPanel();
+
+            Debug.Log("BattlePhaseUIBuilder: 위젯 프리팹 12종 + 전투 HUD·웨이브 시작·저체력 패널 재구성 완료");
         }
 
         // ---- 위젯 프리팹 ----
 
-        private static GameObject BuildHeroStatusWidget()
+        private static GameObject BuildHeroProfileWidget()
         {
-            var root = WidgetRoot("HeroStatusWidget", new Vector2(420f, 124f));
+            var root = WidgetRoot("HeroProfileWidget", new Vector2(420f, 124f));
             Img(root, Color.white, _panel);
             var portrait = Rect(root, "Portrait", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, 0f), new Vector2(108f, 108f));
             Img(portrait, Color.white, _medallion);
@@ -105,7 +110,7 @@ namespace Sayne.Editor
             var (expFill, _) = Bar(root, "EXPBar", new Vector2(166f, -92f), new Vector2(236f, 10f), StageBlue, false);
             Text(Rect(root, "EXPLabel", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(132f, -86f), new Vector2(32f, 22f)), "EXP", 13f, Gold);
 
-            var widget = root.gameObject.AddComponent<HeroStatusWidget>();
+            var widget = root.gameObject.AddComponent<HeroProfileWidget>();
             var so = new SerializedObject(widget);
             so.FindProperty("_portrait").objectReferenceValue = portraitIcon;
             so.FindProperty("_nameText").objectReferenceValue = nameText;
@@ -135,9 +140,9 @@ namespace Sayne.Editor
             return SaveWidget(root.gameObject);
         }
 
-        private static GameObject BuildGuideWidget()
+        private static GameObject BuildQuestWidget()
         {
-            var root = WidgetRoot("GuideWidget", new Vector2(380f, 130f));
+            var root = WidgetRoot("QuestWidget", new Vector2(380f, 130f));
             Img(root, Color.white, _panel);
 
             var titleText = Text(
@@ -157,13 +162,31 @@ namespace Sayne.Editor
 
             var (progressFill, progressLabel) = Bar(root, "ProgressBar", new Vector2(106f, -82f), new Vector2(254f, 22f), GuideGreen, true);
 
-            var widget = root.gameObject.AddComponent<GuideWidget>();
+            // 완료 덮개. 박스 전체를 덮고 누르면 보상을 받는다 — 덮개 자체가 버튼이다.
+            var overlay = Stretch(root, "CompleteOverlay", 0f);
+            var overlayImage = Img(overlay, new Color(0f, 0f, 0.05f, 0.72f), _panel);
+            overlayImage.raycastTarget = true;
+
+            var claimBtn = overlay.gameObject.AddComponent<Button>();
+            claimBtn.targetGraphic = overlayImage;
+            StyleButton(claimBtn);
+
+            Text(Rect(overlay, "CompleteText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(360f, 40f)),
+                "완료", 30f, Gold);
+            Text(Rect(overlay, "ClaimHint", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -22f), new Vector2(360f, 28f)),
+                "눌러서 보상 받기", 18f, TextWhite);
+
+            overlay.gameObject.SetActive(false);
+
+            var widget = root.gameObject.AddComponent<QuestWidget>();
             var so = new SerializedObject(widget);
             so.FindProperty("_titleText").objectReferenceValue = titleText;
             so.FindProperty("_descText").objectReferenceValue = descText;
             so.FindProperty("_rewardText").objectReferenceValue = rewardText;
             so.FindProperty("_progressFill").objectReferenceValue = progressFill;
             so.FindProperty("_progressLabel").objectReferenceValue = progressLabel;
+            so.FindProperty("_completeOverlay").objectReferenceValue = overlay.gameObject;
+            so.FindProperty("_claimBtn").objectReferenceValue = claimBtn;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             return SaveWidget(root.gameObject);
@@ -660,7 +683,99 @@ namespace Sayne.Editor
 
         // ---- 패널 조립 ----
 
-        private static void ComposePanel(GameObject heroStatusPrefab, GameObject currencyPrefab, GameObject guidePrefab,
+        /// <summary>
+        /// 웨이브 시작 화면. 화면 전체를 덮는다. UIDirectionManager 가 웨이브마다 만들어 띄우고 치운다.
+        /// 어두운 바탕 위에 판 하나, 그 위에 웨이브 이름과 "시작" 만 있다.
+        /// </summary>
+        private static void ComposeWaveStartPanel()
+        {
+            var panelRoot = new GameObject("UIPrefab_WaveStart", typeof(RectTransform), typeof(WaveStartPanel));
+            var panelRect = (RectTransform)panelRoot.transform;
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+
+            var dim = Stretch(panelRect, "Dim", 0f);
+            // 알림이 떠 있는 동안에도 게임은 돈다. 바탕이 입력을 가로채면 그 사이 조작이 먹통이 된다.
+            Img(dim, new Color(0f, 0f, 0.05f, 0.45f)).raycastTarget = false;
+            var dimGroup = Group(dim);
+
+            var board = Rect(dim, "Board", Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(0f, 0f), new Vector2(880f, 260f));
+            Img(board, PanelDark, _panel);
+            var boardGroup = Group(board);
+
+            var waveText = Text(
+                Rect(board, "WaveText", new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -62f), new Vector2(640f, 36f)),
+                "STAGE 1 - 1", 26f, TextGray);
+
+            var titleText = Text(
+                Rect(board, "TitleText", new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -132f), new Vector2(680f, 72f)),
+                "시작", 54f, Gold);
+
+            var divider = Rect(board, "Divider", new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -190f), new Vector2(760f, 3f));
+            Img(divider, new Color(1f, 1f, 1f, 0.14f));
+
+            var panel = panelRoot.GetComponent<WaveStartPanel>();
+            var so = new SerializedObject(panel);
+            so.FindProperty("_dimGroup").objectReferenceValue = dimGroup;
+            so.FindProperty("_board").objectReferenceValue = board;
+            so.FindProperty("_boardGroup").objectReferenceValue = boardGroup;
+            so.FindProperty("_waveText").objectReferenceValue = waveText;
+            so.FindProperty("_titleText").objectReferenceValue = titleText;
+            so.FindProperty("_divider").objectReferenceValue = divider;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(panelRoot, WaveStartPanelPath);
+            Object.DestroyImmediate(panelRoot);
+        }
+
+        /// <summary>구역 머리말 한 줄. 왼쪽 정렬 소제목이다.</summary>
+        /// <summary>
+        /// 저체력 경고 막. 화면 전체를 덮되 가운데는 비어 있고 가장자리만 붉다.
+        /// 켜고 끄는 건 UIDirectionManager 가, 울렁이는 건 패널 자신이 한다.
+        /// </summary>
+        private static void ComposeLowHealthPanel()
+        {
+            var panelRoot = new GameObject("UIPrefab_LowHealth", typeof(RectTransform), typeof(CanvasGroup),
+                typeof(LowHealthPanel));
+            var panelRect = (RectTransform)panelRoot.transform;
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+
+            // 막이 안팎으로 숨을 쉬므로 화면보다 조금 크게 깔아 둔다 — 줄어들 때 가장자리가 비지 않게.
+            var edge = Stretch(panelRect, "Edge", -40f);
+            Img(edge, new Color(0.78f, 0.05f, 0.08f), Art("Frames/Vignette")).raycastTarget = false;
+
+            var group = panelRoot.GetComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            group.interactable = false;
+
+            var panel = panelRoot.GetComponent<LowHealthPanel>();
+            var so = new SerializedObject(panel);
+            so.FindProperty("_group").objectReferenceValue = group;
+            so.FindProperty("_edge").objectReferenceValue = edge;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(panelRoot, LowHealthPanelPath);
+            Object.DestroyImmediate(panelRoot);
+        }
+
+        private static RectTransform SectionHeader(RectTransform board, string name, float y, string label)
+        {
+            var rt = Rect(board, name, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, y), new Vector2(320f, 32f));
+            Text(rt, label, 22f, Gold, HorizontalAlignmentOptions.Left);
+            return rt;
+        }
+
+        private static CanvasGroup Group(RectTransform rt)
+        {
+            return rt.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        private static void ComposePanel(GameObject heroProfilePrefab, GameObject currencyPrefab, GameObject questPrefab,
             GameObject stagePrefab, GameObject iconMenuPrefab, GameObject circleButtonPrefab, GameObject skillButtonPrefab,
             GameObject equipmentWindowPrefab, GameObject growthWindowPrefab)
         {
@@ -677,30 +792,25 @@ namespace Sayne.Editor
             root.gameObject.AddComponent<BattleHUDSafeArea>();
 
             // 좌상단
-            var heroStatus = Place<HeroStatusWidget>(heroStatusPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -24f));
-            heroStatus.SetName("이름없음");
-            heroStatus.SetLevel(0);
-            heroStatus.SetHP(5000, 5000);
-            heroStatus.SetEXPRatio(0.35f);
+            var heroProfile = Place<HeroProfileWidget>(heroProfilePrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -24f));
+            heroProfile.Preview("이름없음", level: 0, hp: 5000, maxHP: 5000, expRatio: 0.35f);
 
             var gold = Place<CurrencyWidget>(currencyPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -158f));
-            gold.SetAmount(1004);
+            gold.Preview(1004);
             gold.SetColor(Gold);
 
             var gem = Place<CurrencyWidget>(currencyPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(240f, -158f));
-            gem.SetAmount(500);
+            gem.Preview(500);
             gem.SetColor(GemBlue);
             gem.transform.Find("Icon").GetComponent<Image>().sprite = Art("Icons/Gem");
 
-            var guide = Place<GuideWidget>(guidePrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -218f));
-            guide.SetGuide("성장 가이드 03", "훈련 · 공격력 올리기");
-            guide.SetReward(500);
-            guide.SetProgress(1, 3);
+            var quest = Place<QuestWidget>(questPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -218f));
+            quest.Preview(QuestPlan.EnemyKill("고블린 사냥꾼", EnemyID.Goblin, "고블린", count: 10, goldReward: 300),
+                index: 2, progress: 4, isComplete: false);
 
             // 중앙 상단
             var stage = Place<StageWidget>(stagePrefab, root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f));
-            stage.SetStage("1-1 단계");
-            stage.SetKills(8, 25);
+            stage.Preview("STAGE 1 - 1", kills: 8, goal: 25);
 
             // 우상단 메뉴
             var topMenus = new[] { ("더보기", "Settings"), ("이벤트", "Event"), ("던전", "Dungeon"), ("소환", "Summon"), ("상점", "Shop") };
@@ -739,10 +849,10 @@ namespace Sayne.Editor
             Icon((RectTransform)centerSlot.transform, "Crest", "Icons/Summon", Vector2.one * 0.5f, new Vector2(0f, 8f), new Vector2(62f, 62f));
             Text(Rect((RectTransform)centerSlot.transform, "Caption", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 8f), new Vector2(88f, 24f)), "전투", 18f, Gold);
             var skillButton = Place<SkillButtonWidget>(skillButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-28f, 28f));
-            skillButton.SetText("스킬");
+            skillButton.Preview("스킬", cooldownRatio: 0f, cooldownRemain: 0f);
             var ultimateButton = Place<SkillButtonWidget>(skillButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-192f, 52f));
             ((RectTransform)ultimateButton.transform).sizeDelta = new Vector2(112f, 112f);
-            ultimateButton.SetText("궁극기");
+            ultimateButton.Preview("궁극기", cooldownRatio: 0f, cooldownRemain: 0f);
             ultimateButton.transform.Find("Icon").GetComponent<Image>().sprite = Art("Icons/Ultimate");
             var speed = Place<CircleButtonWidget>(circleButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-58f, 196f));
             ((RectTransform)speed.transform).sizeDelta = new Vector2(82f, 82f);
@@ -764,15 +874,15 @@ namespace Sayne.Editor
                 Rect(root, "ReviveText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -160f), new Vector2(500f, 50f)),
                 string.Empty, 36f, TextWhite);
 
-            var panel = panelRoot.GetComponent<BattlePhaseUIPanel>();
+            var panel = panelRoot.GetComponent<BattlePanel>();
             var so = new SerializedObject(panel);
             so.FindProperty("_reviveText").objectReferenceValue = reviveText;
             so.FindProperty("_joystick").objectReferenceValue = joystick;
-            so.FindProperty("_heroStatus").objectReferenceValue = heroStatus;
+            so.FindProperty("_heroProfile").objectReferenceValue = heroProfile;
             so.FindProperty("_goldWidget").objectReferenceValue = gold;
             so.FindProperty("_gemWidget").objectReferenceValue = gem;
             so.FindProperty("_stageWidget").objectReferenceValue = stage;
-            so.FindProperty("_guideWidget").objectReferenceValue = guide;
+            so.FindProperty("_questWidget").objectReferenceValue = quest;
             so.FindProperty("_skillButton").objectReferenceValue = skillButton;
             so.FindProperty("_ultimateButton").objectReferenceValue = ultimateButton;
             so.FindProperty("_equipMenuButton").objectReferenceValue = equipMenuButton;

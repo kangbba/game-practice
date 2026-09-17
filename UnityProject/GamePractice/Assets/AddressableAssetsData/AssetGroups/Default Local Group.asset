@@ -21,12 +21,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 0aa9f0228da0484fb3d17ee084dfece3
-    m_Address: ChainMail
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 0f9cc5a9866a349d0971dd8c4f2dc0c3
     m_Address: OgreBoss
     m_ReadOnly: 0
@@ -35,12 +29,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 12cf50823da648e882330c0c9e4cc8dd
     m_Address: HuntingBowPlan
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPlans
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 14323a2553c34998836dc0fc3c2b5737
-    m_Address: LeatherHoodPlan
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
@@ -58,28 +46,22 @@ MonoBehaviour:
     - Enemies
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1c2f330398714226a0e1d61381d7d7a2
-    m_Address: LeatherArmorPlan
+    m_Address: NyxDressPlan
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1e6722c08b69499dbf0ac83be3329b52
-    m_Address: ChainMailPlan
+    m_Address: AldricCoatPlan
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1edff58a37774f67a43703f038d579ba
-    m_Address: PlateArmorPlan
+    m_Address: KageArmorPlan
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 2124d45400d945da89e2867d01abd824
-    m_Address: HuntingBow
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 22e79eca0c1e4c4c88f92b32ca280ba0
     m_Address: LongBowPlan
@@ -141,18 +123,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 3579f3d54c2a4b359d2884cf4afea77e
-    m_Address: IronHelm
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 3c31c4a6c1d04f3aa6d1ed0816512baa
-    m_Address: PlateArmor
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 3e1723ba401f4c418f1aa2faead2dcb5
     m_Address: BareHandsPlan
     m_ReadOnly: 0
@@ -164,12 +134,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels:
     - Equipment
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 3e6e16ea6b2345bb8e4274d93c2bbf86
-    m_Address: OgreClub
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4036b0020b344c23baea36fab2709cdd
     m_Address: NyxUltimateCharge
@@ -184,27 +148,15 @@ MonoBehaviour:
     - Maps
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 49c3cabb7ebf4465aeec2d4638f0204e
-    m_Address: BattlePhaseUIPanel
+    m_Address: BattlePanel
     m_ReadOnly: 0
     m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 49c8445bfa46401ab68401dd8f42d7cf
-    m_Address: BloodTalismanPlan
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4c2f976ca0994070b8130c6a39e82248
     m_Address: SkillCharge
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 4cb5c121888a431bbb84824f477f5dd3
-    m_Address: Sword
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4ef54d3fa33c41ec8d1a5b9889004594
     m_Address: OgreClub
@@ -242,24 +194,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Heroes
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 58c7fe03a7b344e4acbbf116b9716ed3
-    m_Address: Staff
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 609d240e8c684bfe9b72d35914cbaa9b
-    m_Address: TowerShieldPlan
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPlans
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 63706971f1d54dbb922ff9664a01adba
-    m_Address: WoodenShield
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6aa254ca57124c9aa26f7001f5d7283e
     m_Address: DeathSmoke
     m_ReadOnly: 0
@@ -267,7 +201,7 @@ MonoBehaviour:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6b5e0d3fd2144167a15aee6c76006777
-    m_Address: TravelerBootsPlan
+    m_Address: AldricBootsPlan
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
@@ -278,23 +212,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 6dcd62a79a134ea49f6368e5b9da1296
-    m_Address: LeatherArmor
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 70221331b05241e0b65f309e8738f5ca
     m_Address: Scythe
     m_ReadOnly: 0
     m_SerializedLabels:
     - Equipment
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 70b116f77d5649fcafe3a0ce260465e7
-    m_Address: TowerShield
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 75945ba2b6784ba68642193cc5942267
     m_Address: ArmedOgrePlan
@@ -314,6 +236,12 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7f68c954d46e34f70a1dc531b4fb829f
+    m_Address: AldricBoots
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 80617ebc7ab941928d9c54a78e6b6966
     m_Address: OverlayHPBar
     m_ReadOnly: 0
@@ -325,11 +253,22 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 80eac32b99004969bf72c8f4c60960e7
-    m_Address: BoneGreaves
+  - m_GUID: 861caee7009ea4b75aa5ca95b221121e
+    m_Address: AldricCoat
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EquipmentPortraits
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8bf3d3a66a9614bf58e6a28a22eab572
+    m_Address: UIPrefab_LowHealth
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8c6743637e08d40f0953c12abfdcd2be
+    m_Address: NyxDress
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 903be332b4d24a3fa54447ba7ee468d5
     m_Address: OgrePlan
@@ -365,29 +304,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: a243cb35f6f74624b9d894a423f37227
-    m_Address: Scythe
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a6ceef4b40764f6eab47fd45a8cf61df
     m_Address: Heal
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: ad3165ec677943e9b3ec9bc729982c76
-    m_Address: PlatedBoots
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: adae846078eb44a5aa9f561b7b10d28b
-    m_Address: IronGreaves
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: adb3eb5c18c242be905cce0614f25747
     m_Address: OgreBossPlan
@@ -401,59 +322,23 @@ MonoBehaviour:
     m_SerializedLabels:
     - EnemyPlans
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b14d31b06be24989848e45ec3751ac5d
-    m_Address: FrostBow
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b160b436c99048b19663c21ef3a21109
-    m_Address: HornedHelmPlan
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPlans
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b1d11bc227d443238c637b56ef1370ca
     m_Address: Portal
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b1f6458411b04905bf0511ac7df8d568
-    m_Address: BoneGreavesPlan
+  - m_GUID: b3c33c506aa034e23aa9bff8b0a659f9
+    m_Address: KageArmor
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EquipmentPlans
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b5665d03c9a04e049fadb9e9abfa22bb
-    m_Address: WoodenShieldPlan
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPlans
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ba06d86aed0c4e9585ed13dc3300cc72
     m_Address: LongBow
     m_ReadOnly: 0
     m_SerializedLabels:
     - Equipment
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: baa918fcb1ca442493fd2632ab770237
-    m_Address: BloodTalisman
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: bac4c2b9e9ae4a35bdfa1bae2af5016a
-    m_Address: SwiftBoots
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: bb259e7acebd4bb2beaa7c3884de8886
-    m_Address: LongBow
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c13217278fd549ab96b8d9422a062071
     m_Address: OgreClubPlan
@@ -478,12 +363,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c61ca8ff8a1841afaa3a4e6e3bc1f126
-    m_Address: LeatherHood
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: cb080f5996124904aca558016de6265c
     m_Address: Goblin
     m_ReadOnly: 0
@@ -491,13 +370,7 @@ MonoBehaviour:
     - Enemies
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: cbdb8abfb36644c5bb360dd748ea6ed0
-    m_Address: SwiftBootsPlan
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPlans
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: cd5c5e9a6f1c47e5bfc16d5aba74e173
-    m_Address: IronGreavesPlan
+    m_Address: NyxBootsPlan
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
@@ -509,7 +382,7 @@ MonoBehaviour:
     - Heroes
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d1acfe4c36294acaa1a7daf2f3e40dd6
-    m_Address: PlatedBootsPlan
+    m_Address: KageBootsPlan
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
@@ -525,29 +398,17 @@ MonoBehaviour:
     m_SerializedLabels:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: d86bdce1b8e8469f8d3e6a591f0bdff5
-    m_Address: BareHands
+  - m_GUID: d7e1a11af42d848ca942a593996e18f7
+    m_Address: KageBoots
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EquipmentPortraits
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d912bb82791f46eb949b5ca93df8d3ef
     m_Address: Aldric
     m_ReadOnly: 0
     m_SerializedLabels:
     - Heroes
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: daaa3be82b684778b65f03357454d90d
-    m_Address: TravelerBoots
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: dbaec44c97c2463c958ee1eb460b880c
-    m_Address: LeatherGreavesPlan
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: dcb0b0a0bf4843a9906b81510b04ff72
     m_Address: ScythePlan
@@ -560,12 +421,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels:
     - DropPortraits
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e584f431ce424b6ea55827889f4562c8
-    m_Address: HornedHelm
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e59e85f5cfc474418ae2dd4bbb285ae7
     m_Address: TutorialWidget
@@ -590,11 +445,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: f349739dbdf94b7da031c2ed72d19755
-    m_Address: GoblinClub
+  - m_GUID: f643e86e7c9ce47efb70703f7c11f3b8
+    m_Address: NyxBoots
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EquipmentPortraits
+    - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f88196cff2724300be168a471f36f429
     m_Address: Aldric
@@ -602,11 +457,10 @@ MonoBehaviour:
     m_SerializedLabels:
     - Profiles
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: fb007a1ac44a41f983782953e450aacb
-    m_Address: LeatherGreaves
+  - m_GUID: f9171d1b6c48245efb809ff5b387a3d7
+    m_Address: UIPrefab_WaveStart
     m_ReadOnly: 0
-    m_SerializedLabels:
-    - EquipmentPortraits
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: d245d5bec672c4a3da23b652abf31bc1, type: 2}

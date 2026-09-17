@@ -8,8 +8,7 @@ namespace Sayne
     {
         private static readonly List<StagePlan> All = new List<StagePlan>
         {
-            new StagePlan(
-                waves: new[]
+            new StagePlan(new[]
                 {
                     new Dictionary<string, int>
                     {
@@ -27,8 +26,12 @@ namespace Sayne
                         [EnemyID.Goblin] = 6,
                         [EnemyID.ArmedOgre] = 2,
                     },
-                },
-                bossEnemyID: EnemyID.OgreBoss),
+                    // 마지막 웨이브가 보스 판이다.
+                    new Dictionary<string, int>
+                    {
+                        [EnemyID.OgreBoss] = 1,
+                    },
+                }),
         };
 
         /// <summary>아직 안 만든 스테이지면 마지막으로 만든 걸 그대로 쓴다. 조용히 넘어가지 않게 로그를 남긴다.</summary>

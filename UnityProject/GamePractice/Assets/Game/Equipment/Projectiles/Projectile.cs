@@ -13,6 +13,9 @@ namespace Sayne
         /// <summary>초당 날아가는 거리. 사거리 5짜리 지팡이면 대략 0.4초 만에 닿는다.</summary>
         [SerializeField] private float _speed = 14f;
 
+        /// <summary>날아간 자리에 남는 궤적. 투사체는 알갱이가 작아서 이게 없으면 눈으로 못 쫓는다.</summary>
+        [SerializeField] private TrailRenderer _trail;
+
         /// <summary>목표의 발밑이 아니라 가슴께로 날아간다. 타격 이펙트가 터지는 높이와 같다.</summary>
         private const float ChestHeight = 0.9f;
 
@@ -27,6 +30,10 @@ namespace Sayne
         public void Launch(Vector3 from, Transform target, Action arrived)
         {
             transform.position = from;
+
+            // 만들어진 자리(원점)에서 쏘는 자리까지 선이 그어지지 않게 첫 프레임에 한 번 지운다.
+            _trail.Clear();
+
             _target = target;
             _destination = ChestPointOf(target);
             _arrived = arrived;

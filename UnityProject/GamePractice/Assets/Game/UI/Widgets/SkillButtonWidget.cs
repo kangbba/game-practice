@@ -5,7 +5,10 @@ using UnityEngine.UI;
 
 namespace Sayne
 {
-    /// <summary>누를 수 있는 원형 스킬 버튼. 쿨타임은 남은 초와 비율만 받아서 그린다.</summary>
+    /// <summary>
+    /// 누를 수 있는 원형 스킬 버튼. 쿨타임을 구독해 남은 비율과 초를 그린다 — 해석은 캐릭터가 이미 해뒀다.
+    /// 켜짐 조건은 캐릭터의 CanUseSkill 과 같은 재료를 본다 — 눌러도 아무 일 없는 버튼은 켜두지 않는다.
+    /// </summary>
     public class SkillButtonWidget : MonoBehaviour
     {
         [SerializeField] private Button _button;
@@ -15,27 +18,48 @@ namespace Sayne
 
         public Observable<Unit> Clicked => _button.onClick.AsObservable();
 
-        public void SetText(string text)
+        /// <summary>이 자리의 기술을 맡는다. 히어로가 바뀌면 새 히어로의 같은 자리를 다시 문다.</summary>
+        public void Init(HeroManager heroManager, SkillSlotType slot)
         {
-            _label.text = text;
+            heroManager.Spawned
+                .Subscribe((self: this, slot), (hero, state) => state.self.SetHero(hero, state.slot))
+                .AddTo(this);
         }
 
-        /// <summary>지금 누를 수 있나. 쿨이 돌거나 기술 모션 중이면 꺼둔다 — 눌려도 무시되는 버튼은 두지 않는다.</summary>
-        public void SetInteractable(bool interactable)
+        /// <summary>구독은 그 히어로의 수명을 따라간다 — 죽으면 같이 풀린다.</summary>
+        private void SetHero(Character hero, SkillSlotType slot)
         {
-            _button.interactable = interactable;
+            var skill = slot == SkillSlotType.Skill ? hero.Combat.Skill : hero.Combat.Ultimate;
+            var cooldown = slot == SkillSlotType.Skill ? hero.Combat.SkillCooldown : hero.Combat.UltimateCooldown;
+
+            _label.text = skill != null ? skill.Name : EmptyName(slot);
+
+            cooldown.RemainRatio
+                .Subscribe(this, (ratio, self) => self._cooldownFill.fillAmount = ratio)
+                .AddTo(hero);
+
+            cooldown.RemainSeconds
+                .Subscribe(this, (remain, self) => self._cooldownText.text = remain > 0f ? $"{remain:0.0}" : string.Empty)
+                .AddTo(hero);
+
+            cooldown.RemainSeconds
+                .CombineLatest(hero.Combat.Casting, (remain, casting) => skill != null && remain <= 0f && !casting)
+                .Subscribe(this, (canUse, self) => self._button.interactable = canUse)
+                .AddTo(hero);
         }
 
-        /// <summary>남은 비율 0~1. 0 이면 쿨타임이 안 보인다.</summary>
-        public void SetCooldownRatio(float ratio)
+        /// <summary>구독 없이 최종 모습만 그린다. 프리팹을 굽거나 미리보기를 찍을 때 쓰는 문이다.</summary>
+        public void Preview(string label, float cooldownRatio, float cooldownRemain)
         {
-            _cooldownFill.fillAmount = ratio;
+            _label.text = label;
+            _cooldownFill.fillAmount = cooldownRatio;
+            _cooldownText.text = cooldownRemain > 0f ? $"{cooldownRemain:0.0}" : string.Empty;
         }
 
-        /// <summary>남은 초. 0 이면 숫자를 감춘다.</summary>
-        public void SetCooldownRemain(float remainSeconds)
+        /// <summary>기술을 아직 안 가진 히어로도 버튼은 뜬다. 그때 쓰는 자리 이름이다.</summary>
+        private static string EmptyName(SkillSlotType slot)
         {
-            _cooldownText.text = remainSeconds > 0f ? $"{remainSeconds:0.0}" : string.Empty;
+            return slot == SkillSlotType.Skill ? "스킬" : "궁극기";
         }
     }
 }
