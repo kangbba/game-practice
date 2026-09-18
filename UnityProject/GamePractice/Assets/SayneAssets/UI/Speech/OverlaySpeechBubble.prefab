@@ -201,7 +201,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: effefbddde3634b6080a492353beea00, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: SayneAssets::Sayne.SpeechBubble
+  m_EditorClassIdentifier: SayneAssets::Sayne.TextPlayer
   _body: {fileID: 564817099691744552}
   _text: {fileID: 551823017351098917}
   _nextMark: {fileID: 9195802823957283262}
@@ -604,4 +604,4 @@ MonoBehaviour:
   _group: {fileID: 6785492299635000960}
   _tapBtn: {fileID: 1724397549329475173}
   _follower: {fileID: 104183392709843259}
-  _bubble: {fileID: 7176469837984603799}
+  _player: {fileID: 7176469837984603799}

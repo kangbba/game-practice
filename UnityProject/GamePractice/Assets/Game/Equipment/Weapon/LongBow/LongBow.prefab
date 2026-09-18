@@ -169,10 +169,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 242b3cde6967496f9ec872339f97b1d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::Sayne.Bow
-  _range: 18
+  _range: 36
   _comboCount: 1
-  _comboInterval: 0.6
-  _cycleInterval: 1.2
+  _comboInterval: 0.38
+  _cycleInterval: 0.75
   _hitDebuffs: []
   _art: {fileID: 8302882715096617720}
   _grip: {fileID: 2680375594889837736}

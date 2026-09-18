@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using R3;
@@ -33,6 +34,9 @@ namespace Sayne
 
         private RectTransform _bubbleRect;
 
+        /// <summary>따라다니는 동안만 사는 구독. 붙을 때 걸고 뗄 때 끊는다.</summary>
+        private IDisposable _follow;
+
         private void Awake()
         {
             _bubbleRect = (RectTransform)_player.transform;
@@ -41,8 +45,11 @@ namespace Sayne
             _group.blocksRaycasts = false;
         }
 
+        /// <summary>대상에 붙어 따라다니기 시작한다. 앞서 붙어 있던 대상에서는 저절로 떨어진다.</summary>
         public void Attach(Camera camera, Transform target, Vector3 worldOffset, Vector2 screenOffset)
         {
+            Detach();
+
             _camera = camera;
             _target = target;
             _worldOffset = worldOffset;
@@ -52,9 +59,17 @@ namespace Sayne
 
             // 카메라와 같은 단계(PostLateUpdate)에서, 카메라보다 늦게 구독해 그 뒤에 돈다 —
             // 순서가 뒤바뀌면 카메라가 움직이는 동안 풍선이 몸에서 한 프레임 밀린다.
-            Observable.EveryUpdate(UnityFrameProvider.PostLateUpdate)
+            _follow = Observable.EveryUpdate(UnityFrameProvider.PostLateUpdate)
                 .Subscribe(this, (_, self) => self.Place())
                 .AddTo(this);
+        }
+
+        /// <summary>대상에서 뗀다. 말이 끝났거나 대상이 사라졌으면 따라갈 이유가 없다.</summary>
+        public void Detach()
+        {
+            _follow?.Dispose();
+            _follow = null;
+            _target = null;
         }
 
         public async UniTask PlayAsync(string text, CancellationToken token)
@@ -62,14 +77,28 @@ namespace Sayne
             _group.alpha = 1f;
             _group.blocksRaycasts = true;
 
-            await _player.PlayAsync(text, token);
-
-            _group.alpha = 0f;
-            _group.blocksRaycasts = false;
+            try
+            {
+                await _player.PlayAsync(text, token);
+            }
+            finally
+            {
+                // 끊겨서 빠져나가도 풍선은 사라지고 대상에서 떨어져야 한다.
+                _group.alpha = 0f;
+                _group.blocksRaycasts = false;
+                Detach();
+            }
         }
 
         private void Place()
         {
+            // 대상이 먼저 죽을 수 있다 — 말을 걸던 적이 화살에 맞아 사라지는 식으로.
+            if (_target == null)
+            {
+                Detach();
+                return;
+            }
+
             var screenPoint = _camera.WorldToScreenPoint(_target.position + _worldOffset);
 
             // 카메라 뒤의 점은 화면 좌표가 뒤집혀 엉뚱한 곳에 찍힌다. 부호를 되돌려 원래 방향의 화면 밖으로 보낸 뒤 가장자리로 민다.

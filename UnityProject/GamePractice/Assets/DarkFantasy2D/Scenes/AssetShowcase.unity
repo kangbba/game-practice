@@ -970,17 +970,6 @@ PrefabInstance:
       addedObject: {fileID: 1735384985}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 88978fb022ca14252a19e1650b331df6, type: 3}
---- !u!114 &283598093 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7446196372071072100, guid: 88978fb022ca14252a19e1650b331df6, type: 3}
-  m_PrefabInstance: {fileID: 283598092}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0c2926db345f47b9885f19d8d29f5a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.CombatHUD
 --- !u!224 &283598094 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7100494232349015322, guid: 88978fb022ca14252a19e1650b331df6, type: 3}
@@ -1043,17 +1032,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 28cfd7f0978c44f8cb4ff29fb6222fc7, type: 3}
---- !u!114 &290007217 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8020596791490621786, guid: 28cfd7f0978c44f8cb4ff29fb6222fc7, type: 3}
-  m_PrefabInstance: {fileID: 290007216}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3ce4e71d41b44db88dba62e84f4f549, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.CharacterRig
 --- !u!1 &364268632
 GameObject:
   m_ObjectHideFlags: 0
@@ -1876,7 +1854,6 @@ GameObject:
   m_Component:
   - component: {fileID: 601513950}
   - component: {fileID: 601513949}
-  - component: {fileID: 601513948}
   - component: {fileID: 601513947}
   m_Layer: 0
   m_Name: EventSystem
@@ -1916,18 +1893,6 @@ MonoBehaviour:
   m_PointerBehavior: 0
   m_CursorLockBehavior: 0
   m_ScrollDeltaPerTick: 6
---- !u!114 &601513948
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 601513946}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a0dc875ef990c4a49b6dfddbe08f294a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.ShowcaseInputSetup
 --- !u!114 &601513949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4060,17 +4025,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a97a53463221042f88b32aadb94b2579, type: 3}
---- !u!114 &1394177778 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 574117403970935037, guid: a97a53463221042f88b32aadb94b2579, type: 3}
-  m_PrefabInstance: {fileID: 1394177777}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3ce4e71d41b44db88dba62e84f4f549, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.CharacterRig
 --- !u!1 &1424346115
 GameObject:
   m_ObjectHideFlags: 0
@@ -4691,7 +4645,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1758171161}
-  - component: {fileID: 1758171160}
   m_Layer: 0
   m_Name: Showcase
   m_TagString: Untagged
@@ -4699,52 +4652,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1758171160
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1758171159}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 128a482e6c9a94b47a575893d657a3c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.AssetShowcase
-  characters:
-  - {fileID: 290007217}
-  - {fileID: 1818306652}
-  - {fileID: 1394177778}
-  hud: {fileID: 283598093}
-  animationButtons:
-  - {fileID: 163799133}
-  - {fileID: 842963360}
-  - {fileID: 1027024229}
-  - {fileID: 501242372}
-  - {fileID: 1213743751}
-  - {fileID: 1577750551}
-  effectButtons:
-  - {fileID: 1893902840}
-  - {fileID: 199548223}
-  - {fileID: 1701247012}
-  - {fileID: 1338731880}
-  - {fileID: 142649974}
-  - {fileID: 1589261602}
-  - {fileID: 370239319}
-  - {fileID: 1169839850}
-  effects:
-  - {fileID: 779213230813254899, guid: fb8dd1dbaebbf48d5a94a70c312a5fa5, type: 3}
-  - {fileID: 3712953015739105596, guid: b963f765893d6434e886650c5209567b, type: 3}
-  - {fileID: 1422772719240353115, guid: f266ee7580fa2435aa57ae9da44aed50, type: 3}
-  - {fileID: 1212261460433770480, guid: a8f1cd7a6605941388dd0dbd1bff3013, type: 3}
-  - {fileID: 3062082135852248129, guid: 8e8c9f233e3624f99b4828b26af4ba48, type: 3}
-  - {fileID: 4110529370765243187, guid: 02de79026dbdf44b588c59b98ad87a95, type: 3}
-  - {fileID: 154853760333514866, guid: ef6d34acd4afe4e238d8965b187edf34, type: 3}
-  - {fileID: 1054884599432991538, guid: 786910c0426f94039ae1e645764b2a76, type: 3}
-  effectOrigin: {fileID: 1176274955}
-  statusText: {fileID: 1848884040}
-  growthPanel: {fileID: 2018554032}
-  growthButton: {fileID: 789736672}
 --- !u!4 &1758171161
 Transform:
   m_ObjectHideFlags: 0
@@ -4817,17 +4724,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7338e5017bb7d4c4eb45ecba498ed2ac, type: 3}
---- !u!114 &1818306652 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2768493751377252564, guid: 7338e5017bb7d4c4eb45ecba498ed2ac, type: 3}
-  m_PrefabInstance: {fileID: 1818306651}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3ce4e71d41b44db88dba62e84f4f549, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.CharacterRig
 --- !u!1 &1844906846
 GameObject:
   m_ObjectHideFlags: 0
@@ -5344,11 +5240,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 59b4d0c8eb8274498940255a862013fa, type: 3}
---- !u!1 &2018554032 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1220731866334721736, guid: 59b4d0c8eb8274498940255a862013fa, type: 3}
-  m_PrefabInstance: {fileID: 2018554031}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

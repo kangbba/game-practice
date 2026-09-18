@@ -423,7 +423,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9222b8273501440bca88f23652da6dfd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Game::Sayne.WorldSpeechBubble
+  m_EditorClassIdentifier: SayneAssets::Sayne.WorldSpeechBubble
   _group: {fileID: 8885926154531896484}
   _anchor: {fileID: 6989464921763945863}
   _body: {fileID: 35800838937453057}

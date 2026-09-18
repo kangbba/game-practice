@@ -984,7 +984,6 @@ GameObject:
   - component: {fileID: 116338681805342846}
   - component: {fileID: 1779693559702500476}
   - component: {fileID: 7557923584707338478}
-  - component: {fileID: 7446196372071072100}
   m_Layer: 0
   m_Name: CombatHUD
   m_TagString: Untagged
@@ -1076,29 +1075,6 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &7446196372071072100
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2537852504683586157}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0c2926db345f47b9885f19d8d29f5a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.CombatHUD
-  healthFill: {fileID: 1271600545770130777}
-  experienceFill: {fileID: 6668134146569444417}
-  cooldownFill: {fileID: 8314749083399084214}
-  healthText: {fileID: 7588678032069702241}
-  levelText: {fileID: 7454823149550569514}
-  coinsText: {fileID: 7777831061807257646}
-  gemsText: {fileID: 2405190649066741980}
-  stageText: {fileID: 1751113630426334375}
-  attackButton: {fileID: 3862501180482802034}
-  healButton: {fileID: 1416918300957820032}
-  autoButton: {fileID: 369575856963518718}
 --- !u!1 &2592422041392549002
 GameObject:
   m_ObjectHideFlags: 0

@@ -67,7 +67,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: bbfb09c2e26e4c11a4bc450383b352b3, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b570e41ca14a4e7380bebe94232c65f9, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -734,7 +734,7 @@ GameObject:
   - component: {fileID: 6096242363709054079}
   - component: {fileID: 3575516962156755792}
   m_Layer: 5
-  m_Name: TutorialWidget
+  m_Name: SpeechBubbleWidget
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -784,12 +784,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 881714f99d815499ca312ef3e941e63c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: SayneAssets::Sayne.TutorialWidget
+  m_EditorClassIdentifier: SayneAssets::Sayne.SpeechBubbleWidget
   _group: {fileID: 6096242363709054079}
   _tapBtn: {fileID: 3222180019194413532}
   _portraitRoot: {fileID: 1650831186430460398}
   _portrait: {fileID: 6046778504971577464}
-  _bubble: {fileID: 5799272396473885811}
+  _player: {fileID: 5799272396473885811}
 --- !u!1 &8977280905175612672
 GameObject:
   m_ObjectHideFlags: 0
@@ -880,7 +880,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: effefbddde3634b6080a492353beea00, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: SayneAssets::Sayne.SpeechBubble
+  m_EditorClassIdentifier: SayneAssets::Sayne.TextPlayer
   _body: {fileID: 2722266228887337818}
   _text: {fileID: 2532640473650955965}
   _nextMark: {fileID: 6453957817282162193}

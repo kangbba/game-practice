@@ -268,7 +268,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4853452717051828566}
   - component: {fileID: 3571730664515773923}
-  - component: {fileID: 574117403970935037}
   - component: {fileID: 582109217118537699}
   m_Layer: 0
   m_Name: Ogre_Right_Rig
@@ -316,26 +315,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &574117403970935037
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2095378534481034191}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3ce4e71d41b44db88dba62e84f4f549, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.CharacterRig
-  maxHealth: 200
-  slashPrefab: {fileID: 779213230813254899, guid: fb8dd1dbaebbf48d5a94a70c312a5fa5, type: 3}
-  hitPrefab: {fileID: 3712953015739105596, guid: b963f765893d6434e886650c5209567b, type: 3}
-  deathPrefab: {fileID: 1212261460433770480, guid: a8f1cd7a6605941388dd0dbd1bff3013, type: 3}
-  effectSocket: {fileID: 8108476798193328922}
-  onStrike:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!70 &582109217118537699
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

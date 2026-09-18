@@ -91,7 +91,7 @@ namespace Sayne.Editor
             so.FindProperty("_tapBtn").objectReferenceValue = tapBtn;
             so.FindProperty("_portraitRoot").objectReferenceValue = portraitRoot;
             so.FindProperty("_portrait").objectReferenceValue = portrait;
-            so.FindProperty("_bubble").objectReferenceValue = bubble;
+            so.FindProperty("_player").objectReferenceValue = bubble;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             Save(root.gameObject);
@@ -115,7 +115,7 @@ namespace Sayne.Editor
             so.FindProperty("_group").objectReferenceValue = group;
             so.FindProperty("_tapBtn").objectReferenceValue = tapBtn;
             so.FindProperty("_follower").objectReferenceValue = follower;
-            so.FindProperty("_bubble").objectReferenceValue = bubble;
+            so.FindProperty("_player").objectReferenceValue = bubble;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             Save(root.gameObject);

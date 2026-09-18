@@ -256,5 +256,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7030b899cc349939e4566be1d925b54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::Sayne.Projectile
-  _speed: 14
+  _speed: 28
   _trail: {fileID: 2403362236813538544}

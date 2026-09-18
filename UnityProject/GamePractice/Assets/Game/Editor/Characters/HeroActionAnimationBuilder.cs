@@ -303,14 +303,14 @@ namespace Sayne
         }
 
         /// <summary>그 모션이 지나가는 자리 전부가 한 화면에 들어오게 카메라를 맞춘다.</summary>
-        private static void FitReviewCamera(GameObject graphic, Camera camera, AnimationClip clip)
+        internal static void FitReviewCamera(GameObject graphic, Camera camera, AnimationClip clip)
         {
             var bounds = new Bounds();
             var hasBounds = false;
             // 거대해진 무기는 빼고 몸이 지나는 자리만 본다 — 무기까지 넣으면 인물이 점이 된다.
             var weaponBone = graphic.transform.Find("Root/Torso/RightArm/Forearm/Weapon");
             var renderers = graphic.GetComponentsInChildren<SpriteRenderer>()
-                .Where(renderer => !renderer.transform.IsChildOf(weaponBone)).ToArray();
+                .Where(renderer => weaponBone == null || !renderer.transform.IsChildOf(weaponBone)).ToArray();
             var steps = Mathf.Max(60, Mathf.CeilToInt(clip.length * 30f));
             for (var frame = 0; frame <= steps; frame++)
             {

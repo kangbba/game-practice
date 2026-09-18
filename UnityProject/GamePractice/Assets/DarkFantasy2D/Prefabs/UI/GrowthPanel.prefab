@@ -699,7 +699,6 @@ GameObject:
   - component: {fileID: 1777596798389270581}
   - component: {fileID: 107147788843860329}
   - component: {fileID: 2478308226350977943}
-  - component: {fileID: 7403516041373029103}
   m_Layer: 0
   m_Name: GrowthPanel
   m_TagString: Untagged
@@ -791,30 +790,6 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 0
---- !u!114 &7403516041373029103
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1220731866334721736}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d85682b53bdd4e89915e30b51537cf5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DarkFantasy2D.GrowthPanel
-  currencyText: {fileID: 1545569973608266220}
-  attackText: {fileID: 248718102491347366}
-  healthText: {fileID: 4307955549057859071}
-  attackTrain: {fileID: 1066297337364766706}
-  healthTrain: {fileID: 7822867387446719029}
-  close: {fileID: 3858140570879997004}
-  onTrained:
-    m_PersistentCalls:
-      m_Calls: []
-  coins: 1004
-  attackLevel: 1
-  healthLevel: 1
 --- !u!1 &1343144879786605087
 GameObject:
   m_ObjectHideFlags: 0
