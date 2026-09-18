@@ -12,13 +12,17 @@ namespace Sayne
         private const float SeparationWeight = 2.5f;
         private const float AimError = 1.5f;
 
+        /// <summary>설 자리까지 이 거리 안으로 들면 흩은 조준을 점점 거둔다. 코앞에서 흩으면 도로 몸에 파고든다.</summary>
+        private const float ScatterFadeDistance = 6f;
+
         private readonly PauseManager _pauseManager;
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
         private readonly UltimateDirector _ultimateDirector;
 
         private readonly Dictionary<Enemy, float> _nextThinkTime = new Dictionary<Enemy, float>();
-        private readonly Dictionary<Enemy, Vector3> _aimPoint = new Dictionary<Enemy, Vector3>();
+        /// <summary>설 자리에서 조준을 얼마나 흩을지. 생각할 때마다 새로 뽑는다 — 적들이 한 줄로 몰려오지 않게.</summary>
+        private readonly Dictionary<Enemy, Vector3> _aimScatter = new Dictionary<Enemy, Vector3>();
 
         public EnemyAIManager(PauseManager pauseManager, HeroManager heroManager, EnemyManager enemyManager,
             UltimateDirector ultimateDirector)
@@ -61,7 +65,7 @@ namespace Sayne
         protected override void OnRelease()
         {
             _nextThinkTime.Clear();
-            _aimPoint.Clear();
+            _aimScatter.Clear();
         }
 
         private void UpdateAI()
@@ -75,6 +79,15 @@ namespace Sayne
 
                 enemy.Move(DesiredDirection(enemy));
                 TryAttack(enemy);
+            }
+
+            // 걸음이 다 정해진 뒤 히어로 몸에 파고든 적을 밀어낸다.
+            foreach (var hero in _heroManager.CurrentHeroes)
+            {
+                if (hero.IsAlive)
+                {
+                    _enemyManager.PushAwayFrom(hero.transform.position);
+                }
             }
         }
 
@@ -143,48 +156,26 @@ namespace Sayne
         {
             _nextThinkTime[enemy] = Time.time + Random.Range(RetargetIntervalMin, RetargetIntervalMax);
 
-            var target = FindNearestHero(enemy.transform.position);
+            var target = _heroManager.FindNearestAliveHero(enemy.transform.position);
             enemy.SetTarget(target);
 
             if (target == null)
             {
-                _aimPoint.Remove(enemy);
+                _aimScatter.Remove(enemy);
                 return;
             }
 
             var scatter = Random.insideUnitCircle * AimError;
-            _aimPoint[enemy] = target.transform.position + new Vector3(scatter.x, 0f, scatter.y);
+            _aimScatter[enemy] = new Vector3(scatter.x, 0f, scatter.y);
         }
 
-        private Hero FindNearestHero(Vector3 from)
-        {
-            Hero nearest = null;
-            var nearestDistance = float.MaxValue;
-
-            foreach (var hero in _heroManager.CurrentHeroes)
-            {
-                if (!hero.IsAlive)
-                {
-                    continue;
-                }
-
-                var distance = (hero.transform.position - from).sqrMagnitude;
-                if (distance < nearestDistance)
-                {
-                    nearestDistance = distance;
-                    nearest = hero;
-                }
-            }
-
-            return nearest;
-        }
 
         private Vector3 DesiredDirection(Enemy enemy)
         {
             var separation = Separation(enemy);
 
             var target = enemy.Target;
-            if (target == null || !_aimPoint.TryGetValue(enemy, out var aim))
+            if (target == null || !_aimScatter.TryGetValue(enemy, out var scatter))
             {
                 return separation;
             }
@@ -193,14 +184,18 @@ namespace Sayne
             var toTarget = target.transform.position - enemy.transform.position;
             toTarget.y = 0f;
 
-            // 사거리 안에서는 멈춘다 — 걸으면서는 못 때린다.
-            if (enemy.Combat.IsInRange(toTarget))
+            // 사거리 안이고 좌우로 안 겹쳤으면 멈춘다 — 걸으면서는 못 때린다.
+            if (CharacterCombat.IsStandable(toTarget, enemy.Combat.AttackRange))
             {
                 return Vector3.zero;
             }
 
-            var toAim = aim - enemy.transform.position;
-            toAim.y = 0f;
+            // 히어로 몸통이 아니라 히어로 옆자리를 노린다. 파고들어 겹치지 않는다.
+            var toStand = CharacterCombat.StandPoint(enemy.transform.position, target.transform.position)
+                - enemy.transform.position;
+            toStand.y = 0f;
+
+            var toAim = toStand + scatter * Mathf.Clamp01(toStand.magnitude / ScatterFadeDistance);
 
             return toAim.normalized + separation;
         }

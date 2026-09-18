@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 
 namespace Sayne
 {
-    /// <summary>캐릭터의 겉모습. 장비 자리마다 어느 본에 다는지 알고, 거기에 장비 그림을 걸치고 벗긴다.
+    /// <summary>캐릭터의 겉모습. 장비 자리마다 어느 본에 다는지 알고, 거기에 장비 그림을 달고 뗀다.
     /// 머리·머리카락 같은 몸은 프리팹에 이미 붙어 있어 여기서 다루지 않는다.</summary>
     public class CharacterSkin : MonoBehaviour
     {

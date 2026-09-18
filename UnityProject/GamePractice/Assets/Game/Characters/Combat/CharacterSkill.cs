@@ -25,7 +25,7 @@ namespace Sayne
             : base(name, animation, powerMultiplier, 0f, staggerSeconds)
         {
             Cooldown = cooldown;
-            HitsFromClip = animation == CharacterAnimations.UltimateName;
+            HitsFromClip = animation == CharacterAnimations.UltimateMeleeName;
             ImpactRatio = CharacterAnimations.SkillImpact;
         }
     }

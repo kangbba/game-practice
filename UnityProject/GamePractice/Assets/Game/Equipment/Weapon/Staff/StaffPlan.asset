@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: 핏빛 쌍날낫
   _description: 자루 양 끝에 날이 달린 긴 낫. 위력은 낮지만 사거리가 가장 길고 걸음이 가볍다.
   _stats:
-  - _type: 0
-    _value: 8
-  - _type: 2
-    _value: 0.3
+    _stats:
+    - _type: 0
+      _value: 8
+    - _type: 2
+      _value: 0.3

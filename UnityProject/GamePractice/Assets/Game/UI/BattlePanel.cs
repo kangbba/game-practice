@@ -22,24 +22,25 @@ namespace Sayne
         [SerializeField] private SkillButtonWidget _ultimateButton;
         [SerializeField] private Button _equipMenuButton;
         [SerializeField] private Button _growthMenuButton;
+        [SerializeField] private Button _formationMenuButton;
 
         public FloatingJoystick Joystick => _joystick;
         public Observable<Unit> SkillClicked => _skillButton.Clicked;
         public Observable<Unit> UltimateClicked => _ultimateButton.Clicked;
 
-        public void Init(HeroManager heroManager, WaveManager waveManager, QuestManager questManager,
+        public void Init(HeroManager heroManager, StageManager stageManager, QuestManager questManager,
             CurrencyManager currencyManager, GrowthManager growthManager,
-            IAssets<CharacterProfile> profiles, PopupManager popupManager)
+            IAssets<CharacterProfile> profiles, PopupManager popupManager, UltimateDirector ultimateDirector)
         {
             _heroProfile.Init(heroManager, growthManager, profiles);
-            _stageWidget.Init(waveManager);
+            _stageWidget.Init(stageManager);
             _questWidget.Init(questManager);
 
             _goldWidget.Init(currencyManager.Gold);
             _gemWidget.Init(currencyManager.Gem);
 
-            _skillButton.Init(heroManager, SkillSlotType.Skill);
-            _ultimateButton.Init(heroManager, SkillSlotType.Ultimate);
+            _skillButton.Init(heroManager, SkillSlotType.Skill, hero => hero.Combat.CanUseSkill);
+            _ultimateButton.Init(heroManager, SkillSlotType.Ultimate, ultimateDirector.CanPlay);
 
             BindRevive(heroManager);
             BindMenuButtons(popupManager);
@@ -63,6 +64,10 @@ namespace Sayne
 
             _equipMenuButton.onClick.AsObservable()
                 .Subscribe(popupManager, (_, manager) => manager.Open(PopupType.Equipment))
+                .AddTo(this);
+
+            _formationMenuButton.onClick.AsObservable()
+                .Subscribe(popupManager, (_, manager) => manager.Open(PopupType.Formation))
                 .AddTo(this);
         }
     }

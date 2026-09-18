@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using R3;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -31,6 +32,11 @@ namespace Sayne
         private readonly Dictionary<DropItem, (Action<Hero> OnCollected, Hero Puller, float Speed)> _drops =
             new Dictionary<DropItem, (Action<Hero>, Hero, float)>();
 
+        private readonly Subject<Vector3> _collected = new Subject<Vector3>();
+
+        /// <summary>구슬이 주워졌다. 주워진 자리를 알린다 — 획득 이펙트가 이걸 본다.</summary>
+        public Observable<Vector3> Collected => _collected;
+
         /// <summary>도는 동안 표를 고치므로 키를 따로 떠 둔다.</summary>
         private readonly List<DropItem> _cursor = new List<DropItem>();
 
@@ -58,6 +64,7 @@ namespace Sayne
             }
 
             _drops.Clear();
+            _collected.Dispose();
         }
 
         /// <summary>
@@ -122,7 +129,7 @@ namespace Sayne
                 return;
             }
 
-            var hero = FindHeroInRange(drop.transform.position);
+            var hero = _heroManager.FindAliveHeroInRadius(drop.transform.position, MagnetRadius);
             if (hero == null)
             {
                 return;
@@ -148,21 +155,11 @@ namespace Sayne
 
             _drops.Remove(drop);
             entry.OnCollected(entry.Puller);
-            Object.Destroy(drop.gameObject);
+            _collected.OnNext(drop.transform.position);
+
+            // 사라지는 모습이 끝나면 치운다. 표에서는 이미 빠졌으니 다시 끌리지 않는다.
+            drop.Vanish().OnComplete(() => Object.Destroy(drop.gameObject));
         }
 
-        private Hero FindHeroInRange(Vector3 position)
-        {
-            foreach (var hero in _heroManager.CurrentHeroes)
-            {
-                if (hero != null && hero.IsAlive
-                    && (hero.transform.position - position).sqrMagnitude <= MagnetRadius * MagnetRadius)
-                {
-                    return hero;
-                }
-            }
-
-            return null;
-        }
     }
 }

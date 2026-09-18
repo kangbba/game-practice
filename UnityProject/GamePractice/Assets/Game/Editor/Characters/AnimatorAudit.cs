@@ -140,7 +140,11 @@ namespace Sayne.Editor
             {
                 required = required
                     .Concat(CharacterAnimations.ComboNames)
-                    .Concat(new[] { CharacterAnimations.SkillName, CharacterAnimations.UltimateName, CharacterAnimations.UltimateRangedName });
+                    .Concat(new[]
+                    {
+                        CharacterAnimations.SkillMeleeName, CharacterAnimations.SkillRangedName,
+                        CharacterAnimations.UltimateMeleeName, CharacterAnimations.UltimateRangedName
+                    });
             }
 
             foreach (var name in required.Distinct().Where(name => !names.Contains(name)))
@@ -180,7 +184,7 @@ namespace Sayne.Editor
             }
 
             // 8. 궁극기는 타격 시점을 이벤트로만 잡는다. 없으면 모션만 돌고 아무도 안 맞는다.
-            if (state == CharacterAnimations.UltimateName &&
+            if (state == CharacterAnimations.UltimateMeleeName &&
                 !AnimationUtility.GetAnimationEvents(clip).Any(item => item.functionName == CharacterAnimations.HitFrameEvent))
             {
                 lines.Add($"{state}: {CharacterAnimations.HitFrameEvent} 이벤트가 하나도 없다 — 때리는 시점이 없다");

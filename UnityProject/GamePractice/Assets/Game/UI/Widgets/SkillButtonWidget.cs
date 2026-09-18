@@ -1,3 +1,4 @@
+using System;
 using R3;
 using TMPro;
 using UnityEngine;
@@ -7,7 +8,7 @@ namespace Sayne
 {
     /// <summary>
     /// 누를 수 있는 원형 스킬 버튼. 쿨타임을 구독해 남은 비율과 초를 그린다 — 해석은 캐릭터가 이미 해뒀다.
-    /// 켜짐 조건은 캐릭터의 CanUseSkill 과 같은 재료를 본다 — 눌러도 아무 일 없는 버튼은 켜두지 않는다.
+    /// 켜짐 조건은 눌렀을 때 실제로 쓰는지를 가르는 그 판정을 그대로 받아 매 프레임 묻는다 — 눌러도 아무 일 없는 버튼은 켜두지 않는다.
     /// </summary>
     public class SkillButtonWidget : MonoBehaviour
     {
@@ -18,11 +19,15 @@ namespace Sayne
 
         public Observable<Unit> Clicked => _button.onClick.AsObservable();
 
-        /// <summary>이 자리의 기술을 맡는다. 히어로가 바뀌면 새 히어로의 같은 자리를 다시 문다.</summary>
-        public void Init(HeroManager heroManager, SkillSlotType slot)
+        /// <summary>
+        /// 이 자리의 기술을 맡는다. 히어로가 바뀌면 새 히어로의 같은 자리를 다시 문다.
+        /// canUse 는 그 히어로가 지금 이 기술을 쓸 수 있는가 — 스킬은 CanUseSkill, 궁극기는 UltimateDirector.CanPlay 다.
+        /// </summary>
+        public void Init(HeroManager heroManager, SkillSlotType slot, Func<Character, bool> canUse)
         {
-            heroManager.Spawned
-                .Subscribe((self: this, slot), (hero, state) => state.self.SetHero(hero, state.slot))
+            heroManager.CurrentHero
+                .Where(hero => hero != null)
+                .Subscribe((self: this, slot, canUse), (hero, state) => state.self.SetHero(hero, state.slot, state.canUse))
                 .AddTo(this);
         }
 
@@ -30,7 +35,7 @@ namespace Sayne
         /// 구독은 그 히어로의 수명을 따라간다 — 죽으면 같이 풀린다.
         /// 궁극기는 든 무기의 것이라 무기를 바꿔 들 때마다 이름과 쓸 수 있는지가 다시 정해진다.
         /// </summary>
-        private void SetHero(Character hero, SkillSlotType slot)
+        private void SetHero(Character hero, SkillSlotType slot, Func<Character, bool> canUse)
         {
             var cooldown = slot == SkillSlotType.Skill ? hero.Combat.SkillCooldown : hero.Combat.UltimateCooldown;
 
@@ -54,10 +59,11 @@ namespace Sayne
                 .Subscribe(this, (remain, self) => self._cooldownText.text = remain > 0f ? $"{remain:0.0}" : string.Empty)
                 .AddTo(hero);
 
-            cooldown.RemainSeconds
-                .CombineLatest(hero.Combat.Casting, skillChanged, (remain, casting, _) => (remain, casting))
-                .Subscribe((self: this, hero, slot), (state, owner) => owner.self._button.interactable =
-                    SkillOf(owner.hero, owner.slot) != null && state.remain <= 0f && !state.casting)
+            // 궁극기는 주변에 적이 있는지까지 보므로 값이 바뀌는 순간을 알릴 곳이 없다 — 매 프레임 묻는다.
+            Observable.EveryUpdate(UnityFrameProvider.Update)
+                .Select((hero, canUse), (_, state) => state.canUse(state.hero))
+                .DistinctUntilChanged()
+                .Subscribe(this, (usable, self) => self._button.interactable = usable)
                 .AddTo(hero);
         }
 

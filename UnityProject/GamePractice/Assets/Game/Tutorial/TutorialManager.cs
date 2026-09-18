@@ -20,11 +20,11 @@ namespace Sayne
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-        /// <summary>발에서 머리까지의 월드 오프셋. HP 바와 같은 지점이다.</summary>
-        private static readonly Vector3 BubbleWorldOffset = new Vector3(0f, 2.2f, 0f);
+        /// <summary>머리 꼭대기에서 말풍선 꼬리 끝까지의 월드 간격. 머리 위 HP 바와 같은 원리로 잰다 — 키는 캐릭터마다 다르다.</summary>
+        private const float BubbleHeadGap = 0.25f;
 
-        /// <summary>머리 위 HP 바를 가리지 않도록 화면상으로 더 띄우는 값.</summary>
-        private static readonly Vector2 BubbleScreenOffset = new Vector2(0f, 36f);
+        /// <summary>머리 위 HP 바(화면상 22 위)를 가리지 않도록 그보다 더 띄우는 값. 기준 해상도 단위.</summary>
+        private static readonly Vector2 BubbleScreenOffset = new Vector2(0f, 64f);
 
         private readonly PauseManager _pauseManager;
         private readonly CameraManager _cameraManager;
@@ -84,12 +84,17 @@ namespace Sayne
             _isPlaying.Value = false;
         }
 
-        /// <summary>대상의 머리 위에 말풍선을 튼다. 플레이어가 넘기면 끝난다.</summary>
-        public async UniTask PlayAsync(Transform target, string text)
+        /// <summary>
+        /// 말하는 이의 머리 위에 초상화 붙은 말풍선을 튼다. 플레이어가 넘기면 끝난다.
+        /// 붙는 자리는 머리 위 HP 바와 같은 원리다 — 키에 카메라 위쪽 방향을 곱한 월드 지점을 화면으로 옮기고, 픽셀만큼 더 띄운다.
+        /// </summary>
+        public async UniTask PlayAsync(Character speaker, Sprite portrait, string text)
         {
             Begin();
-            _overlayBubble.Attach(_cameraManager.Camera, target, BubbleWorldOffset, BubbleScreenOffset);
-            await _overlayBubble.PlayAsync(text, LifeToken);
+            var camera = _cameraManager.Camera;
+            var headOffset = camera.transform.up * (speaker.GetHeight() + BubbleHeadGap);
+            _overlayBubble.Attach(camera, speaker.transform, headOffset, BubbleScreenOffset);
+            await _overlayBubble.PlayAsync(portrait, text, LifeToken);
             _isPlaying.Value = false;
         }
 

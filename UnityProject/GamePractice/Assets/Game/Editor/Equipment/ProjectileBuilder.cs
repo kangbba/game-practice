@@ -24,7 +24,6 @@ namespace Sayne.Editor
         private const int SpriteOrder = 20;
         private const int TrailOrder = 19;
 
-        [MenuItem("★Sayne★/공통/투사체 프리팹 재빌드", false, 51)]
         public static void Build()
         {
             BuildArrow();

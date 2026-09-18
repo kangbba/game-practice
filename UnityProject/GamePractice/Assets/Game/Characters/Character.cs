@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using R3;
 using UnityEngine;
@@ -18,16 +20,19 @@ namespace Sayne
 
         private readonly Subject<Vector3> _looked = new Subject<Vector3>();
         private readonly Subject<int> _damaged = new Subject<int>();
-        private readonly Subject<Character> _fell = new Subject<Character>();
+        private readonly Subject<Character> _startedDying = new Subject<Character>();
         private readonly Subject<Character> _died = new Subject<Character>();
         private readonly ReactiveProperty<bool> _isOnUltimateStage = new ReactiveProperty<bool>();
+        private readonly ReactiveProperty<bool> _isUsingUltimate = new ReactiveProperty<bool>();
 
         /// <summary>이보다 약한 이동 요청은 멈춤으로 본다. 밀어내기 힘이 아주 약할 때 제자리걸음을 하지 않게.</summary>
         private const float MinMoveMagnitude = 0.1f;
 
         private Vector3 _moveDirection;
         private IDisposable _stagger;
-        private bool _isDead;
+
+        /// <summary>발밑에서 머리 끝까지의 높이. 몸은 태어난 뒤 키가 변하지 않으니 Init 때 한 번 잰다.</summary>
+        private float _height;
 
         /// <summary>내가 누구인지. 이름·초상화 같은 건 이 ID 로 전역 테이블에서 찾는다.</summary>
         public abstract string ID { get; }
@@ -69,20 +74,30 @@ namespace Sayne
         /// <summary>발에서 머리 꼭대기까지의 키. 머리 위에 무언가 띄우는 쪽이 이걸 쓴다.</summary>
         public float GetHeight() => _skin.GetHeight();
 
+        /// <summary>몸의 한가운데 — 발밑에서 키의 절반만큼 위. 투사체가 이 자리로 날아간다.</summary>
+        public Vector3 CenterPoint => transform.position + Vector3.up * (_height * 0.5f);
+
+        /// <summary>머리 꼭대기. 카메라가 인물을 화면에 담을 때 발밑과 함께 이 자리를 본다.</summary>
+        public Vector3 TopPoint => transform.position + Vector3.up * _height;
+
         public ReadOnlyReactiveProperty<int> CurrentHP => _currentHP;
         public ReadOnlyReactiveProperty<CharacterStateType> State => _state;
 
-        /// <summary>싸울 수 있는 몸인가. HP 의 파생값이라 따로 들지 않는다.</summary>
-        public bool IsAlive => _currentHP.Value > 0;
+        /// <summary>싸울 수 있는 몸인가. Dying 은 아니다.</summary>
+        public bool IsAlive => _state.Value != CharacterStateType.Dying && _state.Value != CharacterStateType.Death;
 
-        /// <summary>
-        /// 죽음처리까지 끝났나. HP 가 0 이 되는 것(쓰러짐)과 죽음처리는 따로다 —
-        /// 궁극기 동안은 HP 0 인 적이 죽음처리 없이 서서 계속 맞는다. 그 사이는 IsAlive 도 IsDead 도 아니다.
-        /// </summary>
-        public bool IsDead => _isDead;
+        /// <summary>죽음처리까지 끝났나. Dying 은 아니다.</summary>
+        public bool IsDead => _state.Value == CharacterStateType.Death;
 
         /// <summary>궁극기 무대에 올라 있나. 무대 밖 캐릭터의 HP바를 가리는 쪽이 이걸 본다.</summary>
         public ReadOnlyReactiveProperty<bool> IsOnUltimateStage => _isOnUltimateStage;
+
+        /// <summary>
+        /// 궁극기 본편(기술)을 쓰는 중. PlayUltimateAsync 가 도는 동안만 참이다.
+        /// 컷씬부터 복귀까지 연출 전체가 도는지는 UltimateDirector.IsPlaying 이 따로 쥔다.
+        /// 궁극기는 든 무기에서 오므로 무기에 궁극기가 없으면 CanUseUltimate 가 거짓이라 쓰고 싶어도 못 쓴다.
+        /// </summary>
+        public ReadOnlyReactiveProperty<bool> IsUsingUltimate => _isUsingUltimate;
 
         /// <summary>손에 실제로 붙어 있는 무기. 맨손이면 null.</summary>
         public Weapon WornWeapon => _skin.WornWeapon;
@@ -90,7 +105,7 @@ namespace Sayne
         /// <summary>그림이 오른쪽을 보고 있나. 앞쪽을 휩쓰는 판정이 이걸 본다.</summary>
         public bool IsFacingRight => _motion.IsFacingRight;
 
-        /// <summary>죽음처리가 몇 초 걸리나 — 쓰러지는 모션 길이.</summary>
+        /// <summary>죽음처리가 몇 초 걸리나 — 죽는 모션 길이.</summary>
         public float DeathSeconds => _motion.DeathSeconds;
 
         /// <summary>이 몸이 그 모션을 몇 초 동안 하나. 같은 기술이라도 캐릭터마다 클립 길이가 다르다.</summary>
@@ -120,7 +135,8 @@ namespace Sayne
         public Observable<int> Damaged => _damaged;
 
         /// <summary>HP 가 0 이 됐다. 언제 죽음처리할지는 이 몸의 수명 주인(매니저)이 정해 Die 를 부른다.</summary>
-        public Observable<Character> Fell => _fell;
+        /// <summary>HP 가 0 이 돼 Dying 이 됐다. 언제 죽음처리할지는 이걸 받은 수명 주인(매니저)이 정한다.</summary>
+        public Observable<Character> StartedDying => _startedDying;
 
         public Observable<Character> Died => _died;
 
@@ -137,16 +153,27 @@ namespace Sayne
             _isOnUltimateStage.Value = isOn;
         }
 
-        /// <summary>스폰 직후 호출. 프리팹은 벗은 상태이고, 여기서 받은 한 벌을 그때 입는다. 맨손도 무기 한 종류다.</summary>
-        public void Init(StatGroup stats, CombatPlan combatPlan, EquipmentSet equipment)
+        /// <summary>궁극기 본편. 어떻게 때릴지는 손에 든 무기가 정한다. 도는 동안 IsUsingUltimate 가 참이다.</summary>
+        public async UniTask PlayUltimateAsync(UltimateStage stage, CancellationToken token)
         {
-            _baseStats = stats;
+            _isUsingUltimate.Value = true;
+            await WornWeapon.PlayUltimateAsync(stage, token);
+            _isUsingUltimate.Value = false;
+        }
+
+        /// <summary>
+        /// 몸을 만든다. 프리팹은 맨몸이고, 여기서 받은 장비 세트를 그때 장착한다. 맨손도 무기 한 종류다.
+        /// 밖에서는 Hero·Enemy 의 Init(설계값, 장비 세트) 로 부른다 — 설계값 종류가 둘이 달라서 그쪽이 풀어 넘긴다.
+        /// </summary>
+        protected void Init(StatGroup baseStats, SkillData skill, EquipmentSet equipment)
+        {
+            _baseStats = baseStats;
             _growthBonus = default;
 
             Equipment.Wear(equipment);
-            Combat = new CharacterCombat(this, Equipment, combatPlan);
+            Combat = new CharacterCombat(this, Equipment, skill);
 
-            // 방금 입은 한 벌은 여기서 직접 반영한다. 구독은 그 다음에 바뀌는 것만 받는다.
+            // 방금 장착한 장비 세트는 여기서 직접 반영한다. 구독은 그 다음에 바뀌는 것만 받는다.
             _equipmentBonus = Equipment.TotalStats();
             RefreshStats();
 
@@ -164,6 +191,8 @@ namespace Sayne
             _motion.Bind(this);
             _skin.Bind(this);
             _skin.SetSortingLayer(SortingLayer);
+
+            _height = _skin.GetHeight();
         }
 
         /// <summary>성장 몫을 갈아끼운다. 성장은 오르기만 하고, 늘어난 MaxHP 만큼 현재 HP 도 같이 차오른다 — 성장이 벌점이 되지 않게.</summary>
@@ -224,7 +253,7 @@ namespace Sayne
         /// <summary>
         /// 맞아서 잠깐 움찔한다. 그 사이엔 못 움직이고 못 때린다.
         /// 기술(스킬·궁극기)을 쓰는 중엔 움찔하지 않는다 — 기술 클립은 끝까지 재생돼야 한다.
-        /// 스킬을 끊는 건 수동 이동과 쓰러짐·죽음뿐이고, 궁극기는 이동으로도 끊기지 않는다.
+        /// 스킬을 끊는 건 수동 이동과 Dying·죽음뿐이고, 궁극기는 이동으로도 끊기지 않는다.
         /// </summary>
         public void Stagger(float seconds)
         {
@@ -286,25 +315,24 @@ namespace Sayne
         }
 
         /// <summary>
-        /// 맞는다. HP 가 0 이 되면 쓰러질 뿐 죽음처리는 하지 않는다 — Fell 을 받은 매니저가 정한다.
-        /// 쓰러진 채 죽음처리를 기다리는 몸은 마네킹처럼 계속 맞고, 데미지도 계속 뜬다.
+        /// 맞는다. HP 가 0 이 되면 Dying 이 될 뿐 죽음처리는 하지 않는다 — StartedDying 을 받은 매니저가 정한다.
+        /// Dying 인 몸은 죽음처리를 기다리며 계속 맞고, 데미지도 계속 뜬다.
         /// </summary>
         public void TakeDamage(int amount)
         {
             // 죽음처리까지 끝난 몸은 다시 죽지 않는다. 시체를 때려도 아무 일도 일어나지 않는다.
-            if (_isDead)
+            if (IsDead)
             {
                 return;
             }
 
-            var wasAlive = IsAlive;
             _currentHP.Value = Mathf.Max(_currentHP.Value - amount, 0);
 
             _damaged.OnNext(amount);
 
-            if (wasAlive && !IsAlive)
+            if (IsAlive && _currentHP.Value == 0)
             {
-                Fall();
+                StartDying();
             }
         }
 
@@ -314,7 +342,7 @@ namespace Sayne
             return _skin.FadeOut(seconds);
         }
 
-        /// <summary>HP 를 채운다. 최대치를 넘지 않고, 쓰러진 몸은 차오르지 않는다.</summary>
+        /// <summary>HP 를 채운다. 최대치를 넘지 않고, Dying·시체는 차오르지 않는다.</summary>
         public void Heal(int amount)
         {
             if (!IsAlive)
@@ -326,20 +354,19 @@ namespace Sayne
         }
 
         /// <summary>HP 가 0 이 된 순간. 움직임을 멈추고 맞는 자세로 굳는다.</summary>
-        private void Fall()
+        private void StartDying()
         {
-            StopMove();
+            _moveDirection = Vector3.zero;
             _stagger?.Dispose();
             _stagger = null;
-            _state.Value = CharacterStateType.Hit;
+            _state.Value = CharacterStateType.Dying;
 
-            _fell.OnNext(this);
+            _startedDying.OnNext(this);
         }
 
-        /// <summary>죽음처리. 쓰러지는 모션이 나가고 Died 가 울린다. 수명 주인(매니저)만 부른다.</summary>
+        /// <summary>죽음처리. 죽는 모션이 나가고 Died 가 울린다. 수명 주인(매니저)만 부른다.</summary>
         public void Die()
         {
-            _isDead = true;
             _state.Value = CharacterStateType.Death;
 
             _died.OnNext(this);
@@ -352,9 +379,10 @@ namespace Sayne
             _state.Dispose();
             _looked.Dispose();
             _damaged.Dispose();
-            _fell.Dispose();
+            _startedDying.Dispose();
             _died.Dispose();
             _isOnUltimateStage.Dispose();
+            _isUsingUltimate.Dispose();
             _stagger?.Dispose();
             Combat?.Dispose();
             Equipment.Dispose();

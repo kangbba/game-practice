@@ -27,7 +27,6 @@ namespace Sayne.Editor
             new TrailSpec { Prefab = "Staff", Color = new Color(0.62f, 0.4f, 0.95f), Seconds = 0.18f, Width = 0.5f },
         };
 
-        [MenuItem("★Sayne★/장비/무기 트레일 재빌드", false, 120)]
         private static void Build()
         {
             foreach (var spec in Specs)

@@ -16,13 +16,10 @@ namespace Sayne
         /// <summary>날아간 자리에 남는 궤적. 투사체는 알갱이가 작아서 이게 없으면 눈으로 못 쫓는다.</summary>
         [SerializeField] private TrailRenderer _trail;
 
-        /// <summary>목표의 발밑이 아니라 가슴께로 날아간다. 타격 이펙트가 터지는 높이와 같다.</summary>
-        private const float ChestHeight = 0.9f;
-
         /// <summary>목표를 잃고도 영영 날아다니지 않게 두는 수명(초).</summary>
         private const float MaxLifetime = 3f;
 
-        private Transform _target;
+        private Character _target;
         private Vector3 _destination;
         private Action _arrived;
 
@@ -35,8 +32,15 @@ namespace Sayne
             }
         }
 
+        /// <summary>크기를 배수만큼 키운다. 궤적 굵기도 같이 키워야 몸통만 커 보이지 않는다.</summary>
+        public void SetScale(float scale)
+        {
+            transform.localScale *= scale;
+            _trail.widthMultiplier *= scale;
+        }
+
         /// <summary>쏜다. 도착하면 arrived 가 불린다 — 날아가는 동안 목표가 죽었어도 도착은 한다.</summary>
-        public void Launch(Vector3 from, Transform target, Action arrived)
+        public void Launch(Vector3 from, Character target, Action arrived)
         {
             transform.position = from;
 
@@ -44,7 +48,7 @@ namespace Sayne
             _trail.Clear();
 
             _target = target;
-            _destination = ChestPointOf(target);
+            _destination = target.CenterPoint;
             _arrived = arrived;
 
             Destroy(gameObject, MaxLifetime);
@@ -52,10 +56,10 @@ namespace Sayne
 
         private void Update()
         {
-            // 목표가 죽어 사라졌으면 마지막으로 본 자리까지 마저 날아간다. 허공에서 멈추는 것보다 자연스럽다.
+            // 목표의 몸 한가운데를 쫓는다. 죽어 사라졌으면 마지막으로 본 자리까지 마저 날아간다 — 허공에서 멈추는 것보다 자연스럽다.
             if (_target != null)
             {
-                _destination = ChestPointOf(_target);
+                _destination = _target.CenterPoint;
             }
 
             var offset = _destination - transform.position;
@@ -77,11 +81,6 @@ namespace Sayne
             Destroy(gameObject);
 
             _arrived();
-        }
-
-        private static Vector3 ChestPointOf(Transform target)
-        {
-            return target.position + new Vector3(0f, ChestHeight, 0f);
         }
     }
 }

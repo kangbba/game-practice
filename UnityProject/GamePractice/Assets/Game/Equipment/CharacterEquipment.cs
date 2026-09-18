@@ -42,6 +42,22 @@ namespace Sayne
             return total;
         }
 
+        /// <summary>지금 낀 파츠의 ID 들. 벗은 자리는 빠진다 — EquipmentManager.CreateSet 에 넘기면 같은 장비 세트가 다시 만들어진다.</summary>
+        public List<string> WornIDs()
+        {
+            var ids = new List<string>();
+
+            foreach (var property in _parts.Values)
+            {
+                if (property.Value != null)
+                {
+                    ids.Add(property.Value.ID);
+                }
+            }
+
+            return ids;
+        }
+
         public void Wear(EquipmentPart part)
         {
             _parts[part.Slot].Value = part;
@@ -52,7 +68,7 @@ namespace Sayne
             _parts[slot].Value = null;
         }
 
-        /// <summary>한 벌을 통째로 갈아입는다. 한 벌에 없는 자리는 벗는다.</summary>
+        /// <summary>장비 세트를 통째로 장착한다. 세트에 없는 부위는 해제한다.</summary>
         public void Wear(EquipmentSet equipment)
         {
             foreach (var slot in EquipmentSlots.All)

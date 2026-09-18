@@ -15,14 +15,19 @@ namespace Sayne
         /// <summary>골드 구슬에 들어가는 그림.</summary>
         public Sprite CoinIcon => (Sprite)Get(AssetAddresses.CoinIcon);
 
+        /// <summary>회복 구슬에 들어가는 그림.</summary>
+        public Sprite HealIcon => (Sprite)Get(AssetAddresses.HealIcon);
+
         protected override async UniTask OnLoadAsync()
         {
-            var (orb, coin) = await UniTask.WhenAll(
+            var (orb, coin, heal) = await UniTask.WhenAll(
                 LoadAssetByAddressAsync<GameObject>(AssetAddresses.DropOrb),
-                LoadAssetByAddressAsync<Sprite>(AssetAddresses.CoinIcon));
+                LoadAssetByAddressAsync<Sprite>(AssetAddresses.CoinIcon),
+                LoadAssetByAddressAsync<Sprite>(AssetAddresses.HealIcon));
 
             Register(AssetAddresses.DropOrb, orb);
             Register(AssetAddresses.CoinIcon, coin);
+            Register(AssetAddresses.HealIcon, heal);
         }
     }
 }

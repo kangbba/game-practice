@@ -47,7 +47,6 @@ namespace Sayne.Editor
                 : $"[미싱] 모두 {total}개. '미싱 스크립트 걷어내기' 로 지운다.");
         }
 
-        [MenuItem("★Sayne★/공통/미싱 스크립트 걷어내기", false, 57)]
         public static void Clean()
         {
             if (!EditorUtility.DisplayDialog(

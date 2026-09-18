@@ -8,7 +8,7 @@ using Script = Sayne.HeroActionPoseAuthoring.Script;
 namespace Sayne
 {
     /// <summary>
-    /// 7초 궁극기 안무. 한 번 크게 내려찍던 옛 궁극기(Archive/Ultimate_v1)를 대신한다.
+    /// 궁극기 안무 — 7초 동작 뒤에 가만히 선 정지가 붙는다(전체 길이는 CharacterAnimations.UltimateDuration). 한 번 크게 내려찍던 옛 궁극기(Archive/Ultimate_v1)를 대신한다.
     ///
     /// 기 모으기(무기가 하늘 끝까지 자란다) → 베기 셋 → 공중제비 도약 → 낙하 강타
     /// → 마무리 회전 베기 → 공중제비로 내려와 착지해 가만히 선다. 전부 제자리다 — 앞뒤로 움직이지 않는다.
@@ -108,6 +108,9 @@ namespace Sayne
                 new Beat(6.12f, Ground(-.42f, 22, 62, -42, 32, -.9f, .08f, -.40f, -360), Ease.Smooth),
                 new Beat(6.36f, Air(3.0f, 8, 105, -62, 45, -.3f, .12f, -.18f, .5f, -160), Ease.Out),
                 new Beat(6.62f, Ground(-.30f, 14, 42, -42, 24, -.5f, .15f, -.30f), Ease.In),
+                new Beat(7.00f, default, Ease.Smooth),
+
+                // ── 정지: 칼을 거두고 가만히 선 채 버틴다. 이 사이에 뒤늦은 광역 도트가 좌르륵 들어간다(MeleeWeapon).
                 new Beat(duration, default, Ease.Smooth),
             };
 

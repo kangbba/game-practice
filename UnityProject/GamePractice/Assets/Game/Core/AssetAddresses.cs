@@ -10,9 +10,12 @@ namespace Sayne
         public const string MainMap = "WorldMap";
         public const string EquipmentLabel = "Equipment";
         public const string ProfilesLabel = "Profiles";
-        public const string EnemyPlansLabel = "EnemyPlans";
-        public const string HeroPlansLabel = "HeroPlans";
+        public const string EnemyDataLabel = "EnemyData";
+        public const string HeroDataLabel = "HeroData";
         public const string EquipmentPlansLabel = "EquipmentPlans";
+
+        /// <summary>로딩 화면. 다른 에셋보다 먼저 혼자 불린다.</summary>
+        public const string LoadingPanel = "LoadingPanel";
 
         public const string OverlayHPBar = "OverlayHPBar";
         public const string WorldHPBar = "WorldHPBar";
@@ -30,9 +33,13 @@ namespace Sayne
         // 팝업. 종류와의 짝은 PopupTypes.GetAddress 가 든다.
         public const string GrowthWindow = "GrowthWindow";
         public const string EquipmentWindow = "EquipmentWindow";
+        public const string FormationWindow = "FormationWindow";
 
         /// <summary>골드 드랍 구슬에 들어가는 동전 그림.</summary>
         /// <summary>코인 그림. 에셋 파일명이 Gold 라 주소도 그대로다.</summary>
         public const string CoinIcon = "Gold";
+
+        /// <summary>회복 구슬 그림. 에셋 파일명이 Heal 이라 주소도 그대로다.</summary>
+        public const string HealIcon = "Heal";
     }
 }

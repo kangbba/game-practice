@@ -49,8 +49,8 @@ namespace Sayne
         /// <summary>발밑 바: 발에서 화면 아래쪽으로 내리는 월드 거리.</summary>
         private const float FootHPBarGap = 0.2f;
 
-        /// <summary>발밑 바: 프리팹 1픽셀이 월드 몇 단위인가. 160픽셀 폭이면 0.8 단위다.</summary>
-        private const float FootHPBarScale = 0.005f;
+        /// <summary>발밑 바: 프리팹 1픽셀이 월드 몇 단위인가. 160픽셀 폭이면 2.24 단위다.</summary>
+        private const float FootHPBarScale = 0.014f;
 
         /// <summary>발밑 바는 적 레이어에서 몸보다 위에 그린다 — 무리 속에서도 바가 몸에 묻히지 않는다.</summary>
         private const int FootHPBarSortingOrder = 100;
@@ -62,7 +62,7 @@ namespace Sayne
         private readonly CameraManager _cameraManager;
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
-        private readonly WaveManager _waveManager;
+        private readonly StageManager _stageManager;
         private readonly QuestManager _questManager;
         private readonly CurrencyManager _currencyManager;
         private readonly GrowthManager _growthManager;
@@ -82,7 +82,7 @@ namespace Sayne
         public BattlePanel BattlePanel { get; private set; }
 
         public ScreenUIManager(PauseManager pauseManager, CameraManager cameraManager,
-            HeroManager heroManager, EnemyManager enemyManager, WaveManager waveManager, QuestManager questManager,
+            HeroManager heroManager, EnemyManager enemyManager, StageManager stageManager, QuestManager questManager,
             CurrencyManager currencyManager, GrowthManager growthManager, EquipmentManager equipmentManager,
             UltimateDirector ultimateDirector, PopupManager popupManager, IAssets<CharacterProfile> profiles, IAssets<Hero> heroAssets,
             IScreenUIAssets assets)
@@ -91,7 +91,7 @@ namespace Sayne
             _cameraManager = cameraManager;
             _heroManager = heroManager;
             _enemyManager = enemyManager;
-            _waveManager = waveManager;
+            _stageManager = stageManager;
             _questManager = questManager;
             _currencyManager = currencyManager;
             _growthManager = growthManager;
@@ -116,14 +116,16 @@ namespace Sayne
             }
 
             BattlePanel = Object.Instantiate(_assets.BattlePanelPrefab, _canvas.transform);
-            BattlePanel.Init(_heroManager, _waveManager, _questManager, _currencyManager, _growthManager,
-                _profiles, _popupManager);
+            BattlePanel.Init(_heroManager, _stageManager, _questManager, _currencyManager, _growthManager,
+                _profiles, _popupManager, _ultimateDirector);
 
             // 전투 HUD 의 메뉴가 여는 창들. 만들고 여닫는 건 팝업 매니저, 무엇을 볼지는 여기서 넣어 준다.
             _popupManager.Create<GrowthWindow>(PopupType.Growth)
                 .Init(_growthManager, _currencyManager, _heroManager, _heroAssets);
             _popupManager.Create<EquipmentWindow>(PopupType.Equipment)
                 .Init(_equipmentManager, _heroManager, _heroAssets);
+            _popupManager.Create<FormationWindow>(PopupType.Formation)
+                .Init(_heroManager, _heroAssets, _profiles);
 
             _heroManager.Spawned
                 .Merge(_enemyManager.Spawned)
@@ -228,12 +230,13 @@ namespace Sayne
                 .Subscribe(hpBar, (visible, bar) => bar.gameObject.SetActive(visible))
                 .RegisterTo(hpBar.destroyCancellationToken);
 
-            // 바의 수명은 만든 쪽이 쥔다. 몸이 죽는 순간 치우고, 죽지 않고 몸이 치워져도(판 비우기) 같이 치운다 —
-            // 어느 쪽이 먼저 와도 한 번만 돈다.
+            // 바의 수명은 만든 쪽이 쥔다. 몸이 죽는 순간 치우고, 죽지 않고 물러나도(영웅 교체) 그 자리에서 같이 치운다.
+            // 몸이 치워지는 것(판 비우기)도 받는다 — 어느 쪽이 먼저 와도 한 번만 돈다.
             var reap = Disposable.Create((hpBar, currentHP, maxHP),
                 state => DestroyHPBar(state.hpBar, state.currentHP, state.maxHP));
 
             owner.Died
+                .Merge(_heroManager.Despawned.Where(owner, (character, self) => character == self))
                 .Subscribe(reap, (_, disposable) => disposable.Dispose())
                 .RegisterTo(owner.destroyCancellationToken);
 

@@ -50,6 +50,9 @@ namespace Sayne.Editor
                 var glass = AddSprite(root, "Glass", orb, GlassOrder);
                 glass.color = new Color(0.8f, 0.93f, 1f, 0.55f);
 
+                // 구슬은 늘 카메라를 정면으로 본다. 도는 건 카메라 매니저가 활성 빌보드를 모아 한꺼번에 돌린다.
+                root.AddComponent<Billboard>();
+
                 var dropItem = root.AddComponent<DropItem>();
                 var serialized = new SerializedObject(dropItem);
                 serialized.FindProperty("_portrait").objectReferenceValue = portrait;

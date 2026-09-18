@@ -35,7 +35,7 @@ namespace Sayne
         /// <summary>그림이 오른쪽을 보고 있나. 연출은 전부 이 값을 본다.</summary>
         public bool IsFacingRight { get; private set; } = true;
 
-        /// <summary>쓰러지는 모션 길이(초).</summary>
+        /// <summary>죽는 모션 길이(초).</summary>
         public float DeathSeconds => _clipLengths[CharacterAnimations.Death];
 
         /// <summary>그 모션의 클립 길이(초). 컨트롤러에 실린 클립을 그대로 읽는다.</summary>
@@ -175,10 +175,11 @@ namespace Sayne
 
         private void PlayState(CharacterStateType state)
         {
-            // 죽음·피격·걷기는 한 번짜리 모션을 끊고 들어간다.
-            if (state == CharacterStateType.Hit || state == CharacterStateType.Death || state == CharacterStateType.Walk)
+            // 죽음·Dying·피격·걷기는 한 번짜리 모션을 끊고 들어간다.
+            if (state == CharacterStateType.Hit || state == CharacterStateType.Dying
+                || state == CharacterStateType.Death || state == CharacterStateType.Walk)
             {
-                // 기술을 끊는 사유는 쓰러짐(HP 0)과 죽음이다. 움찔은 캐스팅 중엔 걸리지 않는다(Character.Stagger).
+                // 기술을 끊는 사유는 Dying(HP 0)과 죽음이다. 움찔은 캐스팅 중엔 걸리지 않는다(Character.Stagger).
                 // 걷기는 컨트롤러가 이미 CancelCast 로 스킬을 끊은 뒤에만 들어온다.
                 if (state != CharacterStateType.Walk)
                 {
@@ -218,6 +219,8 @@ namespace Sayne
             {
                 CharacterStateType.Walk => CharacterAnimations.Walk,
                 CharacterStateType.Hit => CharacterAnimations.Hit,
+                // Dying 은 따로 모션이 없다. 맞는 자세로 굳어 있는다.
+                CharacterStateType.Dying => CharacterAnimations.Hit,
                 CharacterStateType.Death => CharacterAnimations.Death,
                 CharacterStateType.Idle => CharacterAnimations.Idle,
                 _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)

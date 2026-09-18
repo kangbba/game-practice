@@ -4,22 +4,27 @@ using UnityEngine;
 
 namespace Sayne
 {
-    /// <summary>중앙 상단 스테이지 정보: 단계 이름, 진행바, 킬 카운트. 웨이브 상태를 구독해서 그리기만 한다.</summary>
+    /// <summary>중앙 상단 스테이지 정보: 단계 이름, 진행바, 킬 카운트. 웨이브 시작·처치 수를 구독해서 그리기만 한다.</summary>
     public class StageWidget : MonoBehaviour
     {
         [SerializeField] private TextMeshProUGUI _stageText;
         [SerializeField] private SlicedFillBar _progressFill;
         [SerializeField] private TextMeshProUGUI _killLabel;
 
-        public void Init(WaveManager waveManager)
+        private StageManager _stageManager;
+
+        public void Init(StageManager stageManager)
         {
-            waveManager.Label
-                .Subscribe(this, (label, self) => self._stageText.text = label)
+            _stageManager = stageManager;
+
+            DrawWave();
+
+            stageManager.WaveStarted
+                .Subscribe(this, (_, self) => self.DrawWave())
                 .AddTo(this);
 
-            waveManager.Kills
-                .CombineLatest(waveManager.Goal, (kills, goal) => (kills, goal))
-                .Subscribe(this, (progress, self) => self.DrawKills(progress.kills, progress.goal))
+            stageManager.WaveKills
+                .Subscribe(this, (kills, self) => self.DrawKills(kills, self._stageManager.WaveGoal))
                 .AddTo(this);
         }
 
@@ -29,6 +34,14 @@ namespace Sayne
             _stageText.text = stageName;
 
             DrawKills(kills, goal);
+        }
+
+        /// <summary>웨이브가 바뀌면 명패와 목표 수를 새로 그린다.</summary>
+        private void DrawWave()
+        {
+            _stageText.text = _stageManager.Label;
+
+            DrawKills(_stageManager.WaveKills.CurrentValue, _stageManager.WaveGoal);
         }
 
         private void DrawKills(int current, int max)

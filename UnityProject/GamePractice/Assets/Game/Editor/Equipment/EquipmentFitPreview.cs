@@ -63,7 +63,6 @@ namespace Sayne.Editor
         /// 무기 프리팹마다 Weapon 으로 그림을 다시 세워 저장한다. 게임에선 무기가 생길 때 스스로 세우지만,
         /// 에디터 캡처·아이콘은 저장된 모습을 그대로 찍으므로 프리팹 값을 파일에서 고쳤으면 이걸 한 번 돌린다.
         /// </summary>
-        [MenuItem("★Sayne★/장비/무기 규격 다시 세우기", false, 121)]
         public static void ArrangeWeapons()
         {
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { $"{EquipmentCatalogBuilder.Root}/Weapon" }))
@@ -111,8 +110,8 @@ namespace Sayne.Editor
             Debug.Log($"EquipmentFitPreview: {Path.GetFullPath(Output)}");
         }
 
-        /// <summary>outfitOwner 의 신발·몸통과 철투구를 입혀 찍는다. null 이면 구워진 기본 차림 그대로.</summary>
-        private static void Render(string hero, string outfitOwner)
+        /// <summary>setOwner 의 신발·몸통과 철투구를 장착해 찍는다. null 이면 구워진 기본 상태 그대로.</summary>
+        private static void Render(string hero, string setOwner)
         {
             var scene = EditorSceneManager.NewPreviewScene();
             var pipeline = GraphicsSettings.defaultRenderPipeline;
@@ -131,15 +130,15 @@ namespace Sayne.Editor
                 var graphic = instance.transform.Find("Graphic");
                 foreach (var animator in instance.GetComponentsInChildren<Animator>()) animator.enabled = false;
                 HeroActionAnimationBuilder.DressPreview(graphic, hero);
-                if (outfitOwner != null)
+                if (setOwner != null)
                 {
                     var skin = graphic.GetComponent<CharacterSkin>();
-                    var chest = outfitOwner == "Aldric" ? "AldricCoat" : outfitOwner == "Kage" ? "KageArmor" : "NyxDress";
+                    var chest = setOwner == "Aldric" ? "AldricCoat" : setOwner == "Kage" ? "KageArmor" : "NyxDress";
                     skin.Wear(EquipmentSlot.Boots, AssetDatabase.LoadAssetAtPath<GameObject>(
-                        $"{EquipmentCatalogBuilder.ItemFolder(EquipmentSlot.Boots, outfitOwner + "Boots")}/{outfitOwner}Boots.prefab"));
+                        $"{EquipmentCatalogBuilder.ItemFolder(EquipmentSlot.Boots, setOwner + "Boots")}/{setOwner}Boots.prefab"));
                     skin.Wear(EquipmentSlot.Chest, AssetDatabase.LoadAssetAtPath<GameObject>(
                         $"{EquipmentCatalogBuilder.ItemFolder(EquipmentSlot.Chest, chest)}/{chest}.prefab"));
-                    if (outfitOwner == hero) skin.Wear(EquipmentSlot.Helmet,
+                    if (setOwner == hero) skin.Wear(EquipmentSlot.Helmet,
                         AssetDatabase.LoadAssetAtPath<GameObject>($"{EquipmentCatalogBuilder.ItemFolder(EquipmentSlot.Helmet, "IronHelm")}/IronHelm.prefab"));
                 }
                 var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"Assets/DarkFantasy2D/Animations/Heroes/{hero}/Idle.anim");
@@ -161,7 +160,7 @@ namespace Sayne.Editor
                 capture = new Texture2D(768, 768, TextureFormat.RGBA32, false);
                 capture.ReadPixels(new Rect(0, 0, 768, 768), 0, 0);
                 capture.Apply();
-                File.WriteAllBytes($"{Output}/{hero}-{(outfitOwner == null ? "base" : $"wears-{outfitOwner}")}.png", capture.EncodeToPNG());
+                File.WriteAllBytes($"{Output}/{hero}-{(setOwner == null ? "base" : $"wears-{setOwner}")}.png", capture.EncodeToPNG());
             }
             finally
             {

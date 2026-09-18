@@ -81,14 +81,9 @@ namespace Sayne
                 .Subscribe(this, (_, self) => self.Redraw())
                 .AddTo(this);
 
-            heroManager.Spawned
-                .Subscribe(this, (character, self) =>
-                {
-                    if (character is Hero hero)
-                    {
-                        self.SetHero(hero);
-                    }
-                })
+            heroManager.CurrentHero
+                .Where(hero => hero != null)
+                .Subscribe(this, (hero, self) => self.SetHero(hero))
                 .AddTo(this);
         }
 
@@ -97,7 +92,7 @@ namespace Sayne
         {
             _hero = hero;
 
-            // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 입은 한 벌이 그대로 입혀진다.
+            // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 장착한 장비 세트가 그대로 장착된다.
             _previewStage.SetDoll(_heroAssets.Get(hero.ID));
 
             foreach (var slot in EquipmentSlots.All)

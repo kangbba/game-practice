@@ -11,8 +11,8 @@ namespace Sayne
     /// </summary>
     public class ScreenBlurManager : ManagerBase
     {
-        /// <summary>반씩 몇 번 줄이나. 세 번이면 1/8 — 이중선형으로 줄이는 것만으로도 이미 한 번 번진다.</summary>
-        private const int HalvingCount = 3;
+        /// <summary>반씩 몇 번 줄이나. 두 번이면 1/4 — 이중선형으로 줄이는 것만으로도 이미 한 번 번진다. 세 번(1/8)은 뒤 화면이 알아볼 수 없을 만큼 뭉개졌다.</summary>
+        private const int HalvingCount = 2;
 
         private RenderTexture _screen;
         private readonly RenderTexture[] _steps = new RenderTexture[HalvingCount];

@@ -30,7 +30,6 @@ namespace Sayne.Editor
         /// <summary>다 누운 각도. 원본이 +z 로 넘어가므로(뒤로 눕는다) 방향은 그대로 따른다.</summary>
         private const float LieAngle = 90f;
 
-        [MenuItem("★Sayne★/공통/죽는 모션 다시 굽기", false, 59)]
         public static void Build()
         {
             var clips = AssetDatabase.FindAssets($"t:AnimationClip {ClipName}", new[] { ClipRoot })

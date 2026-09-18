@@ -16,7 +16,7 @@ namespace Sayne
         private readonly EnemyManager _enemyManager;
         private readonly GrowthManager _growthManager;
         private readonly CurrencyManager _currencyManager;
-        private readonly WaveManager _waveManager;
+        private readonly StageManager _stageManager;
 
         private readonly Dictionary<(RecordType type, string key), ReactiveProperty<long>> _records =
             new Dictionary<(RecordType, string), ReactiveProperty<long>>();
@@ -25,12 +25,12 @@ namespace Sayne
         private float _playTime;
 
         public RecordManager(EnemyManager enemyManager, GrowthManager growthManager,
-            CurrencyManager currencyManager, WaveManager waveManager)
+            CurrencyManager currencyManager, StageManager stageManager)
         {
             _enemyManager = enemyManager;
             _growthManager = growthManager;
             _currencyManager = currencyManager;
-            _waveManager = waveManager;
+            _stageManager = stageManager;
         }
 
         protected override void OnInit()
@@ -56,7 +56,7 @@ namespace Sayne
                 .Subscribe(this, (gold, self) => self.Add(RecordType.GoldEarned, gold))
                 .RegisterTo(LifeToken);
 
-            _waveManager.WaveStarted
+            _stageManager.WaveStarted
                 .Subscribe(this, (_, self) => self.Add(RecordType.WaveReach, 1))
                 .RegisterTo(LifeToken);
 

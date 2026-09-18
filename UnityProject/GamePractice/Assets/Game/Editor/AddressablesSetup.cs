@@ -18,7 +18,6 @@ namespace Sayne.Editor
         private const string MapsRoot = "Assets/Game/Maps";
         private const string EquipmentRoot = "Assets/Game/Equipment";
 
-        [MenuItem("★Sayne★/3. 어드레서블 셋업 (SpeechBubbleWidget·Gold 주소)", false, 3)]
         public static void Setup()
         {
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
@@ -35,18 +34,20 @@ namespace Sayne.Editor
             count += MarkFolder(settings, group, HeroesRoot, AssetAddresses.ProfilesLabel, "t:CharacterProfile");
             count += MarkFolder(settings, group, EnemiesRoot, AssetAddresses.ProfilesLabel, "t:CharacterProfile");
 
-            // 적 설계값도 적 폴더에 같이 둔다. 스탯·한 벌·싸움 방식·드랍이 전부 여기 한 장에 있다.
-            count += MarkFolder(settings, group, EnemiesRoot, AssetAddresses.EnemyPlansLabel, "t:EnemyPlan");
+            // 적 설계값도 적 폴더에 같이 둔다. 스탯·시작 장비 세트·싸움 방식·드랍이 전부 여기 한 장에 있다.
+            count += MarkFolder(settings, group, EnemiesRoot, AssetAddresses.EnemyDataLabel, "t:EnemyData");
 
             // 히어로 설계값도 마찬가지로 히어로 폴더에 같이 둔다.
-            count += MarkFolder(settings, group, HeroesRoot, AssetAddresses.HeroPlansLabel, "t:HeroPlan");
+            count += MarkFolder(settings, group, HeroesRoot, AssetAddresses.HeroDataLabel, "t:HeroData");
 
             // 장비 설계값(아이템 카드)은 그 아이템 폴더에 프리팹과 같이 둔다.
             count += MarkFolder(settings, group, EquipmentRoot, AssetAddresses.EquipmentPlansLabel, "t:EquipmentPlan");
 
             count += Mark(settings, group, "Assets/Game/Drops/Art/Portraits/Gold.png", null);
+            count += Mark(settings, group, "Assets/Game/Drops/Art/Portraits/Heal.png", null);
             count += Mark(settings, group, "Assets/Game/Drops/DropItem.prefab", null);
 
+            count += Mark(settings, group, "Assets/Game/Loading/LoadingPanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/OverlayHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/WorldHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/DamageText.prefab", null);
@@ -54,6 +55,7 @@ namespace Sayne.Editor
             count += Mark(settings, group, "Assets/Game/UI/BattlePanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/Popup/GrowthWindow.prefab", null);
             count += Mark(settings, group, "Assets/Game/Equipment/UI/EquipmentWindow.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/Popup/FormationWindow.prefab", null);
             count += Mark(settings, group, "Assets/Game/ScreenPerformance/WaveStartPanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/ScreenPerformance/LowHealthPanel.prefab", null);
 

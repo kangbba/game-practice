@@ -9,7 +9,8 @@ namespace Sayne
     /// <summary>
     /// 활 — 투사체를 쏘는 원거리 무기. 평타는 한 발씩 쏘고, 궁극기는 겨눈 자세로 멈춰 선 채 무대 위 적에게 쏟아붓는다.
     /// 궁극기 모션은 정지 자세 하나이고, 얼마나 버틸지는 그 클립 길이다 — 난사는 그 사이를 이 태스크가 채운다.
-    /// 궁극기 위력은 전체 합이다. 한 발은 그걸 발수로 나눈 만큼 때린다.
+    /// 궁극기 위력은 근접 궁극기와 같은 뜻이다 — 무대 위 적 한 마리가 받는 합. 화살은 적에게 고루 흩어지므로
+    /// 한 발은 위력 × 적 수 ÷ 발수만큼 때린다. 전체 합으로 나누면 적이 많을수록 한 마리 몫이 줄어 근접보다 턱없이 약해진다.
     /// </summary>
     public class Bow : Weapon
     {
@@ -30,6 +31,11 @@ namespace Sayne
 
         public override Projectile Projectile => _projectile;
 
+        /// <summary>활은 사거리 끝까지 쏟아붓는다. 평타가 닿는 적이면 궁극기도 닿는다.</summary>
+        public override float UltimateRadius => Range;
+
+        public override string SkillAnimation => CharacterAnimations.SkillRangedName;
+
         protected override string UltimateAnimation => CharacterAnimations.UltimateRangedName;
 
         public override async UniTask PlayUltimateAsync(UltimateStage stage, CancellationToken token)
@@ -40,7 +46,7 @@ namespace Sayne
 
             var seconds = hero.GetMotionSeconds(ultimate.AnimationHash) - LeadSeconds * 2f;
             var shots = Mathf.Max(1, Mathf.RoundToInt(seconds * ShotsPerSecond));
-            var shot = new BasicAttack(ultimate.Name, ultimate.Animation, ultimate.PowerMultiplier / shots,
+            var shot = new BasicAttack(ultimate.Name, ultimate.Animation, ultimate.PowerMultiplier * stage.Targets.Count / shots,
                 staggerSeconds: ShotStaggerSeconds);
 
             await UniTask.Delay(TimeSpan.FromSeconds(LeadSeconds), cancellationToken: token);
@@ -69,7 +75,7 @@ namespace Sayne
 
             var arrow = Instantiate(_projectile);
             arrow.SetSortingLayer(SortingLayers.UltimateEffect);
-            arrow.Launch(muzzle, target.transform, () => stage.Hit(target, shot));
+            arrow.Launch(muzzle, target, () => stage.Hit(target, shot));
         }
     }
 }

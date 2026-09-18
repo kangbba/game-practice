@@ -16,5 +16,6 @@ MonoBehaviour:
   _displayName: 맨손
   _description: 아무것도 들지 않은 상태. 사거리가 짧고 위력이 약하지만 휘두르는 속도는 준수하다.
   _stats:
-  - _type: 0
-    _value: 5
+    _stats:
+    - _type: 0
+      _value: 5

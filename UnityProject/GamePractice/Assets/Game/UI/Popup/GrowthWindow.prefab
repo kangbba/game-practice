@@ -319,7 +319,7 @@ RectTransform:
   - {fileID: 3858596613849749891}
   - {fileID: 6248545650375305839}
   - {fileID: 5997123028805731292}
-  - {fileID: 3474833143961889278}
+  - {fileID: 2988542641679471181}
   m_Father: {fileID: 1584828689731013126}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -946,7 +946,7 @@ MonoBehaviour:
   _goldText: {fileID: 1850235639065786122}
   _statWidgets:
   - {fileID: 8384398751721386707}
-  - {fileID: 1682173581138139377}
+  - {fileID: 1015629963081720642}
   _preview: {fileID: 4677592551134187688}
 --- !u!1 &7518756016623649404
 GameObject:
@@ -1133,7 +1133,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91971fd5d02cc4136b7f590964bc4883, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::Sayne.GrowthStatWidget
---- !u!1001 &7273974124589943283
+--- !u!1001 &9057338131713536576
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -1230,10 +1230,10 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d95fe894605de4fcfb03e954ca6a56f3, type: 3}
---- !u!114 &1682173581138139377 stripped
+--- !u!114 &1015629963081720642 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8334508252567441666, guid: d95fe894605de4fcfb03e954ca6a56f3, type: 3}
-  m_PrefabInstance: {fileID: 7273974124589943283}
+  m_PrefabInstance: {fileID: 9057338131713536576}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
@@ -1241,8 +1241,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91971fd5d02cc4136b7f590964bc4883, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::Sayne.GrowthStatWidget
---- !u!224 &3474833143961889278 stripped
+--- !u!224 &2988542641679471181 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6110063872277422093, guid: d95fe894605de4fcfb03e954ca6a56f3, type: 3}
-  m_PrefabInstance: {fileID: 7273974124589943283}
+  m_PrefabInstance: {fileID: 9057338131713536576}
   m_PrefabAsset: {fileID: 0}

@@ -47,7 +47,7 @@ namespace Sayne
         }
 
         /// <summary>
-        /// 장비창·드랍 구슬에 보이는 그림. 따로 그린 초상화는 없다 — 캐릭터가 실제로 걸치는 장비 프리팹을 아이콘 무대에서 찍은 것이다.
+        /// 장비창·드랍 구슬에 보이는 그림. 따로 그린 초상화는 없다 — 캐릭터가 실제로 장착하는 장비 프리팹을 아이콘 무대에서 찍은 것이다.
         /// 처음 물어볼 때 한 번 찍어 두고 다시 쓴다.
         /// </summary>
         public Sprite GetIcon(string equipmentID)
@@ -66,7 +66,7 @@ namespace Sayne
             return _visuals.Get(equipmentID).GetComponent<IEquipment>().Slot;
         }
 
-        /// <summary>아이템 카드(스탯)와 장비 프리팹(부위·그 부위만의 것)을 묶어 끼울 수 있는 한 벌의 조각으로 만든다.</summary>
+        /// <summary>아이템 카드(스탯)와 장비 프리팹(부위·그 부위만의 것)을 묶어 장착할 수 있는 장비 조각으로 만든다.</summary>
         public EquipmentPart CreatePart(string equipmentID)
         {
             var plan = _plans.Get(equipmentID);
@@ -78,18 +78,20 @@ namespace Sayne
                 : new Cosmetic(equipmentID, visual, slot, plan.Stats);
         }
 
-        /// <summary>자리별 ID 묶음을 실제 파츠 한 벌로 바꾼다. 비어 있는 자리는 벗은 채로 둔다 — 무기 자리만 맨손이 든다.</summary>
-        public EquipmentSet CreateSet(EquipmentIDs ids)
+        /// <summary>장비 세트 데이터(부위별 ID)를 실제 장비 세트로 만든다. 비어 있는 부위는 비워 둔다 — 무기 부위만 맨손이 든다.</summary>
+        public EquipmentSet CreateSet(EquipmentSetData data)
+        {
+            return CreateSet(data.All());
+        }
+
+        /// <summary>장비 ID 들로 장비 세트를 만든다. 무기가 없으면 맨손이 든다.</summary>
+        public EquipmentSet CreateSet(IEnumerable<string> equipmentIDs)
         {
             var set = new EquipmentSet().Put(CreatePart(EquipmentID.Weapon.BareHands));
 
-            foreach (var slot in EquipmentSlots.All)
+            foreach (var id in equipmentIDs)
             {
-                var id = ids.Get(slot);
-                if (!string.IsNullOrEmpty(id))
-                {
-                    set.Put(CreatePart(id));
-                }
+                set.Put(CreatePart(id));
             }
 
             return set;

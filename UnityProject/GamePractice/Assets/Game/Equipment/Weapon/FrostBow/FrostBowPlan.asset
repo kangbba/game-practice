@@ -16,5 +16,6 @@ MonoBehaviour:
   _displayName: 서리 활
   _description: 맞은 자리가 얼어붙는 활. 맞은 적은 한동안 발이 느려진다.
   _stats:
-  - _type: 0
-    _value: 17
+    _stats:
+    - _type: 0
+      _value: 17

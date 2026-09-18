@@ -7,11 +7,12 @@ namespace Sayne
     {
         Growth,
         Equipment,
+        Formation,
     }
 
     public static class PopupTypes
     {
-        public static readonly PopupType[] All = { PopupType.Growth, PopupType.Equipment };
+        public static readonly PopupType[] All = { PopupType.Growth, PopupType.Equipment, PopupType.Formation };
 
         /// <summary>짝지은 프리팹의 어드레서블 주소.</summary>
         public static string GetAddress(PopupType type)
@@ -20,6 +21,7 @@ namespace Sayne
             {
                 PopupType.Growth => AssetAddresses.GrowthWindow,
                 PopupType.Equipment => AssetAddresses.EquipmentWindow,
+                PopupType.Formation => AssetAddresses.FormationWindow,
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };
         }
@@ -31,6 +33,7 @@ namespace Sayne
             {
                 PopupType.Growth => true,
                 PopupType.Equipment => true,
+                PopupType.Formation => true,
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };
         }

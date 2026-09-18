@@ -31,6 +31,15 @@ namespace Sayne.Editor
         /// <summary>성장창 항목 한 줄.</summary>
         private static readonly Vector2 GrowthRowSize = new Vector2(560f, 92f);
 
+        /// <summary>편성창 파티 칸 하나. 넷이 20 간격으로 1200 폭 모달에 좌우 42 여백을 두고 들어간다.</summary>
+        private static readonly Vector2 PartySlotSize = new Vector2(264f, 300f);
+
+        /// <summary>편성창 영웅 명단 카드 한 장. 셋이 파티 칸 줄과 같은 폭(1116)을 채운다.</summary>
+        private static readonly Vector2 FormationHeroSize = new Vector2(358f, 150f);
+
+        /// <summary>영웅 프로필(이름·초상화·고유색). 히어로 폴더에 에셋 이름 = 히어로 ID 로 있다.</summary>
+        private const string HeroesFolder = "Assets/Game/Characters/Heroes";
+
         private const string FontPath = "Assets/Fonts/TMP/SB_Aggro_Bold SDF.asset";
 
         private static readonly Color PanelDark = new Color(0.08f, 0.12f, 0.20f, 0.94f);
@@ -43,6 +52,12 @@ namespace Sayne.Editor
         private static readonly Color EXPGreen = new Color(0.4f, 0.8f, 0.3f);
         private static readonly Color StageBlue = new Color(0.25f, 0.86f, 0.96f);
         private static readonly Color GuideGreen = new Color(0.45f, 0.8f, 0.3f);
+
+        /// <summary>궁극기 버튼 테두리 — 불붙은 금빛. 스킬 버튼과 한눈에 갈려야 한다.</summary>
+        private static readonly Color UltimateRim = new Color(1f, 0.62f, 0.18f);
+
+        /// <summary>스킬 버튼 테두리 — 차가운 하늘색.</summary>
+        private static readonly Color SkillRim = new Color(0.45f, 0.78f, 1f);
         /// <summary>흐린 화면 위의 암막. 흐림이 이미 뒤를 눌러 주니 옅게만 깐다.</summary>
         private static readonly Color PopupDim = new Color(0f, 0f, 0.05f, 0.35f);
 
@@ -58,7 +73,6 @@ namespace Sayne.Editor
         private static Sprite _gauge;
         private static Sprite _glow;
 
-        [MenuItem("★Sayne★/1. 전투 HUD 빌드 (조이스틱 전용 스프라이트 반영)", false, 1)]
         public static void Build()
         {
             BattleHUDArtBuilder.Build();
@@ -95,6 +109,7 @@ namespace Sayne.Editor
             // 팝업은 HUD 에 들지 않는 독립 프리팹이다. PopupManager 가 종류(PopupType)에 짝지어 만든다.
             BuildEquipmentWindow(equipSlotPrefab, equipCandidatePrefab, equipStatRowPrefab);
             BuildGrowthWindow(BuildGrowthStatWidget());
+            BuildFormationWindow(BuildFormationHeroWidget());
 
             ComposePanel(heroProfilePrefab, currencyPrefab, questPrefab, stagePrefab, iconMenuPrefab, circleButtonPrefab,
                 skillButtonPrefab);
@@ -102,7 +117,7 @@ namespace Sayne.Editor
             ComposeWaveStartPanel();
             ComposeLowHealthPanel();
 
-            Debug.Log("BattlePhaseUIBuilder: 위젯 프리팹 12종 + 전투 HUD·웨이브 시작·저체력 패널 재구성 완료");
+            Debug.Log("BattlePhaseUIBuilder: 위젯 프리팹 13종 + 전투 HUD·웨이브 시작·저체력 패널 재구성 완료");
         }
 
         // ---- 위젯 프리팹 ----
@@ -373,6 +388,12 @@ namespace Sayne.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
 
             return SaveWidget(root.gameObject);
+        }
+
+        /// <summary>스킬 버튼의 테두리(Rim) 색.</summary>
+        private static void SetSkillBorder(SkillButtonWidget button, Color color)
+        {
+            button.transform.Find("Rim").GetComponent<Image>().color = color;
         }
 
         private static GameObject BuildEquipmentSlotWidget()
@@ -749,6 +770,192 @@ namespace Sayne.Editor
             return SavePopup(popup.gameObject);
         }
 
+        /// <summary>
+        /// 편성창 영웅 카드. 왼쪽에 고유색 띠와 초상화 메달, 오른쪽에 이름과 "출전 중 / 대기".
+        /// 카드 전체가 버튼이다. 출전 중이면 금빛 테두리가 켜진다.
+        /// </summary>
+        private static GameObject BuildFormationHeroWidget()
+        {
+            var root = WidgetRoot("FormationHeroWidget", FormationHeroSize);
+            var bg = Img(root, Color.white, _panel);
+            bg.raycastTarget = true;
+            var button = root.gameObject.AddComponent<Button>();
+            button.targetGraphic = bg;
+            StyleButton(button);
+
+            var themeBar = Img(Rect(root, "ThemeBar", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(12f, 0f),
+                new Vector2(8f, FormationHeroSize.y - 28f)), Color.white, _rounded);
+
+            // 초상화는 명패(HeroProfileWidget)와 같은 비율로 원 안에 얼굴이 오게 올려 담는다.
+            var medallion = Rect(root, "Portrait", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(30f, 0f), new Vector2(118f, 118f));
+            Img(medallion, Color.white, _medallion);
+            var clip = Rect(medallion, "PortraitMask", Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.zero, new Vector2(102f, 102f));
+            Img(clip, Color.white, _circle);
+            clip.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+            var portrait = Icon(clip, "HeroPortrait", "Portraits/HeroPortrait", Vector2.one * 0.5f, new Vector2(0f, 22f), new Vector2(108f, 108f));
+
+            var nameText = FitText(Text(
+                Rect(root, "NameText", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(166f, 18f), new Vector2(176f, 40f)),
+                "-", 30f, TextWhite, HorizontalAlignmentOptions.Left), 18f);
+
+            var stateText = Text(
+                Rect(root, "StateText", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(166f, -24f), new Vector2(176f, 28f)),
+                "대기", 18f, TextGray, HorizontalAlignmentOptions.Left);
+
+            // 출전 중 테두리. 가운데를 비운 9슬라이스라 테두리만 그려진다.
+            var selectedMark = Stretch(root, "SelectedMark", 0f);
+            var selectedFrame = Img(selectedMark, Gold, _rounded);
+            selectedFrame.fillCenter = false;
+            selectedFrame.pixelsPerUnitMultiplier = 0.5f;
+            selectedMark.gameObject.SetActive(false);
+
+            var widget = root.gameObject.AddComponent<FormationHeroWidget>();
+            var so = new SerializedObject(widget);
+            so.FindProperty("_button").objectReferenceValue = button;
+            so.FindProperty("_portrait").objectReferenceValue = portrait;
+            so.FindProperty("_themeBar").objectReferenceValue = themeBar;
+            so.FindProperty("_nameText").objectReferenceValue = nameText;
+            so.FindProperty("_stateText").objectReferenceValue = stateText;
+            so.FindProperty("_selectedMark").objectReferenceValue = selectedMark.gameObject;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            return SaveWidget(root.gameObject);
+        }
+
+        /// <summary>
+        /// 편성 모달. 위 = 파티 칸 넷(첫 칸만 진짜, 나머지 셋은 잠긴 장식), 아래 = 영웅 명단과 오른쪽 아래 적용 버튼.
+        /// 첫 칸에는 성장창·장비창과 같은 프리뷰 무대가 꽂혀 지금 영웅이 입은 그대로 선다.
+        /// 명단 카드는 HeroID.All 순서로 깔고, 누가 누구인지는 여기서 프로필을 보고 구워 둔다.
+        /// </summary>
+        private static GameObject BuildFormationWindow(GameObject heroPrefab)
+        {
+            const float margin = 42f;
+            const float slotGap = 20f;
+            const float top = -72f;
+            const float slotTop = top - 36f;
+            var rosterTop = slotTop - PartySlotSize.y - 24f;
+            var rosterCardTop = rosterTop - 36f;
+            var rosterGap = (PartySlotSize.x * 4f + slotGap * 3f - FormationHeroSize.x * HeroID.All.Length) / (HeroID.All.Length - 1);
+
+            var applyTop = rosterCardTop - FormationHeroSize.y - 16f;
+            var applySize = new Vector2(240f, 56f);
+
+            var modalSize = new Vector2(margin * 2f + PartySlotSize.x * 4f + slotGap * 3f, -applyTop + applySize.y + 24f);
+
+            var popup = PopupRoot("FormationWindow");
+            var root = Rect(popup, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), modalSize);
+            Img(root, Color.white, _panel).raycastTarget = true;
+
+            Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -16f), new Vector2(200f, 36f)),
+                "편성", 26f, TextWhite, HorizontalAlignmentOptions.Left);
+            var closeBtn = MakeButton(root, "CloseBtn", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-12f, -12f), new Vector2(48f, 48f), "X");
+
+            // ---- 위: 파티 칸 넷 ----
+            Text(Rect(root, "PartyHeader", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(margin, top), new Vector2(800f, 26f)),
+                "파티  <size=80%>첫 칸의 영웅이 지금 싸운다</size>", 16f, TextGray, HorizontalAlignmentOptions.Left);
+
+            var leaderSlot = Rect(root, "PartySlot_1", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(margin, slotTop), PartySlotSize);
+            Img(leaderSlot, Color.white, _panel);
+
+            // 프리뷰 칸은 아래 이름판 자리를 비우고 칸을 채운다. 그림은 런타임에 프리뷰 무대의 텍스처가 꽂힌다.
+            var previewFrame = Stretch(leaderSlot, "PreviewFrame", 10f);
+            previewFrame.offsetMin = new Vector2(10f, 58f);
+            Img(previewFrame, PanelDarker, _rounded);
+            var preview = Stretch(previewFrame, "Preview", 6f).gameObject.AddComponent<RawImage>();
+            preview.raycastTarget = false;
+            preview.enabled = false;
+
+            var leaderTag = Rect(leaderSlot, "LeaderTag", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -18f), new Vector2(64f, 26f));
+            Img(leaderTag, Gold, _gauge).type = Image.Type.Sliced;
+            Text(Stretch(leaderTag, "Text", 2f), "리더", 15f, PanelDarker);
+
+            var leaderName = FitText(Text(
+                Rect(leaderSlot, "LeaderName", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 10f), new Vector2(PartySlotSize.x - 24f, 40f)),
+                "-", 26f, Gold), 16f);
+
+            // 나머지 셋은 잠긴 칸이다. 누를 것도 바뀔 것도 없는 장식이라 컴포넌트를 달지 않는다.
+            for (var i = 1; i < 4; i++)
+            {
+                var slot = Rect(root, $"PartySlot_{i + 1}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(margin + (PartySlotSize.x + slotGap) * i, slotTop), PartySlotSize);
+                Img(slot, new Color(0.62f, 0.64f, 0.72f), _panel);
+                Img(Stretch(slot, "Inner", 10f), PanelDarker, _rounded);
+
+                Text(Rect(slot, "Number", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(22f, -16f), new Vector2(40f, 30f)),
+                    $"{i + 1}", 22f, new Color(1f, 1f, 1f, 0.25f), HorizontalAlignmentOptions.Left);
+                var lockIcon = Icon(slot, "Lock", "Icons/Lock", Vector2.one * 0.5f, new Vector2(0f, 28f), new Vector2(72f, 72f));
+                lockIcon.color = new Color(0.64f, 0.68f, 0.80f, 0.8f);
+                Text(Rect(slot, "LockedText", Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(0f, -36f), new Vector2(220f, 32f)),
+                    "잠김", 22f, TextGray);
+                Text(Rect(slot, "LockedHint", Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(0f, -68f), new Vector2(220f, 26f)),
+                    "파티 사냥 준비 중", 15f, new Color(0.65f, 0.65f, 0.7f, 0.7f));
+            }
+
+            // ---- 아래: 영웅 명단 ----
+            Text(Rect(root, "RosterHeader", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(margin, rosterTop), new Vector2(800f, 26f)),
+                "영웅  <size=80%>고르고 적용을 누르면 첫 칸의 영웅이 바뀐다. 웨이브는 그대로 이어진다</size>", 16f, TextGray, HorizontalAlignmentOptions.Left);
+
+            // 적용 버튼은 명단 아래 오른쪽. 쓰러진 동안은 막히고, 그때만 켜지는 안내가 버튼 왼쪽에 붙는다.
+            var applyBtn = MakeButton(root, "ApplyBtn", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-margin, applyTop), applySize, "적용");
+
+            var downHint = Text(
+                Rect(root, "DownHint", new Vector2(1f, 1f), new Vector2(1f, 0.5f),
+                    new Vector2(-margin - applySize.x - 20f, applyTop - applySize.y * 0.5f), new Vector2(360f, 26f)),
+                "쓰러진 동안은 바꿀 수 없다", 16f, new Color(0.9f, 0.45f, 0.45f), HorizontalAlignmentOptions.Right);
+            downHint.gameObject.SetActive(false);
+
+            var heroWidgets = new FormationHeroWidget[HeroID.All.Length];
+            for (var i = 0; i < heroWidgets.Length; i++)
+            {
+                var heroID = HeroID.All[i];
+                heroWidgets[i] = Place<FormationHeroWidget>(heroPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(margin + (FormationHeroSize.x + rosterGap) * i, rosterCardTop));
+                heroWidgets[i].Setup(heroID, HeroProfile(heroID));
+                heroWidgets[i].SetSelected(i == 0);
+                heroWidgets[i].SetDeployed(i == 0);
+            }
+
+            leaderName.text = HeroProfile(HeroID.All[0]).DisplayName;
+
+            var window = popup.gameObject.AddComponent<FormationWindow>();
+            var so = new SerializedObject(window);
+            BindPopup(so, popup);
+            so.FindProperty("_closeBtn").objectReferenceValue = closeBtn;
+            so.FindProperty("_applyBtn").objectReferenceValue = applyBtn;
+            so.FindProperty("_leaderPreview").objectReferenceValue = preview;
+            so.FindProperty("_leaderName").objectReferenceValue = leaderName;
+            so.FindProperty("_downHint").objectReferenceValue = downHint.gameObject;
+
+            var widgets = so.FindProperty("_heroWidgets");
+            widgets.arraySize = heroWidgets.Length;
+            for (var i = 0; i < heroWidgets.Length; i++)
+            {
+                widgets.GetArrayElementAtIndex(i).objectReferenceValue = heroWidgets[i];
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            foreach (var widget in heroWidgets)
+            {
+                foreach (var component in widget.GetComponentsInChildren<Component>(true))
+                {
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(component.gameObject);
+                }
+            }
+
+            return SavePopup(popup.gameObject);
+        }
+
+        private static CharacterProfile HeroProfile(string heroID)
+        {
+            var profile = AssetDatabase.LoadAssetAtPath<CharacterProfile>($"{HeroesFolder}/{heroID}/{heroID}.asset");
+            if (profile == null) throw new System.InvalidOperationException($"Hero profile missing: {heroID}");
+            return profile;
+        }
+
         private static EquipmentSlotWidget PlaceSlot(GameObject slotPrefab, RectTransform parent, EquipmentSlot slot,
             Vector2 pos, Vector2 size)
         {
@@ -944,12 +1151,13 @@ namespace Sayne.Editor
             var bottomMenus = new[] { ("성장", "HealSkill", -246f), ("장비", "Shield", -132f), ("편성", "HeroPortrait", 132f), ("심연 장비", "Chest", 246f) };
             Button equipMenuButton = null;
             Button growthMenuButton = null;
+            Button formationMenuButton = null;
             foreach (var (label, iconName, offsetX) in bottomMenus)
             {
                 var menu = Place<IconMenuWidget>(iconMenuPrefab, bottomBar, Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(offsetX, 0f));
                 ((RectTransform)menu.transform).sizeDelta = new Vector2(100f, 104f);
                 menu.SetLabel(label);
-                SetMenuIcon(menu, iconName, label != "장비" && label != "성장");
+                SetMenuIcon(menu, iconName, label != "장비" && label != "성장" && label != "편성");
                 if (label == "장비")
                 {
                     equipMenuButton = MenuButton(menu);
@@ -958,18 +1166,26 @@ namespace Sayne.Editor
                 {
                     growthMenuButton = MenuButton(menu);
                 }
+                if (label == "편성")
+                {
+                    formationMenuButton = MenuButton(menu);
+                }
             }
             var centerSlot = Place<CircleButtonWidget>(circleButtonPrefab, bottomBar, Vector2.one * 0.5f, Vector2.one * 0.5f, new Vector2(0f, 14f));
             ((RectTransform)centerSlot.transform).sizeDelta = new Vector2(104f, 104f);
             centerSlot.SetText(string.Empty);
             Icon((RectTransform)centerSlot.transform, "Crest", "Icons/Summon", Vector2.one * 0.5f, new Vector2(0f, 8f), new Vector2(62f, 62f));
             Text(Rect((RectTransform)centerSlot.transform, "Caption", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 8f), new Vector2(88f, 24f)), "전투", 18f, Gold);
-            var skillButton = Place<SkillButtonWidget>(skillButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-28f, 28f));
-            skillButton.Preview("스킬", cooldownRatio: 0f, cooldownRemain: 0f);
-            var ultimateButton = Place<SkillButtonWidget>(skillButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-192f, 52f));
-            ((RectTransform)ultimateButton.transform).sizeDelta = new Vector2(112f, 112f);
+            // 궁극기가 모서리의 큰 버튼, 스킬은 그 왼쪽의 작은 버튼. 크기와 테두리 색 둘 다로 갈라 헷갈리지 않게 한다.
+            var ultimateButton = Place<SkillButtonWidget>(skillButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-28f, 28f));
+            ((RectTransform)ultimateButton.transform).sizeDelta = new Vector2(172f, 172f);
             ultimateButton.Preview("궁극기", cooldownRatio: 0f, cooldownRemain: 0f);
             ultimateButton.transform.Find("Icon").GetComponent<Image>().sprite = Art("Icons/Ultimate");
+            SetSkillBorder(ultimateButton, UltimateRim);
+            var skillButton = Place<SkillButtonWidget>(skillButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-218f, 44f));
+            ((RectTransform)skillButton.transform).sizeDelta = new Vector2(116f, 116f);
+            skillButton.Preview("스킬", cooldownRatio: 0f, cooldownRemain: 0f);
+            SetSkillBorder(skillButton, SkillRim);
             BuildBottomLeftDecorations(root);
 
             // 부활 텍스트
@@ -990,6 +1206,7 @@ namespace Sayne.Editor
             so.FindProperty("_ultimateButton").objectReferenceValue = ultimateButton;
             so.FindProperty("_equipMenuButton").objectReferenceValue = equipMenuButton;
             so.FindProperty("_growthMenuButton").objectReferenceValue = growthMenuButton;
+            so.FindProperty("_formationMenuButton").objectReferenceValue = formationMenuButton;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             foreach (var component in panelRoot.GetComponentsInChildren<Component>(true))

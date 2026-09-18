@@ -88,14 +88,9 @@ namespace Sayne
 
             CollectCandidates();
 
-            heroManager.Spawned
-                .Subscribe(this, (character, self) =>
-                {
-                    if (character is Hero hero)
-                    {
-                        self.SetHero(hero);
-                    }
-                })
+            heroManager.CurrentHero
+                .Where(hero => hero != null)
+                .Subscribe(this, (hero, self) => self.SetHero(hero))
                 .AddTo(this);
         }
 
@@ -332,7 +327,7 @@ namespace Sayne
 
         private void SetHero(Hero hero)
         {
-            // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 입은 한 벌이 그대로 입혀진다.
+            // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 장착한 장비 세트가 그대로 장착된다.
             _previewStage.SetDoll(_heroAssets.Get(hero.ID));
 
             // 장비 상태가 후보보다 먼저다. 부활하면 창에는 죽은 히어로가 입던 게 남아 있다.
@@ -385,7 +380,7 @@ namespace Sayne
 
         private void Equip(string equipmentID)
         {
-            var hero = FirstAliveHero();
+            var hero = _heroManager.FindFirstAliveHero();
 
             if (hero != null)
             {
@@ -395,7 +390,7 @@ namespace Sayne
 
         private void Unequip(EquipmentSlot slot)
         {
-            var hero = FirstAliveHero();
+            var hero = _heroManager.FindFirstAliveHero();
 
             if (hero != null)
             {
@@ -403,17 +398,5 @@ namespace Sayne
             }
         }
 
-        private Hero FirstAliveHero()
-        {
-            foreach (var hero in _heroManager.CurrentHeroes)
-            {
-                if (hero != null && hero.IsAlive)
-                {
-                    return hero;
-                }
-            }
-
-            return null;
-        }
     }
 }

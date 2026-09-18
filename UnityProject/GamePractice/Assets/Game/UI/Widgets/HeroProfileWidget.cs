@@ -29,7 +29,8 @@ namespace Sayne
                 .Subscribe(this, (ratio, self) => self._expFill.FillAmount = ratio)
                 .AddTo(this);
 
-            heroManager.Spawned
+            heroManager.CurrentHero
+                .Where(hero => hero != null)
                 .Subscribe((self: this, profiles), (hero, state) => state.self.SetHero(hero, state.profiles.Get(hero.ID)))
                 .AddTo(this);
         }

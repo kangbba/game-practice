@@ -54,6 +54,6 @@ MonoBehaviour:
   _tip: {fileID: 0}
   _sizeScale: 1
   _ultimateName: 
-  _ultimatePowerMultiplier: 3
+  _ultimatePowerMultiplier: 7
   _ultimateCooldown: 30
   _ultimateParticleID: 

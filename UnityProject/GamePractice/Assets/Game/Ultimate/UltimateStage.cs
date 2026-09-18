@@ -9,11 +9,14 @@ namespace Sayne
     /// </summary>
     public class UltimateStage
     {
+        private readonly EnemyManager _enemyManager;
+
         public Hero Hero { get; }
         public IReadOnlyList<Enemy> Targets { get; }
 
-        public UltimateStage(Hero hero, IReadOnlyList<Enemy> targets)
+        public UltimateStage(EnemyManager enemyManager, Hero hero, IReadOnlyList<Enemy> targets)
         {
+            _enemyManager = enemyManager;
             Hero = hero;
             Targets = targets;
         }
@@ -34,20 +37,10 @@ namespace Sayne
             Hero.Combat.Hit(target, attack);
         }
 
-        /// <summary>아직 서 있는 적 하나를 아무나 고른다. 다 쓰러졌으면 null.</summary>
+        /// <summary>아직 서 있는 적 하나를 아무나 고른다. 다 죽었으면 null.</summary>
         public Enemy PickTarget()
         {
-            var standing = new List<Enemy>();
-
-            foreach (var target in Targets)
-            {
-                if (!target.IsDead)
-                {
-                    standing.Add(target);
-                }
-            }
-
-            return standing.Count > 0 ? standing[Random.Range(0, standing.Count)] : null;
+            return _enemyManager.PickStandingEnemy(Targets);
         }
 
         /// <summary>
@@ -56,19 +49,7 @@ namespace Sayne
         /// </summary>
         public void FaceNearest()
         {
-            Enemy nearest = null;
-            var nearestDistance = float.MaxValue;
-
-            foreach (var target in Targets)
-            {
-                var distance = (target.transform.position - Hero.transform.position).sqrMagnitude;
-
-                if (!target.IsDead && distance < nearestDistance)
-                {
-                    nearest = target;
-                    nearestDistance = distance;
-                }
-            }
+            var nearest = _enemyManager.FindNearestStandingEnemy(Targets, Hero.transform.position);
 
             if (nearest != null)
             {

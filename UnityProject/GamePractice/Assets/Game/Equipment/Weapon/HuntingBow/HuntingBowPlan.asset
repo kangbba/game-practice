@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: 사냥꾼의 활
   _description: 가볍게 당겨 빠르게 쏘는 활. 위력은 낮지만 쉴 틈 없이 쏜다.
   _stats:
-  - _type: 0
-    _value: 15
-  - _type: 2
-    _value: 0.3
+    _stats:
+    - _type: 0
+      _value: 15
+    - _type: 2
+      _value: 0.3

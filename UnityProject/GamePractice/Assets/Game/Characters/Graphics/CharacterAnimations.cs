@@ -8,7 +8,8 @@ namespace Sayne
 
         // 모션을 새로 구울 때의 기본 길이. 런타임은 이 값이 아니라 클립의 실제 길이를 읽는다(CharacterMotion.GetClipSeconds).
         public const float SkillDuration = 1.05f;
-        public const float UltimateDuration = 7f;
+        /// <summary>근접 궁극기 길이. 안무 7초 뒤에 정적 0.4초 + 뒤늦은 광역 도트 2.5초 동안 가만히 선 자세가 붙는다.</summary>
+        public const float UltimateDuration = 9.9f;
         public const float SkillImpact = .29f;
 
         /// <summary>
@@ -17,9 +18,15 @@ namespace Sayne
         /// </summary>
         public const string HitFrameEvent = "OnHitFrame";
 
-        public const string SkillName = "Skill";
+        // 스킬·궁극기 모션은 근접·원거리가 짝을 이룬다. 스킬은 캐릭터 것, 궁극기는 무기 것이지만
+        // 모션은 둘 다 캐릭터 애니메이터에 있으므로 어느 짝을 틀지는 지금 든 무기 계열이 정한다(Weapon.SkillAnimation·UltimateAnimation).
 
-        public const string UltimateName = "Ultimate";
+        public const string SkillMeleeName = "SkillMelee";
+
+        /// <summary>원거리 계열 스킬: 겨눈 채 멈춰 선 자세 하나. 그 영웅의 근접 스킬과 같은 시간만큼 버틴다.</summary>
+        public const string SkillRangedName = "SkillRanged";
+
+        public const string UltimateMeleeName = "UltimateMelee";
 
         /// <summary>원거리 계열 궁극기: 겨눈 채 멈춰 선 자세 하나. 클립 길이만큼 버틴다.</summary>
         public const string UltimateRangedName = "UltimateRanged";

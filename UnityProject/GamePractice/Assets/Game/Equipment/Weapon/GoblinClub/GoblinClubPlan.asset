@@ -16,5 +16,6 @@ MonoBehaviour:
   _displayName: 고블린 곤봉
   _description: 고블린이 휘두르는 낡은 곤봉. 위력은 낮지만 쉬지 않고 달려든다.
   _stats:
-  - _type: 0
-    _value: 5
+    _stats:
+    - _type: 0
+      _value: 5

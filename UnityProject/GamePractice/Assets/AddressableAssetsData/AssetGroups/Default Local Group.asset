@@ -34,10 +34,10 @@ MonoBehaviour:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 14d9cb9c731d44d2b00f57ee17f27060
-    m_Address: KagePlan
+    m_Address: KageData
     m_ReadOnly: 0
     m_SerializedLabels:
-    - HeroPlans
+    - HeroData
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1b1df5167a404ff39eaf9cbae42ce287
     m_Address: Ogre
@@ -56,6 +56,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1e9b291bdc8114160bee346752b01204
+    m_Address: LoadingPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1edff58a37774f67a43703f038d579ba
     m_Address: KageArmorPlan
@@ -80,6 +85,12 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels:
     - EquipmentPlans
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 27fa9356bc7c4f13aa38dee1c01851a6
+    m_Address: OgreBoss
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Profiles
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 28ae9f60fe75c44ba87fb7251391ecf8
     m_Address: Nyx
@@ -222,6 +233,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6eceb00b73c7b446089187276d0b1e96
+    m_Address: FormationWindow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 70221331b05241e0b65f309e8738f5ca
     m_Address: Scythe
     m_ReadOnly: 0
@@ -229,10 +245,10 @@ MonoBehaviour:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 75945ba2b6784ba68642193cc5942267
-    m_Address: ArmedOgrePlan
+    m_Address: ArmedOgreData
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EnemyPlans
+    - EnemyData
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 76f3ad4c3fc44bbda8751c11c42fc8e8
     m_Address: Nyx
@@ -286,10 +302,10 @@ MonoBehaviour:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 903be332b4d24a3fa54447ba7ee468d5
-    m_Address: OgrePlan
+    m_Address: OgreData
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EnemyPlans
+    - EnemyData
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 92d8850d0e2749d4b3a2b00d91521f78
     m_Address: Sword
@@ -330,16 +346,16 @@ MonoBehaviour:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: adb3eb5c18c242be905cce0614f25747
-    m_Address: OgreBossPlan
+    m_Address: OgreBossData
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EnemyPlans
+    - EnemyData
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b091fbea5e0744239faa67e9e8f682d1
-    m_Address: GoblinPlan
+    m_Address: GoblinData
     m_ReadOnly: 0
     m_SerializedLabels:
-    - EnemyPlans
+    - EnemyData
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b1d11bc227d443238c637b56ef1370ca
     m_Address: Portal
@@ -366,10 +382,10 @@ MonoBehaviour:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c14ce73f61ec4c01b5f4fe64dad2008a
-    m_Address: AldricPlan
+    m_Address: AldricData
     m_ReadOnly: 0
     m_SerializedLabels:
-    - HeroPlans
+    - HeroData
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c2f325fa0255d460a9e9a708c5f8f510
     m_Address: OverlaySpeechBubble
@@ -441,10 +457,10 @@ MonoBehaviour:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e697d407c1804ae09a50e515caf6a4c8
-    m_Address: NyxPlan
+    m_Address: NyxData
     m_ReadOnly: 0
     m_SerializedLabels:
-    - HeroPlans
+    - HeroData
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ee43b4921792489abc01a5f42e096441
     m_Address: AldricUltimate

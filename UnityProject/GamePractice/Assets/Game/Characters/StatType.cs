@@ -19,7 +19,6 @@ namespace Sayne
     {
         /// <summary>
         /// 전부, enum 에 적은 순서 그대로. 손으로 다시 적지 않는다 — 목록이 두 벌이면 한쪽만 고치는 순간 어긋난다.
-        /// 칸 번호가 곧 StatType 값이라 StatGroup 가 이걸 색인으로 쓴다.
         /// </summary>
         public static readonly StatType[] All = (StatType[])Enum.GetValues(typeof(StatType));
 

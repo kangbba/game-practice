@@ -25,7 +25,6 @@ namespace Sayne.Editor
 
         private const int AtlasSize = 4096;
 
-        [MenuItem("★Sayne★/공통/폰트 다시 굽기", false, 50)]
         public static void Rebake()
         {
             var source = AssetDatabase.LoadAssetAtPath<Font>(SourcePath);

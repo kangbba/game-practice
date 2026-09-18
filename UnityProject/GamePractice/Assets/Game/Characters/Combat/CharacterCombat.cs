@@ -8,13 +8,12 @@ namespace Sayne
 {
     /// <summary>
     /// 캐릭터의 싸움 담당. 무엇으로 어떻게 때리는지를 안다.
-    /// 싸우는 방식은 CombatPlan 선언에서 오고, 공격 수치는 낀 무기에서 꺼낸다.
+    /// 스킬은 설계값에서 오고, 평타·궁극기와 공격 수치는 낀 무기에서 꺼낸다.
     /// </summary>
     public class CharacterCombat : IDisposable
     {
         private readonly Subject<BasicAttack> _attacked = new Subject<BasicAttack>();
         private readonly Subject<BasicAttack> _hitMoment = new Subject<BasicAttack>();
-        private readonly Subject<Unit> _ultimateRequested = new Subject<Unit>();
 
         private readonly ReactiveProperty<bool> _isCasting = new ReactiveProperty<bool>();
 
@@ -27,20 +26,37 @@ namespace Sayne
         /// <summary>기술 타격이 아직 안 나갔다. 모션보다 늦게 오는 타격이 있어도 잠금이 먼저 풀리지 않는다.</summary>
         private bool _castHitPending;
 
-        /// <summary>궁극기 연출 전체(컷씬부터 배경이 돌아올 때까지)가 도는 중이다. 모션보다 훨씬 길게 잠근다.</summary>
-        private bool _ultimateRunning;
-
         /// <summary>타격을 클립 이벤트로 받는 기술이 도는 중이면 그 기술. 이벤트가 올 때 이걸로 판정한다.</summary>
         private CharacterSkill _clipAttack;
         private readonly Character _owner;
+
+        /// <summary>캐릭터의 스킬 설계값. 모션이 무기를 따라가므로 굳힌 스킬은 무기를 바꿔 들 때마다 다시 만든다.</summary>
+        private readonly SkillData _skillData;
+        private CharacterSkill _skill;
+        private Weapon _skillWeapon;
         private readonly CharacterEquipment _equipment;
-        private readonly CombatPlan _plan;
 
         /// <summary>평타 4콤보가 도는 사이클.</summary>
         public AttackCycle Cycle { get; }
 
         /// <summary>스킬. 궁극기와 같은 꼴이고 쿨이 짧다. 없는 캐릭터면 null — 적이 그렇다.</summary>
-        public CharacterSkill Skill { get; }
+        /// <summary>
+        /// 스킬. 이름·위력·쿨은 캐릭터 것이고, 모션은 지금 든 무기 계열(근접·원거리)을 따른다.
+        /// 무기를 바꿔 들었을 때만 새로 만든다 — 같은 무기인 동안은 같은 객체라 "이 타격이 스킬인가"를 비교로 가린다.
+        /// </summary>
+        public CharacterSkill Skill
+        {
+            get
+            {
+                if (_skillWeapon != Weapon)
+                {
+                    _skillWeapon = Weapon;
+                    _skill = _skillData.ToSkill(Weapon.SkillAnimation);
+                }
+
+                return _skill;
+            }
+        }
 
         /// <summary>
         /// 궁극기. 캐릭터가 아니라 든 무기의 것이다 — 무기를 바꿔 들면 궁극기도 바뀐다.
@@ -83,16 +99,35 @@ namespace Sayne
         }
 
         /// <summary>
-        /// 기술을 쓰는 중인가. 모션이 안 끝났거나 타격이 아직 안 나갔거나 궁극기 연출이 도는 중이면 참이다.
+        /// 상대와 좌우로 최소 이만큼은 떨어져 선다. 사거리가 Z 를 빡세게 보니 비스듬히 다가가면
+        /// Z 만 맞추고 X 는 거의 0 인 채로 사거리에 들어 몸이 겹친다 — 그걸 막는 몸 간격이다.
+        /// </summary>
+        public const float MinGap = 1.6f;
+
+        /// <summary>다가갈 때 노리는 좌우 간격. MinGap 보다 넉넉해서 경계에서 섰다 걸었다 하지 않는다.</summary>
+        private const float StandGap = 2f;
+
+        /// <summary>상대 옆에 설 자리. 지금 내가 있는 쪽 옆, 상대와 같은 줄(Z)이다.</summary>
+        public static Vector3 StandPoint(Vector3 self, Vector3 target)
+        {
+            var side = self.x >= target.x ? 1f : -1f;
+            return new Vector3(target.x + side * StandGap, self.y, target.z);
+        }
+
+        /// <summary>여기서 멈춰 때려도 되는가. 닿는 거리 안이고, 좌우로 겹치지 않았다.</summary>
+        public static bool IsStandable(Vector3 offset, float reach)
+        {
+            return DistanceOf(offset) <= reach && Mathf.Abs(offset.x) >= MinGap;
+        }
+
+        /// <summary>
+        /// 기술을 쓰는 중인가. 모션이 안 끝났거나 타격이 아직 안 나갔으면 참이다.
         /// 이 동안은 평타·다른 기술·이동 어느 커맨드도 받지 않는다 — 시간 비교가 아니라 상태로 잠근다.
         /// </summary>
         public bool IsCasting => _isCasting.Value;
 
         /// <summary>같은 잠금을 UI 가 구독하는 통로. 캐스팅 중엔 발동 버튼이 꺼져 있어야 한다.</summary>
         public ReadOnlyReactiveProperty<bool> Casting => _isCasting;
-
-        /// <summary>궁극기 연출 전체가 도는 중이다. 스킬과 달리 이동으로도 끊을 수 없다.</summary>
-        public bool IsUsingUltimate => _ultimateRunning;
 
         public bool CanAttack => !IsCasting && _owner.CanAct && !_owner.IsMoving && AttackCooldown.IsReady;
         public bool CanUseSkill => CanCast(Skill, SkillCooldown);
@@ -104,16 +139,12 @@ namespace Sayne
         /// <summary>② 맞는 순간이 됐다. 이때 대상을 다시 찾아 판정한다 — 아무도 없으면 헛친다.</summary>
         public Observable<BasicAttack> HitMoment => _hitMoment;
 
-        /// <summary>궁극기를 눌렀다. 연출의 주인(UltimateDirector)이 이걸 받아 순서대로 굴린다.</summary>
-        public Observable<Unit> UltimateRequested => _ultimateRequested;
-
-        public CharacterCombat(Character owner, CharacterEquipment equipment, CombatPlan plan)
+        public CharacterCombat(Character owner, CharacterEquipment equipment, SkillData skill)
         {
             _owner = owner;
             _equipment = equipment;
-            _plan = plan;
             Cycle = new AttackCycle();
-            Skill = plan.Skill;
+            _skillData = skill;
 
             // 태어나자마자 기술부터 쏘지 않게, 방금 쓴 것과 같은 상태로 시작한다.
             StartOnCooldown(Skill, SkillCooldown);
@@ -155,8 +186,9 @@ namespace Sayne
             // 몸이 그 모션을 실제로 가졌는지는 CharacterMotion 이 다시 한 번 추린다.
             var animation = CharacterAnimations.ComboNames[step % CharacterAnimations.ComboNames.Length];
 
+            // 영웅의 평타만 움찔하게 한다. 적의 평타까지 움찔하게 하면 계속 얻어맞는 동안 영웅 조작이 막힌다.
             // 마지막 타가 조금 더 오래 움찔하게 해서 묶음의 맺음을 준다.
-            var stagger = _plan.ComboStaggers ? (step == comboCount - 1 ? 0.28f : 0.16f) : 0f;
+            var stagger = _owner is Hero ? (step == comboCount - 1 ? 0.28f : 0.16f) : 0f;
 
             return new BasicAttack($"평타{step + 1}", animation, 1f, staggerSeconds: stagger);
         }
@@ -168,24 +200,19 @@ namespace Sayne
         }
 
         /// <summary>
-        /// 궁극기를 누른다. 여기선 쿨을 돌리고 잠그고 알리기만 한다 — 휘두르는 건 연출이 무대를 다 깐 뒤
-        /// PerformUltimateAsync 로 하고, 잠금은 연출이 끝나며 EndUltimate 로 푼다.
-        /// 쿨이 안 돌았거나 궁극기가 없으면 아무 일도 없다.
+        /// 궁극기를 쓸 수 있으면 멈춰 서고 쿨을 돌린 뒤 참을 돌려준다. 못 쓰면 아무 일 없이 거짓.
+        /// 휘두르는 건 연출이 무대를 다 깐 뒤 PerformUltimateAsync 로 한다 — 여기선 전투 쪽 준비만 한다.
         /// </summary>
-        public void UseUltimate()
+        public bool TryStartUltimate()
         {
             if (!CanUseUltimate)
             {
-                return;
+                return false;
             }
 
             _owner.StopMove();
             UltimateCooldown.Begin(Ultimate.Cooldown);
-
-            _ultimateRunning = true;
-            SyncCasting();
-
-            _ultimateRequested.OnNext(Unit.Default);
+            return true;
         }
 
         /// <summary>
@@ -199,14 +226,7 @@ namespace Sayne
             return UniTask.WaitUntil(() => !_castMotionRunning && !_castHitPending, cancellationToken: token);
         }
 
-        /// <summary>궁극기 연출이 끝났다. 잠금을 푼다.</summary>
-        public void EndUltimate()
-        {
-            _ultimateRunning = false;
-            SyncCasting();
-        }
-
-        /// <summary>스킬 모션과 아직 안 나간 타격을 끊는다. 궁극기 연출 잠금은 건드리지 않는다.</summary>
+        /// <summary>스킬 모션과 아직 안 나간 타격을 끊는다.</summary>
         public void CancelCast()
         {
             if (!IsCasting) return;
@@ -281,10 +301,10 @@ namespace Sayne
             SyncCasting();
         }
 
-        /// <summary>잠금은 모션·타격 대기·궁극기 연출의 합집합이다. 이 한 줄 밖에서 _isCasting 을 건드리는 곳은 없다.</summary>
+        /// <summary>잠금은 모션·타격 대기의 합집합이다. 이 한 줄 밖에서 _isCasting 을 건드리는 곳은 없다.</summary>
         private void SyncCasting()
         {
-            _isCasting.Value = _castMotionRunning || _castHitPending || _ultimateRunning;
+            _isCasting.Value = _castMotionRunning || _castHitPending;
         }
 
         /// <summary>휘두르기 시작 — 모션을 알리고, 타격 시점에 판정 신호를 낸다. 이전 타격 판정은 여기서 끊긴다.</summary>
@@ -354,7 +374,6 @@ namespace Sayne
             _hitTimer?.Dispose();
             _isCasting.Dispose();
             _hitMoment.Dispose();
-            _ultimateRequested.Dispose();
             _attacked.Dispose();
             AttackCooldown.Dispose();
             SkillCooldown.Dispose();

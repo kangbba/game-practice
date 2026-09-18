@@ -150,7 +150,7 @@ MonoBehaviour:
   _tip: {fileID: 5987539447910080254}
   _sizeScale: 0.8
   _ultimateName: "\uB208\uBCF4\uB77C \uD654\uC0B4"
-  _ultimatePowerMultiplier: 3
+  _ultimatePowerMultiplier: 7
   _ultimateCooldown: 30
   _ultimateParticleID: 
   _projectile: {fileID: 7700000000000000004, guid: 9787db3211e4446d9c1d4d7b2126ca72, type: 3}

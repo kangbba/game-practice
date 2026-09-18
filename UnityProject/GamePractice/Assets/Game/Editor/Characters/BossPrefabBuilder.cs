@@ -20,7 +20,6 @@ namespace Sayne.Editor
         /// <summary>살짝 붉은 기운. 같은 오우거라도 한눈에 보스로 읽히게 한다.</summary>
         private static readonly Color Tint = new Color(1f, 0.76f, 0.7f);
 
-        [MenuItem("★Sayne★/적/보스 프리팹 재빌드", false, 110)]
         public static void Build()
         {
             var source = AssetDatabase.LoadAssetAtPath<GameObject>(SourcePath);

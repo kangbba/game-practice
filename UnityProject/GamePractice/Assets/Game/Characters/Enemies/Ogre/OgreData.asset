@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a476257acfdc1494588d31f822316879, type: 3}
+  m_Name: OgreData
+  m_EditorClassIdentifier:
+  _enemyID: Ogre
+  _baseStats:
+    _stats:
+    - _type: 1
+      _value: 120
+    - _type: 2
+      _value: 1.2
+  _prefabID: 
+  _equipmentSet:
+    _mainHand: BareHands
+    _offHand: 
+    _helmet: 
+    _chest: 
+    _greaves: 
+    _boots: 
+  _skill:
+    _name: 
+    _powerMultiplier: 0
+    _cooldown: 0
+  _expReward: 30
+  _drops:
+  - _equipmentID: OgreClub
+    _chance: 0.03
+  - _equipmentID: NyxDress
+    _chance: 0.03
+  - _equipmentID: AldricBoots
+    _chance: 0.03
+  - _equipmentID: KageBoots
+    _chance: 0.03

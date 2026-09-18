@@ -46,14 +46,15 @@ namespace Sayne.Editor
         {
             var output = Path.GetFullPath("HUDPreviews");
             Directory.CreateDirectory(output);
-            Render(output, 1920, 1080, false);
-            Render(output, 2340, 1080, false);
-            Render(output, 1920, 1080, true);
+            Render(output, 1920, 1080, null);
+            Render(output, 2340, 1080, null);
+            Render(output, 1920, 1080, PopupType.Equipment);
+            Render(output, 1920, 1080, PopupType.Formation);
             RenderQuestStates(output);
             Debug.Log($"Battle HUD validation passed. Previews: {output}");
         }
 
-        private static void Render(string output, int width, int height, bool isEquipment)
+        private static void Render(string output, int width, int height, PopupType? popup)
         {
             var scene = EditorSceneManager.NewPreviewScene();
             var previousPipeline = GraphicsSettings.defaultRenderPipeline;
@@ -100,13 +101,18 @@ namespace Sayne.Editor
                 ValidateRaycasts(panel);
                 Canvas.ForceUpdateCanvases();
                 ValidateLayout(safeRect);
-                if (isEquipment)
+                if (popup == PopupType.Equipment)
                 {
                     // 팝업은 HUD 밖 독립 프리팹이다. 게임처럼 HUD 위에 화면을 꽉 채워 띄운다.
                     var popupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Equipment/UI/EquipmentWindow.prefab");
                     var window = Object.Instantiate(popupPrefab, canvas.transform, false).GetComponent<EquipmentWindow>();
                     ValidateBindings(window.gameObject);
                     PreviewEquipment(window);
+                }
+                if (popup == PopupType.Formation)
+                {
+                    var popupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/UI/Popup/FormationWindow.prefab");
+                    ValidateBindings(Object.Instantiate(popupPrefab, canvas.transform, false));
                 }
                 Canvas.ForceUpdateCanvases();
                 foreach (var text in canvas.GetComponentsInChildren<TextMeshProUGUI>()) text.ForceMeshUpdate();
@@ -115,7 +121,7 @@ namespace Sayne.Editor
                 capture = new Texture2D(width, height, TextureFormat.RGB24, false);
                 capture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 capture.Apply();
-                var suffix = isEquipment ? "-equipment" : string.Empty;
+                var suffix = popup == null ? string.Empty : $"-{popup.Value.ToString().ToLowerInvariant()}";
                 File.WriteAllBytes(Path.Combine(output, $"battle-hud-{width}x{height}{suffix}.png"), capture.EncodeToPNG());
             }
             finally
@@ -279,9 +285,9 @@ namespace Sayne.Editor
             var raycastTargets = 0;
             foreach (var graphic in root.GetComponentsInChildren<Graphic>())
                 if (graphic.raycastTarget) raycastTargets++;
-            // 조이스틱 + 스킬·궁극기·장비·성장 버튼.
-            if (raycastTargets != 5)
-                throw new InvalidOperationException($"Expected joystick and four interactive HUD buttons, found {raycastTargets} raycast targets.");
+            // 조이스틱 + 스킬·궁극기·장비·성장·편성 버튼.
+            if (raycastTargets != 6)
+                throw new InvalidOperationException($"Expected joystick and five interactive HUD buttons, found {raycastTargets} raycast targets.");
         }
 
         private static void ValidateLayout(RectTransform safeArea)

@@ -28,7 +28,7 @@ namespace Sayne
 
         private readonly PauseManager _pauseManager;
         private readonly HeroManager _heroManager;
-        private readonly WaveManager _waveManager;
+        private readonly StageManager _stageManager;
         private readonly IAssets<CharacterProfile> _profiles;
         private readonly UltimateCutscenePanel _ultimatePanelPrefab;
         private readonly WaveStartPanel _waveStartPanelPrefab;
@@ -44,13 +44,13 @@ namespace Sayne
 
         public ReadOnlyReactiveProperty<bool> IsPerforming => _isPerforming;
 
-        public ScreenPerformanceManager(PauseManager pauseManager, HeroManager heroManager, WaveManager waveManager,
+        public ScreenPerformanceManager(PauseManager pauseManager, HeroManager heroManager, StageManager stageManager,
             IAssets<CharacterProfile> profiles, UltimateCutscenePanel ultimatePanelPrefab,
             WaveStartPanel waveStartPanelPrefab, LowHealthPanel lowHealthPanelPrefab)
         {
             _pauseManager = pauseManager;
             _heroManager = heroManager;
-            _waveManager = waveManager;
+            _stageManager = stageManager;
             _profiles = profiles;
             _ultimatePanelPrefab = ultimatePanelPrefab;
             _waveStartPanelPrefab = waveStartPanelPrefab;
@@ -63,7 +63,7 @@ namespace Sayne
 
             _pauseManager.PauseWhile(_isPerforming);
 
-            _waveManager.WaveStarted
+            _stageManager.WaveStarted
                 .Subscribe(this, (number, self) => self.PlayWaveStartAsync(number.stage, number.wave).Forget())
                 .RegisterTo(LifeToken);
 
@@ -136,7 +136,7 @@ namespace Sayne
         private async UniTaskVoid PlayWaveStartAsync(int stage, int wave)
         {
             var panel = Object.Instantiate(_waveStartPanelPrefab, _canvas.transform);
-            panel.Init(_waveManager.GetLabel(stage, wave));
+            panel.Init(_stageManager.GetLabel(stage, wave));
 
             // 창이 열려 게임이 멈춰 있어도 알림은 제 시간에 사라진다. 패널 연출도 unscaled 로 돈다.
             await UniTask.Delay(TimeSpan.FromSeconds(1.5f), DelayType.UnscaledDeltaTime, cancellationToken: LifeToken);

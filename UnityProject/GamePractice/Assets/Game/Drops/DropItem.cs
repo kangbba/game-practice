@@ -15,6 +15,10 @@ namespace Sayne
         private const float BobHeight = 0.12f;
         private const float BobSeconds = 1.2f;
 
+        /// <summary>주워질 때 부푸는 배수와 사라지는 데 걸리는 시간.</summary>
+        private const float VanishScale = 1.8f;
+        private const float VanishSeconds = 0.18f;
+
         /// <summary>
         /// 착지하고 이만큼 눈에 보인 뒤에야 주울 수 있다. 근접 영웅은 흡입 반경 안에서 적을 잡으므로,
         /// 이게 없으면 구슬이 튀어 오르기도 전에 빨려 들어가 떨어진 걸 볼 수가 없다.
@@ -64,6 +68,20 @@ namespace Sayne
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo)
                 .SetLink(gameObject);
+        }
+
+        /// <summary>주워지는 순간. 잠깐 부풀었다가 흐려지며 사라지는 모습만 그린다 — 파괴는 만든 쪽(DropManager)이 끝난 뒤에 한다.</summary>
+        public Tween Vanish()
+        {
+            var sequence = DOTween.Sequence()
+                .Append(transform.DOScale(transform.localScale * VanishScale, VanishSeconds).SetEase(Ease.OutQuad));
+
+            foreach (var sprite in GetComponentsInChildren<SpriteRenderer>())
+            {
+                sequence.Join(sprite.DOFade(0f, VanishSeconds));
+            }
+
+            return sequence.SetLink(gameObject);
         }
 
         /// <summary>둥실거림을 멈춘다. 끌려가는 동안 이게 살아 있으면 끌리는 경로와 싸운다.</summary>

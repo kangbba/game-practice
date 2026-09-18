@@ -61,7 +61,7 @@ namespace Sayne
         protected override void OnInit()
         {
             _enemyManager.Died
-                .Subscribe(this, (enemy, self) => self.GainExp(enemy.Plan.ExpReward))
+                .Subscribe(this, (enemy, self) => self.GainExp(enemy.Data.ExpReward))
                 .RegisterTo(LifeToken);
         }
 

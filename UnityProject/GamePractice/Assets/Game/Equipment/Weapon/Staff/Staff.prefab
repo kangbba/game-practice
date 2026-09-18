@@ -345,7 +345,7 @@ MonoBehaviour:
   _tip: {fileID: 533824745279332569}
   _sizeScale: 1.2
   _ultimateName: "\uC6D4\uC2DD"
-  _ultimatePowerMultiplier: 3
+  _ultimatePowerMultiplier: 7
   _ultimateCooldown: 30
   _ultimateParticleID: NyxUltimate
 --- !u!1 &5652753578162049998

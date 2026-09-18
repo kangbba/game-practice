@@ -60,7 +60,7 @@ namespace Sayne
 
         [Header("궁극기 — 이름이 비어 있으면 이 무기로는 궁극기를 못 쓴다")]
         [SerializeField] private string _ultimateName;
-        [SerializeField] private float _ultimatePowerMultiplier = 3f;
+        [SerializeField] private float _ultimatePowerMultiplier = 7f;
         [SerializeField] private float _ultimateCooldown = 30f;
 
         /// <summary>궁극기 전용 연출. 비우면 평타와 같은 베기 연출을 쓴다.</summary>
@@ -71,6 +71,12 @@ namespace Sayne
         public EquipmentSlot Slot => EquipmentSlot.MainHand;
 
         public float Range => _range;
+
+        /// <summary>
+        /// 궁극기 무대의 반경. 발동하는 순간 이 안에 살아 있는 적만 무대에 오르고, 하나도 없으면 궁극기를 쓸 수 없다.
+        /// 근접 무기는 몸 주변을 휩쓰는 거리이고, 멀리서 싸우는 무기는 덮어써서 넓힌다.
+        /// </summary>
+        public virtual float UltimateRadius => 10f;
         public int ComboCount => _comboCount;
         public float ComboInterval => _comboInterval;
         public float CycleInterval => _cycleInterval;
@@ -93,6 +99,9 @@ namespace Sayne
         /// <summary>궁극기 전용 연출. 없으면 null.</summary>
         public string UltimateParticleID => string.IsNullOrEmpty(_ultimateParticleID) ? null : _ultimateParticleID;
 
+        /// <summary>이 무기를 들고 스킬을 쓸 때 트는 모션(애니메이터 상태 이름). 스킬은 캐릭터 것이지만 자세는 든 무기 계열을 따른다.</summary>
+        public abstract string SkillAnimation { get; }
+
         /// <summary>이 종류의 궁극기가 트는 영웅 모션(애니메이터 상태 이름).</summary>
         protected abstract string UltimateAnimation { get; }
 
@@ -105,7 +114,7 @@ namespace Sayne
         }
 
         /// <summary>
-        /// 궁극기 본편. 캐릭터 손에 붙은 이 무기가 굽는다. 연출의 뼈대(컷씬 → 무대 → 본편 → 여운 → 쓰러짐 → 복귀)는
+        /// 궁극기 본편. 캐릭터 손에 붙은 이 무기가 굽는다. 연출의 뼈대(컷씬 → 무대 → 본편 → 여운 → 죽음처리 → 복귀)는
         /// UltimateDirector 가 쥐고, 무기는 받은 무대 위에서 때리기만 한다. 끝나면 연출기가 여운으로 넘어간다.
         /// </summary>
         public abstract UniTask PlayUltimateAsync(UltimateStage stage, CancellationToken token);

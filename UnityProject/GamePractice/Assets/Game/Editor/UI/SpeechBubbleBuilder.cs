@@ -16,6 +16,9 @@ namespace Sayne.Editor
     /// </summary>
     public static class SpeechBubbleBuilder
     {
+        /// <summary>머리 위 말풍선 왼쪽의 초상화 한 변. 풍선 높이(124) 안에 들어간다.</summary>
+        private const float OverlayPortraitSize = 96f;
+
         private const string Folder = "Assets/SayneAssets/UI/Speech";
         private const string SpriteFolder = Folder + "/Sprites";
         private const string FontPath = "Assets/Fonts/TMP/SB_Aggro_Bold SDF.asset";
@@ -40,7 +43,6 @@ namespace Sayne.Editor
         private static Sprite _nextMark;
         private static Sprite _portraitMask;
 
-        [MenuItem("★Sayne★/2. 말풍선 프리팹 빌드 (TextPlayer 배선 복구)", false, 2)]
         public static void Build()
         {
             _bubble = ImportSprite("Bubble", Vector4.one * BubbleBorder);
@@ -106,9 +108,16 @@ namespace Sayne.Editor
 
             // 꼬리 끝이 Follower 의 원점에 오도록 풍선을 꼬리 길이만큼 띄운다.
             var follower = Rect(root, "Follower", Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.zero, Vector2.zero);
-            var bubble = Bubble(follower, Vector2.one * 0.5f, new Vector2(0.5f, 0f), new Vector2(0f, 46f), new Vector2(560f, 96f),
-                new Vector2(0.5f, 0f), 90f, new Vector2(44f, 24f), new Vector2(52f, 24f), 30f, HorizontalAlignmentOptions.Center,
-                new Vector2(-30f, 22f), 0.75f, true);
+            // 왼쪽에 말하는 이 얼굴이 들어가므로 글은 그만큼 오른쪽에서 시작한다.
+            var bubble = Bubble(follower, Vector2.one * 0.5f, new Vector2(0.5f, 0f), new Vector2(0f, 46f), new Vector2(640f, 124f),
+                new Vector2(0.5f, 0f), 90f, new Vector2(OverlayPortraitSize + 40f, 24f), new Vector2(52f, 24f), 30f,
+                HorizontalAlignmentOptions.Left, new Vector2(-30f, 22f), 0.75f, true);
+
+            var portraitRoot = Rect((RectTransform)bubble.transform, "Portrait", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(18f, 0f), Vector2.one * OverlayPortraitSize);
+            var portrait = portraitRoot.gameObject.AddComponent<Image>();
+            portrait.preserveAspect = true;
+            portrait.raycastTarget = false;
 
             var overlay = root.gameObject.AddComponent<OverlaySpeechBubble>();
             var so = new SerializedObject(overlay);
@@ -116,6 +125,7 @@ namespace Sayne.Editor
             so.FindProperty("_tapBtn").objectReferenceValue = tapBtn;
             so.FindProperty("_follower").objectReferenceValue = follower;
             so.FindProperty("_player").objectReferenceValue = bubble;
+            so.FindProperty("_portrait").objectReferenceValue = portrait;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             Save(root.gameObject);
@@ -239,6 +249,7 @@ namespace Sayne.Editor
             });
             Capture($"{Folder}/OverlaySpeechBubble.prefab", Path.Combine(output, "tutorial-overlay-bubble.png"), instance =>
             {
+                instance.transform.Find("Follower/Bubble/Portrait").GetComponent<Image>().sprite = portrait;
                 instance.GetComponentInChildren<TextMeshProUGUI>().text = "저 고블린부터 잡자!";
             });
         }

@@ -23,6 +23,9 @@ namespace Sayne
         [SerializeField] private RectTransform _follower;
         [SerializeField] private TextPlayer _player;
 
+        /// <summary>풍선 왼쪽의 말하는 이 얼굴. 없으면 감추고 글만 띄운다.</summary>
+        [SerializeField] private Image _portrait;
+
         private Camera _camera;
         private Transform _target;
 
@@ -72,8 +75,11 @@ namespace Sayne
             _target = null;
         }
 
-        public async UniTask PlayAsync(string text, CancellationToken token)
+        public async UniTask PlayAsync(Sprite portrait, string text, CancellationToken token)
         {
+            _portrait.sprite = portrait;
+            _portrait.enabled = portrait != null;
+
             _group.alpha = 1f;
             _group.blocksRaycasts = true;
 

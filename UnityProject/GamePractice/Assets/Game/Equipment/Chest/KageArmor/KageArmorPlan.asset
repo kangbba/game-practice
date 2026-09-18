@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: 카게의 미늘 갑옷
   _description: 검은 미늘을 겹겹이 엮은 갑옷. 단단한 만큼 발이 무거워진다.
   _stats:
-  - _type: 1
-    _value: 90
-  - _type: 2
-    _value: -0.6
+    _stats:
+    - _type: 1
+      _value: 90
+    - _type: 2
+      _value: -0.6

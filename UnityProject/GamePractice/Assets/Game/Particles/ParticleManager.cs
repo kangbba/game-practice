@@ -9,17 +9,24 @@ namespace Sayne
         private const float DeathEffectScale = 25f;
         private const float UltimateEffectScale = 40f;
 
+        /// <summary>구슬을 주울 때 터지는 이펙트. 전용 파티클이 생기면 여기만 바꾼다.</summary>
+        private const string PickupParticleID = ParticleID.HitSpark;
+        private const float PickupEffectScale = 12f;
+
         private const float ChestHeight = 0.9f;
 
         private readonly IAssets<GameObject> _particleAssets;
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
+        private readonly DropManager _dropManager;
 
-        public ParticleManager(IAssets<GameObject> particleAssets, HeroManager heroManager, EnemyManager enemyManager)
+        public ParticleManager(IAssets<GameObject> particleAssets, HeroManager heroManager, EnemyManager enemyManager,
+            DropManager dropManager)
         {
             _particleAssets = particleAssets;
             _heroManager = heroManager;
             _enemyManager = enemyManager;
+            _dropManager = dropManager;
         }
 
         protected override void OnInit()
@@ -27,6 +34,11 @@ namespace Sayne
             _heroManager.Spawned
                 .Merge(_enemyManager.Spawned)
                 .Subscribe(this, (character, self) => self.BindEffects(character))
+                .RegisterTo(LifeToken);
+
+            // 구슬을 주운 자리에서 작게 반짝인다.
+            _dropManager.Collected
+                .Subscribe(this, (position, self) => self.Play(PickupParticleID, position, PickupEffectScale, true, false))
                 .RegisterTo(LifeToken);
         }
 

@@ -283,7 +283,7 @@ MonoBehaviour:
   _tip: {fileID: 7355951722148343258}
   _sizeScale: 1
   _ultimateName: "\uC218\uD655"
-  _ultimatePowerMultiplier: 3
+  _ultimatePowerMultiplier: 7
   _ultimateCooldown: 30
   _ultimateParticleID: 
 --- !u!1 &5685799726800093065

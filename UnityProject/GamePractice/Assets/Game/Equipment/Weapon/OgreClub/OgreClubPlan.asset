@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: 오우거 몽둥이
   _description: 가시를 박은 육중한 몽둥이. 느리지만 한 방이 무겁다.
   _stats:
-  - _type: 0
-    _value: 12
-  - _type: 2
-    _value: -0.3
+    _stats:
+    - _type: 0
+      _value: 12
+    - _type: 2
+      _value: -0.3

@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: 사신의 낫
   _description: 길게 휘둘러 넓은 범위를 베는 낫. 사거리와 위력이 모두 높지만 무게가 발을 묶는다.
   _stats:
-  - _type: 0
-    _value: 10
-  - _type: 2
-    _value: -0.2
+    _stats:
+    - _type: 0
+      _value: 10
+    - _type: 2
+      _value: -0.2

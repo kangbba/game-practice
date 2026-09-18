@@ -37,7 +37,6 @@ namespace Sayne.Editor
 
         private const string ClipRoot = "Assets/DarkFantasy2D/Animations";
 
-        [MenuItem("★Sayne★/4. 리그 본 좌우 통일 (Front·Rear·BackArm → Right·Left)", false, 4)]
         public static void Rename()
         {
             var curves = RebindClips();
@@ -55,7 +54,6 @@ namespace Sayne.Editor
         /// 그래도 남은 건 리그에서 사라진 본을 가리키는 죽은 커브다(영웅의 Hair — 헤어는 이제 Head 아래 스프라이트다).
         /// 그 클립을 쓰는 리그 중 어디에도 경로가 없을 때만 지운다 — 한 리그에만 있는 본은 건드리지 않는다.
         /// </summary>
-        [MenuItem("★Sayne★/공통/리그 바인딩 수리", false, 55)]
         public static void Repair()
         {
             var bones = RenameBones();

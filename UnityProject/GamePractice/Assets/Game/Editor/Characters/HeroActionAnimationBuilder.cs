@@ -13,13 +13,15 @@ namespace Sayne
         private const string AnimationRoot = "Assets/DarkFantasy2D/Animations/Heroes";
         private const string PrefabRoot = "Assets/Game/Characters/Heroes";
         private static readonly string[] Heroes = { "Kage", "Aldric", "Nyx" };
-        private static readonly string[] Actions = { "Attack1", "Attack2", "Attack3", "Attack4", "Skill", "Ultimate" };
+        private static readonly string[] Actions =
+        {
+            "Attack1", "Attack2", "Attack3", "Attack4", CharacterAnimations.SkillMeleeName, CharacterAnimations.UltimateMeleeName
+        };
         private static readonly float[] Durations = { .55f, .60f, .68f, .68f, CharacterAnimations.SkillDuration, CharacterAnimations.UltimateDuration };
 
         /// <summary>포즈 원본 인덱스. 5번은 평타 4타 전용 마무리 동작이다.</summary>
         private static readonly int[] PoseIndices = { 0, 1, 2, 5, 3, 4 };
 
-        [MenuItem("★Sayne★/영웅/전신 공격 애니메이션 재빌드", false, 100)]
         public static void Build()
         {
             foreach (var hero in Heroes)
@@ -36,6 +38,24 @@ namespace Sayne
             Debug.Log("HERO_ACTIONS_BUILD_PASS: 3 heroes, 18 independent full-body clips.");
         }
 
+        /// <summary>
+        /// 근접 궁극기 클립만 다시 굽는다. 평타·스킬 클립은 건드리지 않는다 — 궁극기 안무만 고쳤을 때
+        /// 다른 모션에 손으로 넣은 수정까지 덮어쓰지 않으려고 따로 둔다.
+        /// </summary>
+        public static void BuildUltimateOnly()
+        {
+            var index = Array.IndexOf(Actions, CharacterAnimations.UltimateMeleeName);
+            foreach (var hero in Heroes)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabRoot}/{hero}/{hero}.prefab");
+                var animator = prefab.GetComponentInChildren<Animator>(true);
+                WriteAction(hero, animator.transform, (AnimatorController)animator.runtimeAnimatorController, index);
+                EditorUtility.SetDirty(animator.runtimeAnimatorController);
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log($"HERO_ULTIMATE_BUILD_PASS: 3 heroes, {CharacterAnimations.UltimateMeleeName} {CharacterAnimations.UltimateDuration}s");
+        }
+
         private static void WriteActions(string hero, Transform graphic, AnimatorController controller)
         {
             var folder = $"{AnimationRoot}/{hero}";
@@ -48,36 +68,43 @@ namespace Sayne
 
             for (var i = 0; i < Actions.Length; i++)
             {
-                var authored = HeroActionPoseAuthoring.Create(graphic, hero, PoseIndices[i], Actions[i], Durations[i]);
-                var path = $"{folder}/{Actions[i]}.anim";
-                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
-                if (clip == null)
-                {
-                    AssetDatabase.CreateAsset(authored, path);
-                    clip = authored;
-                }
-                else
-                {
-                    EditorUtility.CopySerialized(authored, clip);
-                    UnityEngine.Object.DestroyImmediate(authored);
-                    EditorUtility.SetDirty(clip);
-                }
-
-                var machine = controller.layers[0].stateMachine;
-                var state = machine.states.Select(child => child.state).FirstOrDefault(item => item.name == Actions[i]);
-                if (state == null) state = machine.AddState(Actions[i], new Vector3(330, i * 65));
-                state.motion = clip;
-                state.speed = 1f;
-                state.writeDefaultValues = true;
-                // 복귀 시점은 CharacterMotion 이 클립 길이로 관리한다.
-                foreach (var transition in state.transitions) state.RemoveTransition(transition);
-                EditorUtility.SetDirty(state);
-                foreach (var layer in controller.layers)
-                {
-                    RebindAction(layer.stateMachine, Actions[i], clip);
-                }
+                WriteAction(hero, graphic, controller, i);
             }
             EditorUtility.SetDirty(controller);
+        }
+
+        /// <summary>모션 하나를 굽고 베이스 레이어의 같은 이름 상태에 건다.</summary>
+        private static void WriteAction(string hero, Transform graphic, AnimatorController controller, int i)
+        {
+            var folder = $"{AnimationRoot}/{hero}";
+            var authored = HeroActionPoseAuthoring.Create(graphic, hero, PoseIndices[i], Actions[i], Durations[i]);
+            var path = $"{folder}/{Actions[i]}.anim";
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (clip == null)
+            {
+                AssetDatabase.CreateAsset(authored, path);
+                clip = authored;
+            }
+            else
+            {
+                EditorUtility.CopySerialized(authored, clip);
+                UnityEngine.Object.DestroyImmediate(authored);
+                EditorUtility.SetDirty(clip);
+            }
+
+            var machine = controller.layers[0].stateMachine;
+            var state = machine.states.Select(child => child.state).FirstOrDefault(item => item.name == Actions[i]);
+            if (state == null) state = machine.AddState(Actions[i], new Vector3(330, i * 65));
+            state.motion = clip;
+            state.speed = 1f;
+            state.writeDefaultValues = true;
+            // 복귀 시점은 CharacterMotion 이 클립 길이로 관리한다.
+            foreach (var transition in state.transitions) state.RemoveTransition(transition);
+            EditorUtility.SetDirty(state);
+            foreach (var layer in controller.layers)
+            {
+                RebindAction(layer.stateMachine, Actions[i], clip);
+            }
         }
 
         private static void RebindAction(AnimatorStateMachine machine, string name, AnimationClip clip)
@@ -149,24 +176,25 @@ namespace Sayne
                 var fourthReach = AnimationUtility.GetEditorCurve(step4, travel).keys.Max(key => key.value);
                 if (fourthReach - thirdReach < .5f)
                     throw new InvalidOperationException($"{hero}: combo finisher needs a distinct step.");
-                var weapon = graphic.transform.Find("Root/Torso/RightArm/Forearm/Weapon").GetComponentInChildren<SpriteRenderer>();
-                var tip = new Vector3(weapon.sprite.bounds.center.x, weapon.sprite.bounds.max.y, 0f);
-                Vector3 TipNow() => graphic.transform.InverseTransformPoint(weapon.transform.TransformPoint(tip));
+                // 굽기와 같은 끝점(Weapon.Tip)을 잰다. 스프라이트 윗변은 무기 그림이 기울어 있으면 끝이 아니다.
+                var weapon = graphic.transform.Find("Root/Torso/RightArm/Forearm/Weapon").GetComponentInChildren<Weapon>();
+                Vector3 TipNow() => graphic.transform.InverseTransformPoint(weapon.Tip.position);
 
-                var skill = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/Skill.anim");
+                var skill = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/{CharacterAnimations.SkillMeleeName}.anim");
                 skill.SampleAnimation(graphic, skill.length * CharacterAnimations.SkillImpact);
                 var skillReach = ((Vector2)TipNow()).magnitude;
                 if (Mathf.Abs(skillReach - 7f) > .15f)
                     throw new InvalidOperationException($"{hero}/Skill: radius {skillReach:F2}, expected 7.");
 
-                // 궁극기: 낙하 강타의 칼끝이 땅에 꽂히고 무대 반경(10) 너머까지 닿아야 하며, 그 전에 충분히 높이 떠야 한다.
-                var ultimate = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/Ultimate.anim");
+                // 궁극기: 제자리에서 한다(골반이 x 로 움직이지 않는다). 낙하 강타의 칼끝이 땅에 꽂히고, 그 전에 충분히 높이 떠야 한다.
+                var ultimate = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/{CharacterAnimations.UltimateMeleeName}.anim");
+                var drift = AnimationUtility.GetEditorCurve(ultimate, travel).keys.Max(key => Mathf.Abs(key.value));
+                if (drift > .01f)
+                    throw new InvalidOperationException($"{hero}: ultimate drifts forward ({drift:F2}).");
                 ultimate.SampleAnimation(graphic, HeroUltimateChoreography.SlamSeconds);
                 var slamTip = TipNow();
                 if (Mathf.Abs(slamTip.y) > .2f)
                     throw new InvalidOperationException($"{hero}: slam misses ground ({slamTip.y:F2}).");
-                if (slamTip.x < 10f)
-                    throw new InvalidOperationException($"{hero}: slam falls short of the stage edge ({slamTip.x:F2}).");
                 var root = graphic.transform.Find("Root");
                 var landing = root.localPosition.y;
                 ultimate.SampleAnimation(graphic, HeroUltimateChoreography.ApexSeconds);
@@ -272,7 +300,7 @@ namespace Sayne
         internal static void DressPreview(Transform graphic, string hero)
         {
             // 머리·머리카락·망토·스카프는 프리팹에 이미 구워져 있다. 여기서 입히는 건 갈아입는 장비뿐이다.
-            // 프리팹은 벗은 몸이라 시작 차림(무기·몸통·신발)을 전부 입혀야 게임에서 보던 모습이 된다.
+            // 프리팹은 맨몸이라 시작 장비 세트(무기·몸통·신발)를 전부 장착해야 게임에서 보던 모습이 된다.
             var parts = hero switch
             {
                 "Kage" => new List<(EquipmentSlot Slot, string Folder, string Name)>

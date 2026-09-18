@@ -11,6 +11,9 @@ namespace Sayne
     public interface ILoadable
     {
         UniTask LoadAsync();
+
+        /// <summary>로드가 얼마나 끝났는지. 0~1. 로딩 화면 게이지가 이걸 모아 본다.</summary>
+        float Progress { get; }
     }
 
     /// <summary>
@@ -40,6 +43,34 @@ namespace Sayne
         public IReadOnlyCollection<string> IDs => _assets.Keys;
 
         protected bool IsLoaded => _isLoaded;
+
+        /// <summary>
+        /// 지금까지 연 핸들들의 진행도 평균. 로드를 차례로 여는 매니저는 새 핸들이 붙을 때 값이 잠깐 내려갈 수 있다 —
+        /// 되돌아가지 않게 막는 건 보여 주는 쪽(로딩 화면)이 한다.
+        /// </summary>
+        public float Progress
+        {
+            get
+            {
+                if (_isLoaded)
+                {
+                    return 1f;
+                }
+
+                if (_handles.Count == 0)
+                {
+                    return 0f;
+                }
+
+                var sum = 0f;
+                foreach (var handle in _handles)
+                {
+                    sum += handle.PercentComplete;
+                }
+
+                return sum / _handles.Count;
+            }
+        }
 
         protected override void OnInit()
         {

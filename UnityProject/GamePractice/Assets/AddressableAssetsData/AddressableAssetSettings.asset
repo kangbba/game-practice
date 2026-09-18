@@ -108,8 +108,8 @@ MonoBehaviour:
     - Profiles
     - EquipmentPortraits
     - DropTables
-    - EnemyPlans
-    - HeroPlans
+    - EnemyData
+    - HeroData
     - EquipmentPlans
     - DropPortraits
   m_SchemaTemplates: []

@@ -4,7 +4,7 @@ namespace Sayne
 {
     /// <summary>
     /// 재화의 주인. 들어오고 나가는 문만 지킨다 — 누가 왜 주는지는 알지 않는다.
-    /// 처치 보상은 이제 적의 설계값(EnemyPlan)이 정하고 드랍 구슬을 거쳐 들어온다.
+    /// 처치 보상은 이제 적의 설계값(EnemyData)이 정하고 드랍 구슬을 거쳐 들어온다.
     /// </summary>
     public class CurrencyManager : ManagerBase
     {
