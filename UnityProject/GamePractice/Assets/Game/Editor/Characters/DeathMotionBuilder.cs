@@ -20,7 +20,8 @@ namespace Sayne.Editor
     /// </summary>
     public static class DeathMotionBuilder
     {
-        private const string ClipRoot = "Assets/DarkFantasy2D/Animations";
+        /// <summary>죽는 모션 클립이 있는 곳. 에셋팩 원본과, 자기 폴더에 클립을 복사해 둔 캐릭터(오우거 족장 등).</summary>
+        private static readonly string[] ClipRoots = { "Assets/DarkFantasy2D/Animations", "Assets/Game/Characters" };
         private const string ClipName = "Death";
         private const string RootBone = "Root";
 
@@ -32,7 +33,7 @@ namespace Sayne.Editor
 
         public static void Build()
         {
-            var clips = AssetDatabase.FindAssets($"t:AnimationClip {ClipName}", new[] { ClipRoot })
+            var clips = AssetDatabase.FindAssets($"t:AnimationClip {ClipName}", ClipRoots)
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Where(path => System.IO.Path.GetFileNameWithoutExtension(path) == ClipName)
                 .Where(path => !path.Contains("/Archive/"))
@@ -40,7 +41,7 @@ namespace Sayne.Editor
 
             if (clips.Length == 0)
             {
-                Debug.LogError($"DeathMotionBuilder: {ClipRoot} 아래에 {ClipName} 클립이 없다");
+                Debug.LogError($"DeathMotionBuilder: {string.Join(", ", ClipRoots)} 아래에 {ClipName} 클립이 없다");
                 return;
             }
 

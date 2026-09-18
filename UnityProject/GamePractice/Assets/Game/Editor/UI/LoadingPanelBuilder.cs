@@ -395,7 +395,7 @@ namespace Sayne.Editor
 
             // 자간을 넓게 벌리는 글이라 커닝 쌍(TO·AT 등)이 끼면 간격이 들쭉날쭉해진다. 고른 간격이 낫다.
             // 목록에서 kern 만 빼면 TMP 가 옛 설정을 옮기면서 도로 넣는다 — 빈 목록을 통째로 준다.
-            tmp.fontFeatures = new System.Collections.Generic.List<OTL_FeatureTag>();
+            tmp.fontFeatures = new System.Collections.Generic.List<UnityEngine.TextCore.OTL_FeatureTag>();
             return tmp;
         }
     }

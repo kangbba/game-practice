@@ -39,6 +39,7 @@ namespace Sayne
             new Target("Nyx", "Heroes", true),
             new Target("Goblin", "Enemies", false),
             new Target("Ogre", "Enemies", false),
+            new Target("OgreBoss", "Enemies", false),
         };
 
         /// <summary>루프일 때 끝과 시작 사이에 두는 숨. 없으면 마지막 포즈를 볼 새가 없다.</summary>
