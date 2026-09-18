@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: NyxPlan
   m_EditorClassIdentifier:
   _heroID: Nyx
-  _maxHP: 100
+  _maxHP: 200
   _moveSpeed: 4.5
   _attackPower: 5
   _mainHand: Staff
@@ -33,8 +33,3 @@ MonoBehaviour:
       _name: 어둠 갈퀴
       _powerMultiplier: 1.6
       _cooldown: 10
-    _ultimate:
-      _name: 월식
-      _powerMultiplier: 3
-      _cooldown: 45
-    _ultimateParticleID: NyxUltimate

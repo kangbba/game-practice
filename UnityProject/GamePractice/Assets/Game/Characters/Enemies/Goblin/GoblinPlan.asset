@@ -31,11 +31,6 @@ MonoBehaviour:
       _name: 
       _powerMultiplier: 0
       _cooldown: 0
-    _ultimate:
-      _name: 
-      _powerMultiplier: 0
-      _cooldown: 0
-    _ultimateParticleID: 
   _expReward: 8
   _drops:
   - _type: 1

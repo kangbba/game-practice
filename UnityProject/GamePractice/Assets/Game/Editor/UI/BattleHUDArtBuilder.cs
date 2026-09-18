@@ -20,6 +20,37 @@ namespace Sayne.Editor
             Write("Gauge", 64, 32, false, true, new Vector4(10, 10, 10, 10), 6f);
 
             WriteVignette();
+            WriteGlow();
+        }
+
+        /// <summary>
+        /// 가운데는 꽉 차고 가장자리로 갈수록 부드럽게 사라지는 네모. 9슬라이스로 늘려 패널 뒤에 깔면 후광,
+        /// 앞에 깔면 번쩍이는 섬광이 된다. 흰색이라 쓰는 쪽이 물들인다.
+        /// </summary>
+        private static void WriteGlow()
+        {
+            const int size = 128;
+
+            // 가장자리에서 이만큼 안쪽부터 완전히 불투명하다. 9슬라이스 border 와 같아야 늘려도 번짐 폭이 그대로다.
+            const float falloff = 40f;
+
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var pixels = new Color[size * size];
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var edge = Mathf.Min(Mathf.Min(x, size - 1 - x), Mathf.Min(y, size - 1 - y)) + 0.5f;
+                    var alpha = Mathf.SmoothStep(0f, 1f, edge / falloff);
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha * alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+
+            Save("Glow", texture, Vector4.one * falloff);
         }
 
         /// <summary>

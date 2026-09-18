@@ -12,16 +12,18 @@ namespace Sayne
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
         private readonly WaveManager _waveManager;
+        private readonly UltimateDirector _ultimateDirector;
 
         public override string Key => PhaseID.InGame;
 
         public InGamePhase(MapManager mapManager, HeroManager heroManager, EnemyManager enemyManager,
-            WaveManager waveManager)
+            WaveManager waveManager, UltimateDirector ultimateDirector)
         {
             _mapManager = mapManager;
             _heroManager = heroManager;
             _enemyManager = enemyManager;
             _waveManager = waveManager;
+            _ultimateDirector = ultimateDirector;
         }
 
         public override void Enter(CancellationToken token)
@@ -63,12 +65,16 @@ namespace Sayne
             _enemyManager.DestroyAllEnemies();
         }
 
-        /// <summary>적을 내보내고, 다 죽을 때까지 기다렸다가 판을 비운다.</summary>
+        /// <summary>
+        /// 적을 내보내고, 다 죽을 때까지 기다렸다가 판을 비운다.
+        /// 궁극기 연출이 도는 중이면 그게 끝날 때까지 판을 안 치운다 — 쓰러지는 몸과 어두운 배경이 끝까지 보여야 한다.
+        /// </summary>
         private async UniTask FightAsync(IReadOnlyDictionary<string, int> enemies, CancellationToken token)
         {
             _enemyManager.SpawnEnemies(enemies);
 
-            await UniTask.WaitUntil(_enemyManager.IsAliveEnemyNone, cancellationToken: token);
+            await UniTask.WaitUntil(() => _enemyManager.IsAliveEnemyNone() && !_ultimateDirector.IsPlaying.CurrentValue,
+                cancellationToken: token);
 
             _enemyManager.DestroyAllEnemies();
         }

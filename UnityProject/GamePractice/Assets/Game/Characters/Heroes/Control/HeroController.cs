@@ -21,6 +21,11 @@ namespace Sayne
         /// <summary>타격이 퍼지는 반경. 타겟 주위에 있는 적도 같이 맞는다.</summary>
         private const float SplashRadius = 1.2f;
 
+        // 스킬이 휩쓰는 범위. 몸 앞쪽으로 길고, 등 뒤로 조금, 화면 깊이로는 위아래 폭만큼.
+        private const float SkillFrontReach = 4f;
+        private const float SkillBackReach = 0.8f;
+        private const float SkillDepthReach = 1.5f;
+
         /// <summary>투사체가 떠나는 높이. 발밑이 아니라 가슴께에서 나간다.</summary>
         private const float MuzzleHeight = 0.9f;
 
@@ -45,9 +50,21 @@ namespace Sayne
         /// ③ 타겟이 아직 사거리에 있으면 때린다. 벗어났으면 헛친다.
         /// 근접이면 여기서 바로 판정하고, 원거리면 투사체를 쏘고 판정을 도착 시점으로 미룬다 —
         /// 미루는 것뿐이라 판정 규칙은 근접과 한 글자도 다르지 않다.
+        /// 궁극기는 여기서 안 때린다 — UltimateDirector 가 무대에 올린 적 전부에게 준다.
         /// </summary>
         private void ApplyHit(BasicAttack attack)
         {
+            if (attack == Hero.Combat.Ultimate)
+            {
+                return;
+            }
+
+            if (attack == Hero.Combat.Skill)
+            {
+                Sweep(attack);
+                return;
+            }
+
             var target = Hero.Target as Enemy;
             if (target == null || !target.IsAlive || !Hero.Combat.IsInRange(ToTarget(target)))
             {
@@ -75,6 +92,29 @@ namespace Sayne
 
             Object.Instantiate(prefab)
                 .Launch(muzzle, target.transform, () => Splash(target, attack));
+        }
+
+        /// <summary>
+        /// 스킬은 모션이 앞을 크게 휩쓴다 — 타겟이 사거리에 있든 없든 몸 앞쪽 넓은 범위의 산 적을 전부 때린다.
+        /// </summary>
+        private void Sweep(BasicAttack attack)
+        {
+            var forward = Hero.IsFacingRight ? 1f : -1f;
+
+            // 맞고 죽은 적은 그 자리에서 목록을 빠져나간다. 뒤에서부터 훑어야 순번이 밀리지 않는다.
+            var enemies = _enemyManager.CurrentEnemies;
+            for (var i = enemies.Count - 1; i >= 0; i--)
+            {
+                var enemy = enemies[i];
+                var offset = enemy.transform.position - Hero.transform.position;
+                var ahead = offset.x * forward;
+
+                if (enemy.IsAlive && ahead >= -SkillBackReach && ahead <= SkillFrontReach &&
+                    Mathf.Abs(offset.z) <= SkillDepthReach)
+                {
+                    Hero.Combat.Hit(enemy, attack);
+                }
+            }
         }
 
         /// <summary>터진 자리 근처의 산 적을 전부 때린다.</summary>
@@ -127,17 +167,25 @@ namespace Sayne
                 return;
             }
 
-            // 기술을 쓰는 동안은 어떤 커맨드도 받지 않는다 — 이동·타겟 변경·평타 전부 모션이 끝난 뒤다.
-            if (Hero.Combat.IsCasting)
+            // 궁극기 연출 중엔 어떤 커맨드도 받지 않는다 — 이동도 안 된다.
+            if (Hero.Combat.IsUsingUltimate)
             {
                 return;
             }
 
-            // 수동 이동이 들어오면 교전을 끊는다. 손을 떼면 타겟 찾기부터 다시 시작한다.
+            // 수동 이동이 들어오면 교전을 끊는다. 스킬을 쓰는 중이었으면 스킬도 끊고 걷는다.
+            // 손을 떼면 타겟 찾기부터 다시 시작한다.
             if (_moveSource.IsActive)
             {
+                Hero.Combat.CancelCast();
                 Hero.SetTarget(null);
                 Hero.Move(_moveSource.Direction);
+                return;
+            }
+
+            // 스킬 모션이 도는 동안 자동 전투는 끼어들지 않는다 — 타겟 변경·자동 이동·평타 전부 모션이 끝난 뒤다.
+            if (Hero.Combat.IsCasting)
+            {
                 return;
             }
 

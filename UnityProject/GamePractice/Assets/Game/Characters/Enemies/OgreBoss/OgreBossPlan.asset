@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: OgreBossPlan
   m_EditorClassIdentifier:
   _enemyID: OgreBoss
+  _isBoss: 1
   _maxHP: 600
   _moveSpeed: 1.1
   _attackPower: 0
@@ -31,11 +32,6 @@ MonoBehaviour:
       _name: 
       _powerMultiplier: 0
       _cooldown: 0
-    _ultimate:
-      _name: 
-      _powerMultiplier: 0
-      _cooldown: 0
-    _ultimateParticleID: 
   _expReward: 200
   _drops:
   - _type: 1

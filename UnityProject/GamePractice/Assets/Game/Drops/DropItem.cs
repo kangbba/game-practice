@@ -15,6 +15,12 @@ namespace Sayne
         private const float BobHeight = 0.12f;
         private const float BobSeconds = 1.2f;
 
+        /// <summary>
+        /// 착지하고 이만큼 눈에 보인 뒤에야 주울 수 있다. 근접 영웅은 흡입 반경 안에서 적을 잡으므로,
+        /// 이게 없으면 구슬이 튀어 오르기도 전에 빨려 들어가 떨어진 걸 볼 수가 없다.
+        /// </summary>
+        private const float SettleSeconds = 0.4f;
+
         /// <summary>구슬 안쪽에 그림이 들어갈 크기(월드 단위). 어떤 초상화든 이 안에 맞춰 줄인다.</summary>
         private const float PortraitSize = 0.55f;
 
@@ -29,12 +35,16 @@ namespace Sayne
 
         private Transform _magnet;
         private float _currentAbsorbSpeed;
+        private bool _isSettled;
 
         /// <summary>대상에게 닿았다. 무엇을 준다는 판단은 이걸 받는 쪽이 한다.</summary>
         public Observable<DropItem> Absorbed => _absorbed;
 
         /// <summary>이미 누군가에게 빨려가는 중인가. 흡수는 한 번뿐이다.</summary>
         public bool IsAbsorbing => _magnet != null;
+
+        /// <summary>지금 주울 수 있나. 떨어져 잠깐 보인 뒤이고, 아직 아무에게도 안 빨려간 구슬이다.</summary>
+        public bool CanBeAbsorbed => _isSettled && !IsAbsorbing;
 
         /// <summary>구슬에 담을 그림. 원본 크기가 제각각이라 구슬 안에 맞게 줄여 넣는다.</summary>
         public void SetPortrait(Sprite portrait)
@@ -59,6 +69,8 @@ namespace Sayne
             DOTween.Sequence()
                 .Append(transform.DOJump(landing, PopHeight, 1, PopSeconds).SetEase(Ease.OutQuad))
                 .AppendCallback(() => Bob())
+                .AppendInterval(SettleSeconds)
+                .AppendCallback(() => _isSettled = true)
                 .SetLink(gameObject);
         }
 

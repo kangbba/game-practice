@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using R3;
 using TMPro;
 using UnityEngine;
@@ -22,20 +21,15 @@ namespace Sayne
         [SerializeField] private SkillButtonWidget _skillButton;
         [SerializeField] private SkillButtonWidget _ultimateButton;
         [SerializeField] private Button _equipMenuButton;
-        [SerializeField] private EquipmentWindow _equipmentWindow;
         [SerializeField] private Button _growthMenuButton;
-        [SerializeField] private GrowthWindow _growthWindow;
 
         public FloatingJoystick Joystick => _joystick;
         public Observable<Unit> SkillClicked => _skillButton.Clicked;
         public Observable<Unit> UltimateClicked => _ultimateButton.Clicked;
 
-        /// <summary>이 HUD 위에 뜨는 창 전부. 새 창을 만들면 여기에 올린다 — 열린 동안 게임 중단은 그걸로 따라온다.</summary>
-        public IReadOnlyList<PopupWindow> Popups => new PopupWindow[] { _equipmentWindow, _growthWindow };
-
         public void Init(HeroManager heroManager, WaveManager waveManager, QuestManager questManager,
-            CurrencyManager currencyManager, GrowthManager growthManager, EquipmentManager equipmentManager,
-            IAssets<CharacterProfile> profiles, IAssets<Hero> heroAssets)
+            CurrencyManager currencyManager, GrowthManager growthManager,
+            IAssets<CharacterProfile> profiles, PopupManager popupManager)
         {
             _heroProfile.Init(heroManager, growthManager, profiles);
             _stageWidget.Init(waveManager);
@@ -47,11 +41,8 @@ namespace Sayne
             _skillButton.Init(heroManager, SkillSlotType.Skill);
             _ultimateButton.Init(heroManager, SkillSlotType.Ultimate);
 
-            _growthWindow.Init(growthManager, currencyManager, heroManager);
-            _equipmentWindow.Init(equipmentManager, heroManager, heroAssets);
-
             BindRevive(heroManager);
-            BindMenuButtons();
+            BindMenuButtons(popupManager);
         }
 
         /// <summary>부활 카운트다운. 위젯 없이 글자 하나뿐이라 여기서 그린다.</summary>
@@ -63,15 +54,15 @@ namespace Sayne
                 .AddTo(this);
         }
 
-        /// <summary>창을 여는 버튼들. 무엇을 보여줄지는 창이 알아서 하고, 여기는 열어 주기만 한다.</summary>
-        private void BindMenuButtons()
+        /// <summary>창을 여는 버튼들. 어느 종류를 열지만 말하고, 여는 건 팝업 매니저가 한다.</summary>
+        private void BindMenuButtons(PopupManager popupManager)
         {
             _growthMenuButton.onClick.AsObservable()
-                .Subscribe(this, (_, self) => self._growthWindow.Show())
+                .Subscribe(popupManager, (_, manager) => manager.Open(PopupType.Growth))
                 .AddTo(this);
 
             _equipMenuButton.onClick.AsObservable()
-                .Subscribe(this, (_, self) => self._equipmentWindow.Toggle())
+                .Subscribe(popupManager, (_, manager) => manager.Open(PopupType.Equipment))
                 .AddTo(this);
         }
     }

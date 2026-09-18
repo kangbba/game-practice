@@ -15,7 +15,7 @@ namespace Sayne.Editor
         // Same sprite is used on the character and in the inventory. PPU is independent of UI size.
         public static void BuildVisual(string id, EquipmentSlot slot)
         {
-            var path = $"{Root}/Art/{id}.png";
+            var path = $"{ItemFolder(slot, id)}/{id}.png";
             if (!File.Exists(path)) return;
             var importer = (TextureImporter)AssetImporter.GetAtPath(path);
             importer.textureType = TextureImporterType.Sprite;
@@ -28,9 +28,6 @@ namespace Sayne.Editor
             importer.SaveAndReimport();
             var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
             var bounds = OpaqueBounds(sprite.texture);
-            var folder = $"{Root}/{slot}";
-            Directory.CreateDirectory(folder);
-            AssetDatabase.Refresh();
             var go = new GameObject(id);
             try
             {
@@ -44,7 +41,7 @@ namespace Sayne.Editor
                 go.transform.localPosition = new Vector3(
                     (sprite.texture.width * .5f - bounds.center.x) / bounds.height,
                     (sprite.texture.height * .5f - bounds.yMin) / bounds.height, 0);
-                PrefabUtility.SaveAsPrefabAsset(go, $"{folder}/{id}.prefab");
+                Save(go, slot);
             }
             finally { Object.DestroyImmediate(go); }
         }
@@ -52,7 +49,7 @@ namespace Sayne.Editor
         private const string HeroArtRoot = "Assets/DarkFantasy2D/Art/Heroes";
         private const string SpriteMaterialGuid = "b8e9b7a04f8ad4ed28aee4490672b159";
         private static readonly string[] Heroes = { "Kage", "Aldric", "Nyx" };
-        private static readonly string[] Sides = { "Front", "Rear" };
+        private static readonly string[] Sides = { Boots.FrontSide, Boots.RearSide };
 
         /// <summary>영웅 아트에서 떼어 낸 몸통 장비의 ID. 그림은 그 영웅의 몸통 그림을 그대로 쓴다. 누구 것이든 아무나 입는다.</summary>
         private static readonly Dictionary<string, string> ChestIDs = new Dictionary<string, string>
@@ -98,7 +95,7 @@ namespace Sayne.Editor
             {
                 foreach (var side in Sides)
                 {
-                    var sprite = ImportSprite($"{Root}/Art/{id}_{side}.png");
+                    var sprite = ImportSprite($"{ItemFolder(EquipmentSlot.Boots, id)}/{id}_{side}.png");
                     var child = new GameObject(side);
                     child.transform.SetParent(go.transform, false);
                     AddRenderer(child, sprite);
@@ -150,9 +147,29 @@ namespace Sayne.Editor
             return renderer;
         }
 
+        /// <summary>아이템 하나의 폴더. 그 아이템의 프리팹·설계값·그림이 여기 같이 있다 — 부위 폴더 아래 아이템마다 하나.</summary>
+        public static string ItemFolder(EquipmentSlot slot, string id)
+        {
+            return $"{Root}/{SlotFolder(slot)}/{id}";
+        }
+
+        private static string SlotFolder(EquipmentSlot slot)
+        {
+            return slot == EquipmentSlot.MainHand ? "Weapon" : slot.ToString();
+        }
+
+        /// <summary>부위 스크립트를 붙여 아이템 폴더에 저장한다. 부위는 이 스크립트가 스스로 밝힌다.</summary>
         private static void Save(GameObject go, EquipmentSlot slot)
         {
-            var folder = $"{Root}/{slot}";
+            switch (slot)
+            {
+                case EquipmentSlot.Helmet: go.AddComponent<Helmet>(); break;
+                case EquipmentSlot.Chest: go.AddComponent<Armor>(); break;
+                case EquipmentSlot.Boots: go.AddComponent<Boots>(); break;
+                default: throw new System.ArgumentOutOfRangeException(nameof(slot), slot, "이 부위는 빌더가 굽지 않는다.");
+            }
+
+            var folder = ItemFolder(slot, go.name);
             Directory.CreateDirectory(folder);
             PrefabUtility.SaveAsPrefabAsset(go, $"{folder}/{go.name}.prefab");
         }

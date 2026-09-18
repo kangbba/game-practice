@@ -16,12 +16,17 @@ namespace Sayne.Editor
         private const string WaveStartPanelPath = "Assets/Game/UIDirection/UIPrefab_WaveStart.prefab";
         private const string LowHealthPanelPath = "Assets/Game/UIDirection/UIPrefab_LowHealth.prefab";
         private const string WidgetFolder = "Assets/Game/UI/Widgets";
+        private const string PopupFolder = "Assets/Game/UI/Popup";
+        private const string PopupBlurMaterialPath = PopupFolder + "/PopupBlur.mat";
         private const string SayneSpriteFolder = "Assets/SayneAssets/UI/Sprites";
         /// <summary>정산 화면에 늘어놓을 전리품 칸 수. 넘치면 "+N" 으로 접힌다.</summary>
 
         /// <summary>가방 한 칸. 6열 × 4행 = EquipmentWindow.BagCapacity 칸이 564×352 안에 딱 들어가는 크기다.</summary>
         private static readonly Vector2 BagCellSize = new Vector2(86f, 80f);
         private const int BagColumns = 6;
+
+        /// <summary>성장창 항목 한 줄.</summary>
+        private static readonly Vector2 GrowthRowSize = new Vector2(560f, 92f);
 
         private const string FontPath = "Assets/Fonts/TMP/SB_Aggro_Bold SDF.asset";
 
@@ -35,6 +40,11 @@ namespace Sayne.Editor
         private static readonly Color EXPGreen = new Color(0.4f, 0.8f, 0.3f);
         private static readonly Color StageBlue = new Color(0.25f, 0.86f, 0.96f);
         private static readonly Color GuideGreen = new Color(0.45f, 0.8f, 0.3f);
+        /// <summary>흐린 화면 위의 암막. 흐림이 이미 뒤를 눌러 주니 옅게만 깐다.</summary>
+        private static readonly Color PopupDim = new Color(0f, 0f, 0.05f, 0.35f);
+
+        /// <summary>흐린 화면 자체의 톤. 살짝 어둡고 푸르게.</summary>
+        private static readonly Color PopupBlurTint = new Color(0.78f, 0.8f, 0.88f, 1f);
 
         private static TMP_FontAsset _font;
         private static Sprite _rounded;
@@ -43,6 +53,7 @@ namespace Sayne.Editor
         private static Sprite _medallion;
         private static Sprite _ring;
         private static Sprite _gauge;
+        private static Sprite _glow;
         private static Sprite _circleSolid;
         private static Sprite _circleOutline;
 
@@ -54,6 +65,7 @@ namespace Sayne.Editor
             _medallion = Art("Frames/Medallion");
             _ring = Art("Frames/Ring");
             _gauge = Art("Frames/Gauge");
+            _glow = Art("Frames/Glow");
             _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
             _rounded = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             _circle = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
@@ -75,12 +87,13 @@ namespace Sayne.Editor
             var equipSlotPrefab = BuildEquipmentSlotWidget();
             var equipCandidatePrefab = BuildEquipmentCandidateWidget();
             var equipStatRowPrefab = BuildEquipmentStatRowWidget();
-            var equipWindowPrefab = BuildEquipmentWindow(equipSlotPrefab, equipCandidatePrefab, equipStatRowPrefab);
-            var growthStatPrefab = BuildGrowthStatWidget();
-            var growthWindowPrefab = BuildGrowthWindow(growthStatPrefab);
+
+            // 팝업은 HUD 에 들지 않는 독립 프리팹이다. PopupManager 가 종류(PopupType)에 짝지어 만든다.
+            BuildEquipmentWindow(equipSlotPrefab, equipCandidatePrefab, equipStatRowPrefab);
+            BuildGrowthWindow(BuildGrowthStatWidget());
 
             ComposePanel(heroProfilePrefab, currencyPrefab, questPrefab, stagePrefab, iconMenuPrefab, circleButtonPrefab,
-                skillButtonPrefab, equipWindowPrefab, growthWindowPrefab);
+                skillButtonPrefab);
 
             ComposeWaveStartPanel();
             ComposeLowHealthPanel();
@@ -99,7 +112,7 @@ namespace Sayne.Editor
             var clip = Rect(portrait, "PortraitMask", Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.zero, new Vector2(94f, 94f));
             Img(clip, Color.white, _circle);
             clip.gameObject.AddComponent<Mask>().showMaskGraphic = false;
-            var portraitIcon = Icon(clip, "HeroPortrait", "Portraits/HeroPortrait", Vector2.one * 0.5f, Vector2.zero, new Vector2(100f, 100f));
+            var portraitIcon = Icon(clip, "HeroPortrait", "Portraits/HeroPortrait", Vector2.one * 0.5f, new Vector2(0f, 20f), new Vector2(100f, 100f));
             var levelPlate = Rect(portrait, "LevelPlate", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -1f), new Vector2(76f, 26f));
             Img(levelPlate, Color.white, _panel);
             var levelText = Text(Stretch(levelPlate, "LevelText", 2f), "Lv.0", 18f, Gold);
@@ -140,53 +153,120 @@ namespace Sayne.Editor
             return SaveWidget(root.gameObject);
         }
 
+        /// <remarks>
+        /// 폭은 위의 프로필·재화 줄과 같은 420 이다. 번호는 태그로 떼어 제목이 제 칸을 온전히 쓴다.
+        /// 후광은 패널보다 먼저 그려야 뒤에 깔리므로 루트가 아니라 Frame 이 패널을 든다.
+        /// </remarks>
         private static GameObject BuildQuestWidget()
         {
-            var root = WidgetRoot("QuestWidget", new Vector2(380f, 130f));
-            Img(root, Color.white, _panel);
+            const float columnX = 116f;
+            const float columnWidth = 292f;
 
-            var titleText = Text(
-                Rect(root, "TitleText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, -6f), new Vector2(200f, 28f)),
-                "가이드", 18f, Gold, HorizontalAlignmentOptions.Left);
+            var root = WidgetRoot("QuestWidget", new Vector2(420f, 120f));
 
-            var reward = Rect(root, "RewardIcon", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(14f, 12f), new Vector2(80f, 80f));
+            // 받을 때 박스가 가운데를 축으로 튕기도록 몸통을 가운데 피벗으로 한 겹 둔다. 루트 피벗은 배치하는 쪽 몫이다.
+            var body = Stretch(root, "Body", 0f);
+
+            var glow = Stretch(body, "ClaimGlow", -20f);
+            var glowImage = Img(glow, Gold, _glow);
+            glowImage.type = Image.Type.Sliced;
+            glow.gameObject.SetActive(false);
+
+            Img(Stretch(body, "Frame", 0f), Color.white, _panel);
+
+            var content = Stretch(body, "Content", 0f);
+            var contentGroup = content.gameObject.AddComponent<CanvasGroup>();
+            contentGroup.blocksRaycasts = false;
+
+            var reward = Rect(content, "Reward", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(12f, 0f), new Vector2(92f, 96f));
             Img(reward, Color.white, _panel);
-            Icon(reward, "Gem", "Icons/Gem", new Vector2(0.5f, 0.5f), new Vector2(0f, 12f), new Vector2(42f, 46f));
-            var rewardText = Text(
-                Rect(reward, "RewardText", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 2f), new Vector2(80f, 26f)),
-                "0", 20f, GemBlue);
+            var rewardIcon = Icon(reward, "Coin", "Icons/Coin", new Vector2(0.5f, 0.5f), new Vector2(0f, 12f), new Vector2(48f, 48f));
+            var rewardText = FitText(Text(
+                Rect(reward, "RewardText", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 4f), new Vector2(84f, 28f)),
+                "0", 21f, Gold), 14f);
 
-            var descText = Text(
-                Rect(root, "DescText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(106f, -38f), new Vector2(264f, 30f)),
-                "-", 20f, TextWhite, HorizontalAlignmentOptions.Left);
+            var tag = Rect(content, "Tag", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(columnX, -12f), new Vector2(84f, 26f));
+            Img(tag, Gold, _gauge).type = Image.Type.Sliced;
+            var tagText = FitText(Text(Stretch(tag, "TagText", 2f), "퀘스트 1", 15f, PanelDarker), 11f);
 
-            var (progressFill, progressLabel) = Bar(root, "ProgressBar", new Vector2(106f, -82f), new Vector2(254f, 22f), GuideGreen, true);
+            var titleText = FitText(Text(
+                Rect(content, "TitleText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(columnX + 94f, -12f), new Vector2(columnWidth - 94f, 26f)),
+                "-", 21f, TextWhite, HorizontalAlignmentOptions.Left), 15f);
 
-            // 완료 덮개. 박스 전체를 덮고 누르면 보상을 받는다 — 덮개 자체가 버튼이다.
-            var overlay = Stretch(root, "CompleteOverlay", 0f);
-            var overlayImage = Img(overlay, new Color(0f, 0f, 0.05f, 0.72f), _panel);
+            var descText = FitText(Text(
+                Rect(content, "DescText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(columnX, -46f), new Vector2(columnWidth, 26f)),
+                "-", 18f, new Color(0.78f, 0.81f, 0.88f), HorizontalAlignmentOptions.Left), 13f);
+
+            var (progressFill, progressLabel) = Bar(content, "ProgressBar", new Vector2(columnX, -82f), new Vector2(columnWidth, 26f), GuideGreen, true);
+            progressLabel.fontSize = 18f;
+            progressLabel.outlineWidth = 0.25f;
+            progressLabel.outlineColor = new Color32(8, 14, 26, 255);
+
+            // 받기 덮개. 내용을 가리지 않고 진행바 자리에 금빛 버튼만 올린다 — 무엇을 끝냈는지가 그대로 보여야 한다.
+            // 버튼은 꽉 찬 금색 게이지 꼴이고 현재/목표 수치를 그대로 들고 있다.
+            // 누르는 건 박스 전체다. 덮개의 투명한 판이 버튼을 받는다.
+            var overlay = Stretch(body, "ClaimOverlay", 0f);
+            var overlayImage = Img(overlay, Color.clear);
             overlayImage.raycastTarget = true;
-
             var claimBtn = overlay.gameObject.AddComponent<Button>();
             claimBtn.targetGraphic = overlayImage;
-            StyleButton(claimBtn);
+            claimBtn.transition = Selectable.Transition.None;
+            claimBtn.navigation = new Navigation { mode = Navigation.Mode.None };
 
-            Text(Rect(overlay, "CompleteText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(360f, 40f)),
-                "완료", 30f, Gold);
-            Text(Rect(overlay, "ClaimHint", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -22f), new Vector2(360f, 28f)),
-                "눌러서 보상 받기", 18f, TextWhite);
+            var pill = Rect(overlay, "ClaimPill", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(columnX + columnWidth * 0.5f, -95f), new Vector2(columnWidth + 4f, 34f));
+            Img(pill, Gold, _gauge).type = Image.Type.Sliced;
+            pill.gameObject.AddComponent<RectMask2D>();
+            var shine = Rect(pill, "Shine", new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-40f, 0f), new Vector2(34f, 70f));
+            shine.localRotation = Quaternion.Euler(0f, 0f, -24f);
+            Img(shine, new Color(1f, 1f, 1f, 0.55f));
+            var claimText = FitText(Text(Stretch(pill, "ClaimText", 2f), "0/0  보상 받기", 18f, PanelDarker), 13f);
 
             overlay.gameObject.SetActive(false);
 
+            // 받는 순간의 연출 부품. 평소엔 보이지 않는다.
+            var flash = Stretch(body, "Flash", -20f);
+            var flashImage = Img(flash, new Color(1f, 0.97f, 0.86f, 0f), _glow);
+            flashImage.type = Image.Type.Sliced;
+
+            var burst = Rect(body, "Burst", new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(58f, 12f), Vector2.zero);
+            var coins = new Image[QuestWidget.BurstCoinCount];
+            for (var i = 0; i < coins.Length; i++)
+            {
+                coins[i] = Icon(burst, $"Coin{i}", "Icons/Coin", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(30f, 30f));
+                coins[i].gameObject.SetActive(false);
+            }
+            var gainText = Text(Rect(burst, "GainText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(160f, 40f)),
+                "+0", 30f, Gold);
+            gainText.outlineWidth = 0.22f;
+            gainText.outlineColor = new Color32(40, 24, 8, 255);
+            gainText.gameObject.SetActive(false);
+
             var widget = root.gameObject.AddComponent<QuestWidget>();
             var so = new SerializedObject(widget);
+            so.FindProperty("_tagText").objectReferenceValue = tagText;
             so.FindProperty("_titleText").objectReferenceValue = titleText;
             so.FindProperty("_descText").objectReferenceValue = descText;
             so.FindProperty("_rewardText").objectReferenceValue = rewardText;
             so.FindProperty("_progressFill").objectReferenceValue = progressFill;
             so.FindProperty("_progressLabel").objectReferenceValue = progressLabel;
-            so.FindProperty("_completeOverlay").objectReferenceValue = overlay.gameObject;
+            so.FindProperty("_claimOverlay").objectReferenceValue = overlay.gameObject;
             so.FindProperty("_claimBtn").objectReferenceValue = claimBtn;
+            so.FindProperty("_claimGlow").objectReferenceValue = glowImage;
+            so.FindProperty("_claimPill").objectReferenceValue = pill;
+            so.FindProperty("_claimShine").objectReferenceValue = shine;
+            so.FindProperty("_claimText").objectReferenceValue = claimText;
+            so.FindProperty("_body").objectReferenceValue = body;
+            so.FindProperty("_content").objectReferenceValue = contentGroup;
+            so.FindProperty("_rewardIcon").objectReferenceValue = rewardIcon.rectTransform;
+            so.FindProperty("_flash").objectReferenceValue = flashImage;
+            so.FindProperty("_gainText").objectReferenceValue = gainText;
+            var coinsProperty = so.FindProperty("_coins");
+            coinsProperty.arraySize = coins.Length;
+            for (var i = 0; i < coins.Length; i++)
+            {
+                coinsProperty.GetArrayElementAtIndex(i).objectReferenceValue = coins[i];
+            }
             so.ApplyModifiedPropertiesWithoutUndo();
 
             return SaveWidget(root.gameObject);
@@ -197,7 +277,7 @@ namespace Sayne.Editor
             var root = WidgetRoot("StageWidget", new Vector2(420f, 126f), new Vector2(0.5f, 1f));
             var titlePlate = Rect(root, "StagePlate", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(250f, 48f));
             Img(titlePlate, Color.white, _panel);
-            var stageText = Text(Stretch(titlePlate, "StageText", 4f), "1-1 단계", 28f, Gold);
+            var stageText = FitText(Text(Stretch(titlePlate, "StageText", 6f), "STAGE 1-1", 24f, Gold), 16f);
             var (progressFill, _) = Bar(root, "ProgressBar", new Vector2(0f, -56f), new Vector2(420f, 20f), StageBlue, false);
             var killPill = Rect(root, "KillPill", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -84f), new Vector2(140f, 36f));
             Img(killPill, Color.white, _panel);
@@ -268,9 +348,16 @@ namespace Sayne.Editor
             cooldownFill.fillClockwise = false;
             cooldownFill.fillAmount = 0f;
             Img(Stretch(root, "Rim", 0f), Color.white, _ring);
-            var label = Text(
-                Rect(root, "Label", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 13f), new Vector2(100f, 26f)),
-                "공격", 19f, TextWhite);
+            // 기술 이름은 길어질 수 있다 — 버튼 폭만큼 넓게 두고 두 줄까지 접는다. 그래도 넘치면 글자가 줄어든다.
+            // 두 줄이면 아이콘 아랫부분에 걸치므로 외곽선으로 읽히게 한다.
+            var label = FitText(Text(
+                Rect(root, "Label", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 6f), new Vector2(136f, 46f)),
+                "공격", 19f, TextWhite), 13f);
+            label.textWrappingMode = TextWrappingModes.Normal;
+            label.verticalAlignment = VerticalAlignmentOptions.Bottom;
+            label.lineSpacing = -12f;
+            label.outlineWidth = 0.22f;
+            label.outlineColor = new Color32(8, 14, 26, 255);
             var cooldownText = Text(Stretch(root, "CooldownText", 14f), string.Empty, 32f, TextWhite);
 
             var widget = root.gameObject.AddComponent<SkillButtonWidget>();
@@ -402,9 +489,9 @@ namespace Sayne.Editor
             const float halfWidth = 564f;
             const float top = -72f;
 
-            var root = WidgetRoot("EquipmentWindow", new Vector2(1200f, 720f), new Vector2(0.5f, 0.5f));
-            var bg = Img(root, Color.white, _panel);
-            bg.raycastTarget = true;
+            var popup = PopupRoot("EquipmentWindow");
+            var root = Rect(popup, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(1200f, 720f));
+            Img(root, Color.white, _panel).raycastTarget = true;
 
             Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -16f), new Vector2(200f, 36f)),
                 "장비", 26f, TextWhite, HorizontalAlignmentOptions.Left);
@@ -516,8 +603,9 @@ namespace Sayne.Editor
             var candidatesRoot = Stretch(bag, "Candidates", 0f);
             BagGrid(candidatesRoot);
 
-            var window = root.gameObject.AddComponent<EquipmentWindow>();
+            var window = popup.gameObject.AddComponent<EquipmentWindow>();
             var so = new SerializedObject(window);
+            BindPopup(so, popup);
             var slots = so.FindProperty("_slots");
             slots.arraySize = slotWidgets.Length;
             for (var i = 0; i < slotWidgets.Length; i++)
@@ -547,34 +635,35 @@ namespace Sayne.Editor
             so.FindProperty("_actionBtnLabel").objectReferenceValue = actionBtnLabel;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            return SaveWidget(root.gameObject);
+            return SavePopup(popup.gameObject);
         }
 
         /// <summary>성장 항목 한 줄. 이름·레벨, "기본 + 성장" 분해, 값이 붙은 강화 버튼. 값은 창이 구독해서 채운다.</summary>
         private static GameObject BuildGrowthStatWidget()
         {
-            var root = WidgetRoot("GrowthStatWidget", new Vector2(460f, 84f));
+            var root = WidgetRoot("GrowthStatWidget", GrowthRowSize);
             Img(root, Color.white, _panel);
 
-            var nameText = Text(
-                Rect(root, "NameText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -10f), new Vector2(260f, 32f)),
-                "공격력  Lv.1", 21f, TextWhite, HorizontalAlignmentOptions.Left);
+            var nameText = FitText(Text(
+                Rect(root, "NameText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -12f), new Vector2(320f, 32f)),
+                "공격력  Lv.1", 22f, TextWhite, HorizontalAlignmentOptions.Left), 15f);
 
-            var valueText = Text(
-                Rect(root, "ValueText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -46f), new Vector2(260f, 28f)),
-                "기본 0 (+ 성장 0)", 16f, TextGray, HorizontalAlignmentOptions.Left);
+            // 값은 "기본 +성장" 한 줄. 성장 몫은 초록으로 붙는다.
+            var valueText = FitText(Text(
+                Rect(root, "ValueText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -50f), new Vector2(320f, 32f)),
+                "0 +0", 24f, TextWhite, HorizontalAlignmentOptions.Left), 15f);
 
             var upgradeBtn = MakeButton(root, "UpgradeBtn", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-14f, 0f), new Vector2(150f, 60f), "강화");
+                new Vector2(-14f, 0f), new Vector2(170f, 68f), "▲ 강화");
             var upgradeLabel = upgradeBtn.GetComponentInChildren<TextMeshProUGUI>();
-            upgradeLabel.fontSize = 19f;
+            upgradeLabel.fontSize = 20f;
             ((RectTransform)upgradeLabel.transform).anchoredPosition = new Vector2(0f, 12f);
 
             // 값은 버튼 안 아래쪽에 붙인다 — 무엇을 누르면 얼마가 나가는지 한 덩어리로 읽힌다.
-            var costText = Text(
+            var costText = FitText(Text(
                 Rect((RectTransform)upgradeBtn.transform, "CostText", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                    new Vector2(0f, 8f), new Vector2(140f, 22f)),
-                "0 G", 16f, Gold);
+                    new Vector2(0f, 8f), new Vector2(156f, 24f)),
+                "0 G", 17f, Gold), 12f);
 
             var widget = root.gameObject.AddComponent<GrowthStatWidget>();
             var so = new SerializedObject(widget);
@@ -588,37 +677,56 @@ namespace Sayne.Editor
         }
 
         /// <summary>성장 모달. 보유 골드와 성장 항목 줄들. 줄 순서는 GrowthPlan.All 과 같아야 한다.</summary>
+        /// <remarks>
+        /// 장비창과 같은 짜임이다 — 왼쪽에 캐릭터 프리뷰, 오른쪽에 항목 줄. 줄마다 강화 버튼이 하나씩 붙는다.
+        /// </remarks>
         private static GameObject BuildGrowthWindow(GameObject statPrefab)
         {
-            var stats = GrowthPlan.All;
-            var height = 190f + 96f * stats.Length;
-            var root = WidgetRoot("GrowthWindow", new Vector2(520f, height), new Vector2(0.5f, 0.5f));
-            var bg = Img(root, Color.white, _panel);
-            bg.raycastTarget = true;
+            const float margin = 24f;
+            const float top = -72f;
+            const float previewSize = 300f;
+            const float rowGap = 12f;
+            const float columnX = margin + previewSize + margin;
 
-            Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -12f), new Vector2(200f, 36f)),
+            var stats = GrowthPlan.All;
+            var rowsBottom = -top + 44f + (GrowthRowSize.y + rowGap) * stats.Length;
+            var modalSize = new Vector2(columnX + GrowthRowSize.x + margin, Mathf.Max(-top + previewSize, rowsBottom) + margin);
+
+            var popup = PopupRoot("GrowthWindow");
+            var root = Rect(popup, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), modalSize);
+            Img(root, Color.white, _panel).raycastTarget = true;
+
+            Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -16f), new Vector2(200f, 36f)),
                 "성장", 26f, TextWhite, HorizontalAlignmentOptions.Left);
             var closeBtn = MakeButton(root, "CloseBtn", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-12f, -12f), new Vector2(48f, 48f), "X");
 
+            // ---- 왼쪽: 캐릭터 프리뷰. 그림은 런타임에 프리뷰 무대의 텍스처가 꽂힌다 ----
+            var previewFrame = Rect(root, "PreviewFrame", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(margin, top), new Vector2(previewSize, previewSize));
+            Img(previewFrame, PanelDarker, _rounded);
+            var preview = Stretch(previewFrame, "Preview", 6f).gameObject.AddComponent<RawImage>();
+            preview.raycastTarget = false;
+            preview.enabled = false;
+
+            // ---- 오른쪽: 보유 골드와 항목 줄 ----
             var goldText = Text(
-                Rect(root, "GoldText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -60f), new Vector2(460f, 32f)),
+                Rect(root, "GoldText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(columnX, top), new Vector2(GrowthRowSize.x, 32f)),
                 "보유 골드  0", 20f, TextWhite, HorizontalAlignmentOptions.Left);
 
             var statWidgets = new GrowthStatWidget[stats.Length];
             for (var i = 0; i < stats.Length; i++)
             {
                 statWidgets[i] = Place<GrowthStatWidget>(statPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(30f, -102f - 96f * i));
+                    new Vector2(columnX, top - 44f - (GrowthRowSize.y + rowGap) * i));
             }
 
-            Text(Rect(root, "Hint", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(460f, 28f)),
-                "골드를 써서 항목을 하나씩 올린다. 올릴수록 값이 비싸진다", 15f, TextGray);
-
-            var window = root.gameObject.AddComponent<GrowthWindow>();
+            var window = popup.gameObject.AddComponent<GrowthWindow>();
             var so = new SerializedObject(window);
+            BindPopup(so, popup);
             so.FindProperty("_closeBtn").objectReferenceValue = closeBtn;
             so.FindProperty("_goldText").objectReferenceValue = goldText;
+            so.FindProperty("_preview").objectReferenceValue = preview;
 
             var widgets = so.FindProperty("_statWidgets");
             widgets.arraySize = statWidgets.Length;
@@ -629,7 +737,7 @@ namespace Sayne.Editor
 
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            return SaveWidget(root.gameObject);
+            return SavePopup(popup.gameObject);
         }
 
         private static EquipmentSlotWidget PlaceSlot(GameObject slotPrefab, RectTransform parent, EquipmentSlot slot,
@@ -776,8 +884,7 @@ namespace Sayne.Editor
         }
 
         private static void ComposePanel(GameObject heroProfilePrefab, GameObject currencyPrefab, GameObject questPrefab,
-            GameObject stagePrefab, GameObject iconMenuPrefab, GameObject circleButtonPrefab, GameObject skillButtonPrefab,
-            GameObject equipmentWindowPrefab, GameObject growthWindowPrefab)
+            GameObject stagePrefab, GameObject iconMenuPrefab, GameObject circleButtonPrefab, GameObject skillButtonPrefab)
         {
             var panelRoot = PrefabUtility.LoadPrefabContents(PanelPath);
 
@@ -810,7 +917,7 @@ namespace Sayne.Editor
 
             // 중앙 상단
             var stage = Place<StageWidget>(stagePrefab, root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f));
-            stage.Preview("STAGE 1 - 1", kills: 8, goal: 25);
+            stage.Preview("STAGE 1-1", kills: 8, goal: 25);
 
             // 우상단 메뉴
             var topMenus = new[] { ("더보기", "Settings"), ("이벤트", "Event"), ("던전", "Dungeon"), ("소환", "Summon"), ("상점", "Shop") };
@@ -854,20 +961,7 @@ namespace Sayne.Editor
             ((RectTransform)ultimateButton.transform).sizeDelta = new Vector2(112f, 112f);
             ultimateButton.Preview("궁극기", cooldownRatio: 0f, cooldownRemain: 0f);
             ultimateButton.transform.Find("Icon").GetComponent<Image>().sprite = Art("Icons/Ultimate");
-            var speed = Place<CircleButtonWidget>(circleButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-58f, 196f));
-            ((RectTransform)speed.transform).sizeDelta = new Vector2(82f, 82f);
-            speed.SetText("1.0×");
             BuildBottomLeftDecorations(root);
-
-            // 장비창 — 기본은 닫힘. 장비 메뉴 버튼으로 연다.
-            var equipmentWindow = Place<EquipmentWindow>(equipmentWindowPrefab, root,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f));
-            equipmentWindow.gameObject.SetActive(false);
-
-            // 성장 모달 — 같은 원리로 성장 메뉴 버튼으로 연다.
-            var growthWindow = Place<GrowthWindow>(growthWindowPrefab, root,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f));
-            growthWindow.gameObject.SetActive(false);
 
             // 부활 텍스트
             var reviveText = Text(
@@ -886,9 +980,7 @@ namespace Sayne.Editor
             so.FindProperty("_skillButton").objectReferenceValue = skillButton;
             so.FindProperty("_ultimateButton").objectReferenceValue = ultimateButton;
             so.FindProperty("_equipMenuButton").objectReferenceValue = equipMenuButton;
-            so.FindProperty("_equipmentWindow").objectReferenceValue = equipmentWindow;
             so.FindProperty("_growthMenuButton").objectReferenceValue = growthMenuButton;
-            so.FindProperty("_growthWindow").objectReferenceValue = growthWindow;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             foreach (var component in panelRoot.GetComponentsInChildren<Component>(true))
@@ -1032,6 +1124,58 @@ namespace Sayne.Editor
             return prefab;
         }
 
+        /// <summary>
+        /// 팝업의 뿌리. 화면을 꽉 채우는 입력 막이다 — 뒤쪽 UI 는 눌리지 않는다.
+        /// 그 아래로 흐린 화면(Blur) → 옅은 암막(Dim) 을 깔고, 창 모양은 호출한 쪽이 이 뒤에 "Modal" 로 단다.
+        /// 뒤판이 모달의 부모라 언제나 모달 뒤에 그려진다.
+        /// </summary>
+        private static RectTransform PopupRoot(string name)
+        {
+            var root = WidgetRoot(name, Vector2.zero, new Vector2(0.5f, 0.5f));
+            root.anchorMin = Vector2.zero;
+            root.anchorMax = Vector2.one;
+            root.gameObject.AddComponent<CanvasGroup>();
+            Img(root, Color.clear).raycastTarget = true;
+
+            // 흐린 화면은 열 때 PopupManager 가 찍어 넣는다. 그 전(프리팹·미리보기)엔 꺼져 있고 암막만 보인다.
+            var blur = Stretch(root, "Blur", 0f).gameObject.AddComponent<RawImage>();
+            blur.material = PopupBlurMaterial();
+            blur.color = PopupBlurTint;
+            blur.raycastTarget = false;
+            blur.enabled = false;
+
+            Img(Stretch(root, "Dim", 0f), PopupDim);
+            return root;
+        }
+
+        /// <summary>PopupWindow 공통 바인딩. 창 컴포넌트를 단 뒤에 부른다.</summary>
+        private static void BindPopup(SerializedObject so, RectTransform popup)
+        {
+            so.FindProperty("_group").objectReferenceValue = popup.GetComponent<CanvasGroup>();
+            so.FindProperty("_blur").objectReferenceValue = popup.Find("Blur").GetComponent<RawImage>();
+        }
+
+        /// <summary>흐린 화면을 그리는 머티리얼. 프리팹이 들고 있어야 빌드에 셰이더가 따라간다.</summary>
+        private static Material PopupBlurMaterial()
+        {
+            var material = AssetDatabase.LoadAssetAtPath<Material>(PopupBlurMaterialPath);
+
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Sayne/UI/PopupBlur"));
+                AssetDatabase.CreateAsset(material, PopupBlurMaterialPath);
+            }
+
+            return material;
+        }
+
+        private static GameObject SavePopup(GameObject temp)
+        {
+            var prefab = PrefabUtility.SaveAsPrefabAsset(temp, $"{PopupFolder}/{temp.name}.prefab");
+            Object.DestroyImmediate(temp);
+            return prefab;
+        }
+
         private static T Place<T>(GameObject prefab, RectTransform parent, Vector2 anchor, Vector2 pivot, Vector2 pos)
             where T : Component
         {
@@ -1081,6 +1225,15 @@ namespace Sayne.Editor
             tmp.textWrappingMode = TextWrappingModes.NoWrap;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
             tmp.raycastTarget = false;
+            return tmp;
+        }
+
+        /// <summary>글이 칸보다 길면 넘치지 않고 minSize 까지 줄어든다. 그래도 넘치면 말줄임.</summary>
+        private static TextMeshProUGUI FitText(TextMeshProUGUI tmp, float minSize)
+        {
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = minSize;
+            tmp.fontSizeMax = tmp.fontSize;
             return tmp;
         }
 

@@ -93,6 +93,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - Heroes
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2d054fc68683b4d52893233ae05d9bfe
+    m_Address: EquipmentWindow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 30894c51e03d41a9aa784b1244b89188
     m_Address: GoblinClubPlan
     m_ReadOnly: 0
@@ -158,11 +163,22 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4e579ddd5f7148ff89f0fc89bd9f177a
+    m_Address: BareHands
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4ef54d3fa33c41ec8d1a5b9889004594
     m_Address: OgreClub
     m_ReadOnly: 0
     m_SerializedLabels:
     - Equipment
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4fcbcb000226a4f36af1e6828aa1a073
+    m_Address: WorldSpeechBubble
+    m_ReadOnly: 0
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 55de6e3ceffb1496782633a7dd0f5122
     m_Address: Kage
@@ -236,6 +252,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - Particles
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7b620a2ab18f84ad2889fd639d8e03ed
+    m_Address: GrowthWindow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7f68c954d46e34f70a1dc531b4fb829f
     m_Address: AldricBoots
     m_ReadOnly: 0
@@ -290,8 +311,7 @@ MonoBehaviour:
   - m_GUID: 9787db3211e4446d9c1d4d7b2126ca72
     m_Address: Arrow
     m_ReadOnly: 0
-    m_SerializedLabels:
-    - Equipment
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 97f661b581234bb1bce5087d7a15574b
     m_Address: AldricUltimateCharge
@@ -301,6 +321,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9d4b7e2a6c1f4a8398e5d0b3f7a2c614
     m_Address: UltimateCutscenePanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a61a3c8dd9824c1399d9eaf4ac8788af
+    m_Address: WorldHPBar
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

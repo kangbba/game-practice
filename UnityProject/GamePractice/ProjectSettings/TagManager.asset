@@ -38,20 +38,8 @@ TagManager:
   - 
   - 
   m_SortingLayers:
-  - name: Ground
-    uniqueID: 315482641
-    locked: 0
-  - name: GroundEffect
-    uniqueID: 785310442
-    locked: 0
-  - name: Shadow
-    uniqueID: 923846713
-    locked: 0
   - name: Default
     uniqueID: 0
-    locked: 0
-  - name: Actor
-    uniqueID: 641937584
     locked: 0
   - name: Enemy
     uniqueID: 2934734899
@@ -59,11 +47,17 @@ TagManager:
   - name: Hero
     uniqueID: 1772544637
     locked: 0
-  - name: Effect
-    uniqueID: 469823157
+  - name: UltimateBackground
+    uniqueID: 807121713
     locked: 0
-  - name: WorldUI
-    uniqueID: 85296341
+  - name: UltimateEnemy
+    uniqueID: 1485816597
+    locked: 0
+  - name: UltimateHero
+    uniqueID: 4250380004
+    locked: 0
+  - name: UltimateEffect
+    uniqueID: 1947500236
     locked: 0
   m_RenderingLayers:
   - Default

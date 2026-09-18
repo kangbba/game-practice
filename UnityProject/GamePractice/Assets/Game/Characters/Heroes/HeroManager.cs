@@ -1,13 +1,21 @@
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using R3;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Sayne
 {
     public class HeroManager : ManagerBase
     {
         private const float ReviveDuration = 5f;
+
+        /// <summary>마지막으로 맞은 뒤 이만큼 지나야 회복이 시작된다.</summary>
+        private const float RegenDelaySeconds = 5f;
+
+        /// <summary>회복이 시작되면 1초마다 최대 체력의 이 비율만큼 찬다.</summary>
+        private const float RegenRatioPerSecond = 0.05f;
 
         private readonly IAssets<Hero> _heroAssets;
         private readonly IAssets<HeroPlan> _heroPlans;
@@ -85,6 +93,20 @@ namespace Sayne
             hero.SetGrowthBonus(_growthManager.Bonus.CurrentValue);
 
             _currentHeroes.Add(hero);
+
+            // 히어로는 죽음을 미루지 않는다. HP 가 0 이 되는 그 자리에서 죽음처리한다.
+            hero.Fell
+                .Subscribe(hero, (_, owner) => owner.Die())
+                .RegisterTo(LifeToken);
+
+            // 맞지 않고 한동안 지나면 조금씩 찬다. 맞으면 기다림을 처음부터 다시 센다.
+            hero.Damaged
+                .Select(_ => Unit.Default)
+                .Prepend(Unit.Default)
+                .Select(_ => Observable.Timer(TimeSpan.FromSeconds(RegenDelaySeconds), TimeSpan.FromSeconds(1f)))
+                .Switch()
+                .Subscribe(hero, (_, owner) => owner.Heal(Mathf.CeilToInt(owner.FinalMaxHP * RegenRatioPerSecond)))
+                .RegisterTo(hero.destroyCancellationToken);
 
             hero.Died
                 .Subscribe((self: this, heroID, hero), (_, state) => state.self.ReviveAsync(state.heroID, state.hero).Forget())

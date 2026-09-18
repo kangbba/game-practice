@@ -44,14 +44,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: OgreBoss
       objectReference: {fileID: 0}
-    - target: {fileID: 2791706913608100841, guid: 1b1df5167a404ff39eaf9cbae42ce287, type: 3}
-      propertyPath: m_Color.b
-      value: 0.7
-      objectReference: {fileID: 0}
-    - target: {fileID: 2791706913608100841, guid: 1b1df5167a404ff39eaf9cbae42ce287, type: 3}
-      propertyPath: m_Color.g
-      value: 0.76
-      objectReference: {fileID: 0}
     - target: {fileID: 3202203227361556250, guid: 1b1df5167a404ff39eaf9cbae42ce287, type: 3}
       propertyPath: m_Color.b
       value: 0.7
@@ -78,15 +70,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4853452717051828566, guid: 1b1df5167a404ff39eaf9cbae42ce287, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.6
+      value: 4.2
       objectReference: {fileID: 0}
     - target: {fileID: 4853452717051828566, guid: 1b1df5167a404ff39eaf9cbae42ce287, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.6
+      value: 4.2
       objectReference: {fileID: 0}
     - target: {fileID: 4853452717051828566, guid: 1b1df5167a404ff39eaf9cbae42ce287, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.6
+      value: 4.2
       objectReference: {fileID: 0}
     - target: {fileID: 4853452717051828566, guid: 1b1df5167a404ff39eaf9cbae42ce287, type: 3}
       propertyPath: m_LocalPosition.x

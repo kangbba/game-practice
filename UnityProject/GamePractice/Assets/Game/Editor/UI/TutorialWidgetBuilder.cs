@@ -24,6 +24,12 @@ namespace Sayne.Editor
 
         private const float BubbleBorder = 44f;
 
+        /// <summary>월드 말풍선: 캔버스 1 단위가 월드 몇 단위인가. 420 폭 풍선이 약 2.5 월드 단위다.</summary>
+        private const float WorldBubblePixelSize = 0.006f;
+
+        /// <summary>월드 말풍선: 영웅 레이어에서 몸보다 위.</summary>
+        private const int WorldBubbleSortingOrder = 200;
+
         private static readonly Color Ink = new Color(0.086f, 0.125f, 0.227f);
         private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.45f);
 
@@ -48,11 +54,12 @@ namespace Sayne.Editor
 
             BuildTutorialWidget();
             BuildOverlaySpeechBubble();
+            BuildWorldSpeechBubble();
 
             AddressablesSetup.Setup();
             CapturePreviews();
 
-            Debug.Log("TutorialWidgetBuilder: TutorialWidget·OverlaySpeechBubble 프리팹 빌드 완료");
+            Debug.Log("TutorialWidgetBuilder: TutorialWidget·OverlaySpeechBubble·WorldSpeechBubble 프리팹 빌드 완료");
         }
 
         // ---- 프리팹 ----
@@ -113,6 +120,63 @@ namespace Sayne.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
 
             Save(root.gameObject);
+        }
+
+        /// <summary>
+        /// 머리 위 월드 말풍선. 제 캔버스를 든 월드 UI 라 캐릭터 자식으로 붙기만 하면 된다.
+        /// 뿌리는 발에 서서 카메라 쪽으로 돌고(Billboard), 풍선은 Anchor 가 머리 위로 올린다.
+        /// 넘김 표시가 없다 — 누르지 않아도 알아서 사라지는 혼잣말이다.
+        /// </summary>
+        private static void BuildWorldSpeechBubble()
+        {
+            var go = new GameObject("WorldSpeechBubble", typeof(RectTransform));
+            go.layer = LayerMask.NameToLayer("UI");
+            var root = (RectTransform)go.transform;
+            root.sizeDelta = Vector2.zero;
+            root.localScale = Vector3.one * WorldBubblePixelSize;
+
+            var canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.sortingLayerName = SortingLayers.Hero;
+            canvas.sortingOrder = WorldBubbleSortingOrder;
+            var group = go.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            go.AddComponent<Billboard>();
+
+            var anchor = Rect(root, "Anchor", Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.zero, Vector2.zero);
+
+            // 꼬리 끝이 Anchor 원점에 오도록 풍선을 꼬리 길이만큼 띄운다.
+            var body = Rect(anchor, "Bubble", Vector2.one * 0.5f, new Vector2(0.5f, 0f), new Vector2(0f, 46f), new Vector2(420f, 84f));
+            Img(body, _bubble).type = Image.Type.Sliced;
+
+            var tail = Rect(body, "Tail", new Vector2(0.5f, 0f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(56f, 64f));
+            tail.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            tail.anchoredPosition = tail.localRotation * new Vector3(10f, 0f, 0f);
+            Img(tail, _tail);
+
+            var textRT = Stretch(body, "Text");
+            textRT.offsetMin = new Vector2(32f, 20f);
+            textRT.offsetMax = new Vector2(-32f, -20f);
+            var text = textRT.gameObject.AddComponent<TextMeshProUGUI>();
+            text.font = _font;
+            text.fontSize = 30f;
+            text.color = Ink;
+            text.horizontalAlignment = HorizontalAlignmentOptions.Center;
+            text.verticalAlignment = VerticalAlignmentOptions.Middle;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Overflow;
+            text.raycastTarget = false;
+            text.text = "적들이 몰려오고 있어!";
+
+            var bubble = go.AddComponent<WorldSpeechBubble>();
+            var so = new SerializedObject(bubble);
+            so.FindProperty("_group").objectReferenceValue = group;
+            so.FindProperty("_anchor").objectReferenceValue = anchor;
+            so.FindProperty("_body").objectReferenceValue = body;
+            so.FindProperty("_text").objectReferenceValue = text;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            Save(go);
         }
 
         /// <param name="tailAnchor">꼬리가 붙는 풍선 가장자리. 꼬리 그림은 끝이 왼쪽을 보므로 아래로 내리려면 90도 돌린다.</param>

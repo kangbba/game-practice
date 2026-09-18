@@ -6,6 +6,8 @@ namespace Sayne
     public class UIAssetManager : AssetManagerBase<GameObject>
     {
         public OverlayHPBar OverlayHPBarPrefab => Get(AssetAddresses.OverlayHPBar).GetComponent<OverlayHPBar>();
+        public WorldSpeechBubble WorldSpeechBubblePrefab => Get(AssetAddresses.WorldSpeechBubble).GetComponent<WorldSpeechBubble>();
+        public WorldHPBar WorldHPBarPrefab => Get(AssetAddresses.WorldHPBar).GetComponent<WorldHPBar>();
         public DamageText DamageTextPrefab => Get(AssetAddresses.DamageText).GetComponent<DamageText>();
         public BattlePanel BattlePanelPrefab => Get(AssetAddresses.BattlePanel).GetComponent<BattlePanel>();
         public WaveStartPanel WaveStartPanelPrefab => Get(AssetAddresses.UIPrefab_WaveStart).GetComponent<WaveStartPanel>();
@@ -15,6 +17,12 @@ namespace Sayne
 
         public TutorialWidget TutorialWidgetPrefab => Get(AssetAddresses.TutorialWidget).GetComponent<TutorialWidget>();
         public OverlaySpeechBubble OverlaySpeechBubblePrefab => Get(AssetAddresses.OverlaySpeechBubble).GetComponent<OverlaySpeechBubble>();
+
+        /// <summary>그 종류에 짝지은 팝업 프리팹.</summary>
+        public PopupWindow GetPopupPrefab(PopupType type)
+        {
+            return Get(PopupTypes.GetAddress(type)).GetComponent<PopupWindow>();
+        }
 
         protected override async UniTask OnLoadAsync()
         {
@@ -38,6 +46,14 @@ namespace Sayne
             Register(AssetAddresses.UltimateCutscenePanel, cutscenePanel);
             Register(AssetAddresses.TutorialWidget, tutorialWidget);
             Register(AssetAddresses.OverlaySpeechBubble, overlayBubble);
+            Register(AssetAddresses.WorldHPBar, await LoadAssetByAddressAsync<GameObject>(AssetAddresses.WorldHPBar));
+            Register(AssetAddresses.WorldSpeechBubble, await LoadAssetByAddressAsync<GameObject>(AssetAddresses.WorldSpeechBubble));
+
+            foreach (var type in PopupTypes.All)
+            {
+                var address = PopupTypes.GetAddress(type);
+                Register(address, await LoadAssetByAddressAsync<GameObject>(address));
+            }
         }
     }
 }

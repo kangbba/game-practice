@@ -32,6 +32,17 @@ namespace Sayne.Editor
                 return;
             }
 
+            // 무기 프리팹의 쥐는 점·끝·배수를 고친 뒤 그림을 다시 세워 저장하고 착용 캡처.
+            const string weapons = "tmp/equipment/weapons.request";
+            if (!EditorApplication.isCompiling && !EditorApplication.isUpdating &&
+                !EditorApplication.isPlayingOrWillChangePlaymode && File.Exists(weapons))
+            {
+                File.Delete(weapons);
+                ArrangeWeapons();
+                Capture();
+                return;
+            }
+
             const string icons = "tmp/equipment/icons.request";
             if (!EditorApplication.isCompiling && !EditorApplication.isUpdating &&
                 !EditorApplication.isPlayingOrWillChangePlaymode && File.Exists(icons))
@@ -46,6 +57,25 @@ namespace Sayne.Editor
                 EditorApplication.isPlayingOrWillChangePlaymode || !File.Exists(request)) return;
             File.Delete(request);
             Capture();
+        }
+
+        /// <summary>
+        /// 무기 프리팹마다 Weapon 으로 그림을 다시 세워 저장한다. 게임에선 무기가 생길 때 스스로 세우지만,
+        /// 에디터 캡처·아이콘은 저장된 모습을 그대로 찍으므로 프리팹 값을 파일에서 고쳤으면 이걸 한 번 돌린다.
+        /// </summary>
+        [MenuItem("★Sayne★/장비/무기 규격 다시 세우기", false, 121)]
+        public static void ArrangeWeapons()
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { $"{EquipmentCatalogBuilder.Root}/Weapon" }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var root = PrefabUtility.LoadPrefabContents(path);
+                root.GetComponent<Weapon>().Arrange();
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+
+            Debug.Log("EquipmentFitPreview: 무기 규격 다시 세움");
         }
 
         /// <summary>게임이 쓰는 아이콘 무대로 장비 프리팹 전부를 찍어 저장한다. 장비창에 뜰 아이콘이 이것과 같다.</summary>
@@ -106,11 +136,11 @@ namespace Sayne.Editor
                     var skin = graphic.GetComponent<CharacterSkin>();
                     var chest = outfitOwner == "Aldric" ? "AldricCoat" : outfitOwner == "Kage" ? "KageArmor" : "NyxDress";
                     skin.Wear(EquipmentSlot.Boots, AssetDatabase.LoadAssetAtPath<GameObject>(
-                        $"Assets/Game/Equipment/Boots/{outfitOwner}Boots.prefab"));
+                        $"{EquipmentCatalogBuilder.ItemFolder(EquipmentSlot.Boots, outfitOwner + "Boots")}/{outfitOwner}Boots.prefab"));
                     skin.Wear(EquipmentSlot.Chest, AssetDatabase.LoadAssetAtPath<GameObject>(
-                        $"Assets/Game/Equipment/Chest/{chest}.prefab"));
+                        $"{EquipmentCatalogBuilder.ItemFolder(EquipmentSlot.Chest, chest)}/{chest}.prefab"));
                     if (outfitOwner == hero) skin.Wear(EquipmentSlot.Helmet,
-                        AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Equipment/Helmet/IronHelm.prefab"));
+                        AssetDatabase.LoadAssetAtPath<GameObject>($"{EquipmentCatalogBuilder.ItemFolder(EquipmentSlot.Helmet, "IronHelm")}/IronHelm.prefab"));
                 }
                 var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"Assets/DarkFantasy2D/Animations/Heroes/{hero}/Idle.anim");
                 if (clip != null) clip.SampleAnimation(graphic.gameObject, 0f);

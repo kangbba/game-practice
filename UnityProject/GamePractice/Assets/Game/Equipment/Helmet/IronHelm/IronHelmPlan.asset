@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4342e93c0b874f828bbc9dca499a0a43, type: 3}
+  m_Name: IronHelmPlan
+  m_EditorClassIdentifier:
+  _equipmentID: IronHelm
+  _displayName: 철 투구
+  _description: 머리를 통째로 감싸는 철 투구. 묵직하지만 확실하다.
+  _maxHP: 45
+  _moveSpeed: -0.3
+  _attackPower: 0

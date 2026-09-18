@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
-    /// 성장 모달의 항목 한 줄. "공격력 Lv.3 / 기본 5 (+ 성장 4) / [120 G]" 를 그리고 강화 버튼을 흘린다.
+    /// 성장 모달의 항목 한 줄. "공격력 Lv.3 / 5 +4 / [강화 120 G]" 를 그리고 강화 버튼을 흘린다.
     /// 계산하지 않는다 — 살 수 있는지조차 창이 받아서 넣어 준다.
     /// </summary>
     public class GrowthStatWidget : MonoBehaviour
@@ -27,7 +27,7 @@ namespace Sayne
         /// <summary>성장은 캐릭터 자체의 이야기라 장비 몫은 여기 없다 — 기본과 성장을 나눠 보여준다.</summary>
         public void SetValue(int baseValue, int growth)
         {
-            _valueText.text = $"기본 {baseValue} <color=#78CC4D>(+ 성장 {growth})</color>";
+            _valueText.text = $"{baseValue} <color=#78CC4D>+{growth}</color>";
         }
 
         /// <summary>값과 살 수 있는지를 한 번에 받는다. 못 사면 버튼이 죽고 값이 흐려진다.</summary>

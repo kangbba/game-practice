@@ -151,36 +151,62 @@ namespace Sayne
                     throw new InvalidOperationException($"{hero}: combo finisher needs a distinct step.");
                 var weapon = graphic.transform.Find("Root/Torso/Arm/Forearm/Weapon").GetComponentInChildren<SpriteRenderer>();
                 var tip = new Vector3(weapon.sprite.bounds.center.x, weapon.sprite.bounds.max.y, 0f);
-                foreach (var action in new[] { "Skill", "Ultimate" })
-                {
-                    var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/{action}.anim");
-                    var radius = action == "Skill" ? 7f : 10f;
-                    var impact = action == "Skill" ? CharacterAnimations.SkillImpact : CharacterAnimations.UltimateImpact;
-                    clip.SampleAnimation(graphic, clip.length * impact);
-                    var actual = ((Vector2)graphic.transform.InverseTransformPoint(weapon.transform.TransformPoint(tip))).magnitude;
-                    if (Mathf.Abs(actual - radius) > .15f)
-                        throw new InvalidOperationException($"{hero}/{action}: radius {actual:F2}, expected {radius}.");
-                    if (action != "Ultimate") continue;
-                    var tipHeight = graphic.transform.InverseTransformPoint(weapon.transform.TransformPoint(tip)).y;
-                    if (Mathf.Abs(tipHeight) > .15f)
-                        throw new InvalidOperationException($"{hero}: slam misses ground ({tipHeight:F2}).");
-                    var root = graphic.transform.Find("Root");
-                    var landing = root.localPosition.y;
-                    clip.SampleAnimation(graphic, clip.length * .38f);
-                    var jump = root.localPosition.y - landing;
-                    if (jump < 5f)
-                        throw new InvalidOperationException($"{hero}: ultimate jump too small ({jump:F2}).");
-                    Debug.Log($"HERO_MOTION_SIZE_PASS: {hero}, skill=7, ultimate={actual:F2}, jump={jump:F2}");
-                }
+                Vector3 TipNow() => graphic.transform.InverseTransformPoint(weapon.transform.TransformPoint(tip));
+
+                var skill = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/Skill.anim");
+                skill.SampleAnimation(graphic, skill.length * CharacterAnimations.SkillImpact);
+                var skillReach = ((Vector2)TipNow()).magnitude;
+                if (Mathf.Abs(skillReach - 7f) > .15f)
+                    throw new InvalidOperationException($"{hero}/Skill: radius {skillReach:F2}, expected 7.");
+
+                // 궁극기: 낙하 강타의 칼끝이 땅에 꽂히고 무대 반경(10) 너머까지 닿아야 하며, 그 전에 충분히 높이 떠야 한다.
+                var ultimate = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/Ultimate.anim");
+                ultimate.SampleAnimation(graphic, HeroUltimateChoreography.SlamSeconds);
+                var slamTip = TipNow();
+                if (Mathf.Abs(slamTip.y) > .2f)
+                    throw new InvalidOperationException($"{hero}: slam misses ground ({slamTip.y:F2}).");
+                if (slamTip.x < 10f)
+                    throw new InvalidOperationException($"{hero}: slam falls short of the stage edge ({slamTip.x:F2}).");
+                var root = graphic.transform.Find("Root");
+                var landing = root.localPosition.y;
+                ultimate.SampleAnimation(graphic, HeroUltimateChoreography.ApexSeconds);
+                var jump = root.localPosition.y - landing;
+                if (jump < 5.5f)
+                    throw new InvalidOperationException($"{hero}: ultimate jump too small ({jump:F2}).");
+                var hits = AnimationUtility.GetAnimationEvents(ultimate)
+                    .Count(item => item.functionName == CharacterAnimations.HitFrameEvent);
+                if (hits < 2)
+                    throw new InvalidOperationException($"{hero}: ultimate has {hits} hit frames.");
+                Debug.Log($"HERO_MOTION_SIZE_PASS: {hero}, skill=7, slam=({slamTip.x:F2},{slamTip.y:F2}), jump={jump:F2}, hits={hits}");
             }
             finally { UnityEngine.Object.DestroyImmediate(instance); }
+        }
+
+        /// <summary>열린 에디터에 재빌드·리뷰 렌더를 시키는 문. 이 파일이 생기면 한 번 돌고 지운다.</summary>
+        private const string ReviewRequest = "tmp/heroes/actions.request";
+
+        /// <summary>리뷰 렌더가 떨어지는 곳. 영웅별 포즈 시트(png)와 모션별 30fps 프레임 폴더.</summary>
+        private const string ReviewFolder = "tmp/heroes/review";
+
+        [InitializeOnLoadMethod]
+        private static void WatchRequest()
+        {
+            EditorApplication.update -= CheckRequest;
+            EditorApplication.update += CheckRequest;
+        }
+
+        private static void CheckRequest()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating ||
+                EditorApplication.isPlayingOrWillChangePlaymode || !File.Exists(ReviewRequest)) return;
+            File.Delete(ReviewRequest);
+            BuildAndReview();
         }
 
         public static void BuildAndReview()
         {
             Build();
-            var reviewFolder = Path.Combine(Path.GetTempPath(), "SayneHeroActionReview");
-            Directory.CreateDirectory(reviewFolder);
+            Directory.CreateDirectory(ReviewFolder);
             foreach (var heroId in Heroes)
             {
                 var preview = new PreviewRenderUtility();
@@ -194,18 +220,19 @@ namespace Sayne
                     DressPreview(graphic.transform, heroId);
                     var camera = preview.camera;
                     camera.orthographic = true;
-                    camera.orthographicSize = 1.85f;
-                    camera.transform.position = new Vector3(.20f, 1.35f, -10);
                     camera.transform.rotation = Quaternion.identity;
                     camera.clearFlags = CameraClearFlags.SolidColor;
                     camera.backgroundColor = new Color(.10f, .13f, .18f, 1);
                     camera.nearClipPlane = .1f;
                     camera.farClipPlane = 30;
-                    FitReviewCamera(graphic, camera, heroId);
+                    // 궁극기는 화면 몇 개 분량을 움직이므로 모션마다 따로 카메라를 맞춘다.
                     for (var row = 0; row < Actions.Length; row++)
                     {
                         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{heroId}/{Actions[row]}.anim");
-                        var fractions = row == 4 ? new[] { 0f, .18f, .29f, .51f, .64f, .87f } : row == 5 ? new[] { .10f, .20f, .38f, .46f, .52f, .68f } : new[] { 0f, .24f, .36f, .51f, .69f, .87f };
+                        FitReviewCamera(graphic, camera, clip);
+                        var fractions = row == 4 ? new[] { 0f, .18f, .29f, .51f, .64f, .87f }
+                            : row == 5 ? new[] { .15f, .214f, .389f, .60f, .693f, .817f }
+                            : new[] { 0f, .24f, .36f, .51f, .69f, .87f };
                         for (var column = 0; column < fractions.Length; column++)
                         {
                             clip.SampleAnimation(graphic, fractions[column] * clip.length);
@@ -215,25 +242,23 @@ namespace Sayne
                             sheet.SetPixels(column * 320, (Actions.Length - 1 - row) * 320, 320, 320, frame.GetPixels());
                             UnityEngine.Object.DestroyImmediate(frame);
                         }
-                    }
-                    var framesFolder = Path.Combine(reviewFolder, heroId + "-frames");
-                    Directory.CreateDirectory(framesFolder);
-                    var frameIndex = 0;
-                    foreach (var action in Actions)
-                    {
-                        var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{heroId}/{action}.anim");
-                        for (var frameIndexInClip = 0; frameIndexInClip <= Mathf.CeilToInt(clip.length * 30f); frameIndexInClip++)
+                        var framesFolder = Path.Combine(ReviewFolder, $"{heroId}-{Actions[row]}");
+                        if (Directory.Exists(framesFolder)) Directory.Delete(framesFolder, true);
+                        Directory.CreateDirectory(framesFolder);
+                        // 궁극기는 시야가 넓어 인물이 작게 나오므로 프레임을 크게 찍는다.
+                        var frameSize = row == 5 ? 960 : 480;
+                        for (var frameIndex = 0; frameIndex <= Mathf.CeilToInt(clip.length * 30f); frameIndex++)
                         {
-                            clip.SampleAnimation(graphic, Mathf.Min(frameIndexInClip / 30f, clip.length));
-                            preview.BeginStaticPreview(new Rect(0, 0, 480, 480));
+                            clip.SampleAnimation(graphic, Mathf.Min(frameIndex / 30f, clip.length));
+                            preview.BeginStaticPreview(new Rect(0, 0, frameSize, frameSize));
                             preview.Render(true);
                             var frame = preview.EndStaticPreview();
-                            File.WriteAllBytes(Path.Combine(framesFolder, $"{frameIndex++:D4}.png"), frame.EncodeToPNG());
+                            File.WriteAllBytes(Path.Combine(framesFolder, $"{frameIndex:D4}.png"), frame.EncodeToPNG());
                             UnityEngine.Object.DestroyImmediate(frame);
                         }
                     }
                     sheet.Apply();
-                    File.WriteAllBytes(Path.Combine(reviewFolder, heroId + ".png"), sheet.EncodeToPNG());
+                    File.WriteAllBytes(Path.Combine(ReviewFolder, heroId + ".png"), sheet.EncodeToPNG());
                 }
                 finally
                 {
@@ -241,6 +266,7 @@ namespace Sayne
                     UnityEngine.Object.DestroyImmediate(sheet);
                 }
             }
+            Debug.Log($"HERO_ACTIONS_REVIEW_PASS: {Path.GetFullPath(ReviewFolder)}");
         }
 
         internal static void DressPreview(Transform graphic, string hero)
@@ -271,28 +297,29 @@ namespace Sayne
 
             foreach (var part in parts)
             {
-                var visual = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/{part.Folder}/{part.Name}.prefab");
+                var visual = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/{part.Folder}/{part.Name}/{part.Name}.prefab");
                 graphic.GetComponent<CharacterSkin>().Wear(part.Slot, visual);
             }
         }
 
-        private static void FitReviewCamera(GameObject graphic, Camera camera, string hero)
+        /// <summary>그 모션이 지나가는 자리 전부가 한 화면에 들어오게 카메라를 맞춘다.</summary>
+        private static void FitReviewCamera(GameObject graphic, Camera camera, AnimationClip clip)
         {
             var bounds = new Bounds();
             var hasBounds = false;
-            var renderers = graphic.GetComponentsInChildren<SpriteRenderer>();
-            foreach (var action in Actions)
+            // 거대해진 무기는 빼고 몸이 지나는 자리만 본다 — 무기까지 넣으면 인물이 점이 된다.
+            var weaponBone = graphic.transform.Find("Root/Torso/Arm/Forearm/Weapon");
+            var renderers = graphic.GetComponentsInChildren<SpriteRenderer>()
+                .Where(renderer => !renderer.transform.IsChildOf(weaponBone)).ToArray();
+            var steps = Mathf.Max(60, Mathf.CeilToInt(clip.length * 30f));
+            for (var frame = 0; frame <= steps; frame++)
             {
-                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationRoot}/{hero}/{action}.anim");
-                for (var frame = 0; frame <= 60; frame++)
+                clip.SampleAnimation(graphic, clip.length * frame / steps);
+                foreach (var renderer in renderers)
                 {
-                    clip.SampleAnimation(graphic, clip.length * frame / 60f);
-                    foreach (var renderer in renderers)
-                    {
-                        if (renderer.sprite == null || !renderer.enabled) continue;
-                        if (!hasBounds) { bounds = renderer.bounds; hasBounds = true; }
-                        else bounds.Encapsulate(renderer.bounds);
-                    }
+                    if (renderer.sprite == null || !renderer.enabled) continue;
+                    if (!hasBounds) { bounds = renderer.bounds; hasBounds = true; }
+                    else bounds.Encapsulate(renderer.bounds);
                 }
             }
             camera.orthographicSize = Mathf.Max(bounds.extents.x, bounds.extents.y) * 1.12f;

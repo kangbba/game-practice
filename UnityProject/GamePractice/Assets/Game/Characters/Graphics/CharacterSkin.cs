@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using R3;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Sayne
 {
@@ -19,8 +21,8 @@ namespace Sayne
             [SerializeField] private SpriteRenderer[] _coveredSprites = Array.Empty<SpriteRenderer>();
 
             /// <summary>
-            /// 한 장비가 자리마다 다른 그림을 쓸 때 고르는 이름 — 신발의 앞발·뒷발.
-            /// 적혀 있으면 장비 프리팹의 자식 중 이 이름만 남긴다. 비어 있으면 통째로 단다.
+            /// 이 자리가 신발의 어느 발인가(Boots.FrontSide·RearSide). 한 켤레가 두 발 자리에 각각 붙으므로
+            /// 자리마다 자기 발의 그림만 남기라고 신발에게 알린다. 신발 자리가 아니면 비워 둔다.
             /// </summary>
             [SerializeField] private string _variant;
             [SerializeField] private bool _overrideSortingOrder;
@@ -37,8 +39,7 @@ namespace Sayne
 
                 _worn = UnityEngine.Object.Instantiate(visual, _transform, false);
                 if (!string.IsNullOrEmpty(_variant))
-                    foreach (Transform child in _worn.transform)
-                        child.gameObject.SetActive(child.name == _variant);
+                    _worn.GetComponent<Boots>().ShowSide(_variant);
                 foreach (var sprite in _coveredSprites) sprite.enabled = false;
                 if (_overrideSortingOrder)
                     foreach (var sprite in _worn.GetComponentsInChildren<SpriteRenderer>())
@@ -72,6 +73,36 @@ namespace Sayne
         private Dictionary<EquipmentSlot, List<SlotEntry>> _table;
         private Character _character;
         private WeaponTrail _weaponTrail;
+
+        /// <summary>손에 실제로 붙어 있는 무기. 맨손이면 null. 궁극기는 이 무기가 굽는다.</summary>
+        public Weapon WornWeapon { get; private set; }
+
+        /// <summary>몸·장비·궤적을 한 덩어리로 묶는다. 그림은 전부 이 아래에 있어서 레이어 한 칸으로 같이 움직인다.</summary>
+        private SortingGroup _sortingGroup;
+
+        private void Awake()
+        {
+            _sortingGroup = gameObject.AddComponent<SortingGroup>();
+        }
+
+        /// <summary>몸 전체를 투명하게 흐린다. 이 아래 그림은 장비까지 전부 같이 사라진다.</summary>
+        public Tween FadeOut(float seconds)
+        {
+            var sequence = DOTween.Sequence();
+
+            foreach (var renderer in GetComponentsInChildren<SpriteRenderer>())
+            {
+                sequence.Join(renderer.DOFade(0f, seconds));
+            }
+
+            return sequence.SetLink(gameObject);
+        }
+
+        /// <summary>몸 전체가 그려질 정렬 레이어. 어느 레이어인지는 캐릭터가 정한다.</summary>
+        public void SetSortingLayer(string layer)
+        {
+            _sortingGroup.sortingLayerName = layer;
+        }
 
         /// <summary>
         /// 발에서 머리 그림 꼭대기까지의 키. 캐릭터마다 키와 배율이 달라 고정값을 못 쓴다.
@@ -116,7 +147,7 @@ namespace Sayne
 
             character.Combat.Attacked
                 .Subscribe(this, (attack, self) => self._weaponTrail?.Play(attack is CharacterSkill skill
-                    ? skill.MotionSeconds * .8f : attack.HitTime + TrailFollowThrough))
+                    ? self._character.GetMotionSeconds(skill.AnimationHash) * .8f : attack.HitTime + TrailFollowThrough))
                 .AddTo(this);
         }
 
@@ -138,6 +169,7 @@ namespace Sayne
             if (slot == EquipmentSlot.MainHand)
             {
                 _weaponTrail = null;
+                WornWeapon = null;
             }
 
             // 벗은 자리, 그리고 맨손처럼 그림이 없는 파츠는 벗기만 한다.
@@ -151,18 +183,22 @@ namespace Sayne
             foreach (var entry in entries)
             {
                 var worn = entry.Wear(part.Visual);
-                if (part is Weapon weapon) SetupTrail(worn, weapon);
+                if (part is WeaponPart) SetupWeapon(worn);
             }
         }
 
-        /// <summary>트레일을 쓸지는 입힐 때 한 번만 정한다 — 무기가 허락하고 주인이 영웅일 때. 꺼진 트레일은 없는 것과 같다.</summary>
-        private void SetupTrail(GameObject worn, Weapon weapon)
+        /// <summary>
+        /// 손에 붙은 무기를 쥐어 둔다. 궤적은 프리팹에 있으면 쓰되 영웅만 — 적까지 궤적을 그리면 화면이 어지럽다.
+        /// 꺼진 트레일은 없는 것과 같다.
+        /// </summary>
+        private void SetupWeapon(GameObject worn)
         {
+            WornWeapon = worn.GetComponent<Weapon>();
             _weaponTrail = worn.GetComponentInChildren<WeaponTrail>(true);
 
             if (_weaponTrail != null)
             {
-                _weaponTrail.gameObject.SetActive(weapon.UseTrail && _character is Hero);
+                _weaponTrail.gameObject.SetActive(_character is Hero);
             }
         }
 

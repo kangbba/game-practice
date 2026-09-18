@@ -60,13 +60,10 @@ namespace Sayne
                 trail.gameObject.SetActive(false);
             }
 
-            // 신발처럼 자리마다 다른 그림을 자식으로 나눠 든 장비는 첫 그림 하나로 대표한다 — 전부 켜면 한자리에 겹친다.
-            if (model.GetComponent<SpriteRenderer>() == null)
+            // 신발은 앞발·뒷발 그림을 같이 든다. 전부 켜면 한자리에 겹치니 앞발 하나로 대표한다.
+            if (model.TryGetComponent<Boots>(out var boots))
             {
-                for (var i = 1; i < model.transform.childCount; i++)
-                {
-                    model.transform.GetChild(i).gameObject.SetActive(false);
-                }
+                boots.ShowSide(Boots.FrontSide);
             }
 
             var bounds = BoundsOf(model);

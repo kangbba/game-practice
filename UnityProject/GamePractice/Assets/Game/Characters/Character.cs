@@ -1,7 +1,7 @@
 using System;
+using DG.Tweening;
 using R3;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Sayne
 {
@@ -18,10 +18,16 @@ namespace Sayne
 
         private readonly Subject<Vector3> _looked = new Subject<Vector3>();
         private readonly Subject<int> _damaged = new Subject<int>();
+        private readonly Subject<Character> _fell = new Subject<Character>();
         private readonly Subject<Character> _died = new Subject<Character>();
+        private readonly ReactiveProperty<bool> _isOnUltimateStage = new ReactiveProperty<bool>();
+
+        /// <summary>이보다 약한 이동 요청은 멈춤으로 본다. 밀어내기 힘이 아주 약할 때 제자리걸음을 하지 않게.</summary>
+        private const float MinMoveMagnitude = 0.1f;
 
         private Vector3 _moveDirection;
         private IDisposable _stagger;
+        private bool _isDead;
 
         /// <summary>내가 누구인지. 이름·초상화 같은 건 이 ID 로 전역 테이블에서 찾는다.</summary>
         public abstract string ID { get; }
@@ -66,8 +72,32 @@ namespace Sayne
         public ReadOnlyReactiveProperty<int> CurrentHP => _currentHP;
         public ReadOnlyReactiveProperty<CharacterStateType> State => _state;
 
-        /// <summary>HP 의 파생값이라 따로 들지 않는다.</summary>
+        /// <summary>싸울 수 있는 몸인가. HP 의 파생값이라 따로 들지 않는다.</summary>
         public bool IsAlive => _currentHP.Value > 0;
+
+        /// <summary>
+        /// 죽음처리까지 끝났나. HP 가 0 이 되는 것(쓰러짐)과 죽음처리는 따로다 —
+        /// 궁극기 동안은 HP 0 인 적이 죽음처리 없이 서서 계속 맞는다. 그 사이는 IsAlive 도 IsDead 도 아니다.
+        /// </summary>
+        public bool IsDead => _isDead;
+
+        /// <summary>궁극기 무대에 올라 있나. 무대 밖 캐릭터의 HP바를 가리는 쪽이 이걸 본다.</summary>
+        public ReadOnlyReactiveProperty<bool> IsOnUltimateStage => _isOnUltimateStage;
+
+        /// <summary>손에 실제로 붙어 있는 무기. 맨손이면 null.</summary>
+        public Weapon WornWeapon => _skin.WornWeapon;
+
+        /// <summary>그림이 오른쪽을 보고 있나. 앞쪽을 휩쓰는 판정이 이걸 본다.</summary>
+        public bool IsFacingRight => _motion.IsFacingRight;
+
+        /// <summary>죽음처리가 몇 초 걸리나 — 쓰러지는 모션 길이.</summary>
+        public float DeathSeconds => _motion.DeathSeconds;
+
+        /// <summary>이 몸이 그 모션을 몇 초 동안 하나. 같은 기술이라도 캐릭터마다 클립 길이가 다르다.</summary>
+        public float GetMotionSeconds(int stateHash)
+        {
+            return _motion.GetClipSeconds(stateHash);
+        }
 
         /// <summary>맞아서 움찔하는 중인가. 평타경직은 상태이상이 아니라 기본 반응이다.</summary>
         public bool IsStaggered => _stagger != null;
@@ -76,7 +106,7 @@ namespace Sayne
         public bool CanAct => IsAlive && !IsStaggered
             && !Debuffs.Has(DebuffType.Stun) && !Debuffs.Has(DebuffType.Freeze);
 
-        /// <summary>기술을 쓰는 중인가. 그 동안은 평타·다른 기술은 물론 이동 명령도 받지 않는다.</summary>
+        /// <summary>기술을 쓰는 중인가. 그 동안은 평타·다른 기술·이동을 받지 않는다 — 스킬을 걸어서 끊으려면 먼저 CancelCast 를 부른다.</summary>
         public bool IsActing => Combat != null && Combat.IsCasting;
 
         public bool CanMove => CanAct && !IsActing;
@@ -88,11 +118,25 @@ namespace Sayne
         public Observable<Vector3> Looked => _looked;
 
         public Observable<int> Damaged => _damaged;
+
+        /// <summary>HP 가 0 이 됐다. 언제 죽음처리할지는 이 몸의 수명 주인(매니저)이 정해 Die 를 부른다.</summary>
+        public Observable<Character> Fell => _fell;
+
         public Observable<Character> Died => _died;
 
-        private void Awake()
+        /// <summary>평소 그려지는 정렬 레이어.</summary>
+        protected abstract string SortingLayer { get; }
+
+        /// <summary>궁극기 무대에 올랐을 때의 정렬 레이어. 궁극기 백그라운드 위다.</summary>
+        protected abstract string UltimateSortingLayer { get; }
+
+        /// <summary>궁극기 무대에 올리거나 내린다. 어느 레이어인지만 정하고, 까는 건 그림 쪽이 한다.</summary>
+        public void SetOnUltimateStage(bool isOn)
         {
+            _skin.SetSortingLayer(isOn ? UltimateSortingLayer : SortingLayer);
+            _isOnUltimateStage.Value = isOn;
         }
+
         /// <summary>스폰 직후 호출. 프리팹은 벗은 상태이고, 여기서 받은 한 벌을 그때 입는다. 맨손도 무기 한 종류다.</summary>
         public void Init(CharacterStats stats, CombatPlan combatPlan, EquipmentSet equipment)
         {
@@ -119,6 +163,7 @@ namespace Sayne
 
             _motion.Bind(this);
             _skin.Bind(this);
+            _skin.SetSortingLayer(SortingLayer);
         }
 
         /// <summary>성장 몫을 갈아끼운다. 성장은 오르기만 하고, 늘어난 MaxHP 만큼 현재 HP 도 같이 차오른다 — 성장이 벌점이 되지 않게.</summary>
@@ -146,11 +191,20 @@ namespace Sayne
             _currentHP.Value = Mathf.Min(_currentHP.Value, FinalMaxHP);
         }
 
-        /// <summary>이 방향으로 걷는다. 멈추려면 StopMove 를 부른다.</summary>
+        /// <summary>
+        /// 이 방향으로 걷는다. 방향이 거의 없으면 멈춘다 — 제자리에 선 채 걷는 모션이 돌면 안 된다.
+        /// AI 는 사거리 안이거나 타겟이 없을 때 0 방향을 보낸다.
+        /// </summary>
         public void Move(Vector3 direction)
         {
             if (!CanMove)
             {
+                return;
+            }
+
+            if (direction.magnitude < MinMoveMagnitude)
+            {
+                StopMove();
                 return;
             }
 
@@ -167,10 +221,14 @@ namespace Sayne
             Target = target;
         }
 
-        /// <summary>맞아서 잠깐 움찔한다. 그 사이엔 못 움직이고 못 때린다.</summary>
+        /// <summary>
+        /// 맞아서 잠깐 움찔한다. 그 사이엔 못 움직이고 못 때린다.
+        /// 기술(스킬·궁극기)을 쓰는 중엔 움찔하지 않는다 — 기술 클립은 끝까지 재생돼야 한다.
+        /// 스킬을 끊는 건 수동 이동과 쓰러짐·죽음뿐이고, 궁극기는 이동으로도 끊기지 않는다.
+        /// </summary>
         public void Stagger(float seconds)
         {
-            if (!IsAlive || seconds <= 0f)
+            if (!IsAlive || seconds <= 0f || Combat.IsCasting)
             {
                 return;
             }
@@ -227,27 +285,61 @@ namespace Sayne
             transform.Translate(_moveDirection * (_currentStats.Value.MoveSpeed * Time.deltaTime));
         }
 
+        /// <summary>
+        /// 맞는다. HP 가 0 이 되면 쓰러질 뿐 죽음처리는 하지 않는다 — Fell 을 받은 매니저가 정한다.
+        /// 쓰러진 채 죽음처리를 기다리는 몸은 마네킹처럼 계속 맞고, 데미지도 계속 뜬다.
+        /// </summary>
         public void TakeDamage(int amount)
         {
-            // 죽은 자는 다시 죽지 않는다. 시체를 때려도 아무 일도 일어나지 않는다.
+            // 죽음처리까지 끝난 몸은 다시 죽지 않는다. 시체를 때려도 아무 일도 일어나지 않는다.
+            if (_isDead)
+            {
+                return;
+            }
+
+            var wasAlive = IsAlive;
+            _currentHP.Value = Mathf.Max(_currentHP.Value - amount, 0);
+
+            _damaged.OnNext(amount);
+
+            if (wasAlive && !IsAlive)
+            {
+                Fall();
+            }
+        }
+
+        /// <summary>몸을 흐려 없앤다. 그림만 사라질 뿐 파괴는 수명의 주인(매니저)이 한다.</summary>
+        public Tween FadeOut(float seconds)
+        {
+            return _skin.FadeOut(seconds);
+        }
+
+        /// <summary>HP 를 채운다. 최대치를 넘지 않고, 쓰러진 몸은 차오르지 않는다.</summary>
+        public void Heal(int amount)
+        {
             if (!IsAlive)
             {
                 return;
             }
 
-            _currentHP.Value = Mathf.Max(_currentHP.Value - amount, 0);
-
-            if (!IsAlive)
-            {
-                Die();
-            }
-
-            _damaged.OnNext(amount);
+            _currentHP.Value = Mathf.Min(_currentHP.Value + amount, FinalMaxHP);
         }
 
-        private void Die()
+        /// <summary>HP 가 0 이 된 순간. 움직임을 멈추고 맞는 자세로 굳는다.</summary>
+        private void Fall()
         {
             StopMove();
+            _stagger?.Dispose();
+            _stagger = null;
+            _state.Value = CharacterStateType.Hit;
+
+            _fell.OnNext(this);
+        }
+
+        /// <summary>죽음처리. 쓰러지는 모션이 나가고 Died 가 울린다. 수명 주인(매니저)만 부른다.</summary>
+        public void Die()
+        {
+            _isDead = true;
             _state.Value = CharacterStateType.Death;
 
             _died.OnNext(this);
@@ -260,7 +352,9 @@ namespace Sayne
             _state.Dispose();
             _looked.Dispose();
             _damaged.Dispose();
+            _fell.Dispose();
             _died.Dispose();
+            _isOnUltimateStage.Dispose();
             _stagger?.Dispose();
             Combat?.Dispose();
             Equipment.Dispose();

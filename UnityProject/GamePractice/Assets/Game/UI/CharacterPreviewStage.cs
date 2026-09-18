@@ -16,6 +16,11 @@ namespace Sayne
         /// <summary>전장의 카메라에 안 걸리는 먼 곳.</summary>
         private static readonly Vector3 StagePosition = new Vector3(0f, -500f, 0f);
 
+        /// <summary>무대끼리의 간격. 창마다 무대를 하나씩 세우므로, 서로의 카메라에 옆 인형이 찍히지 않게 띄운다.</summary>
+        private const float StageSpacing = 50f;
+
+        private static int _stageCount;
+
         /// <summary>발끝이 원점인 몸을 화면 가운데로 올리는 카메라 자리.</summary>
         private static readonly Vector3 CameraOffset = new Vector3(0f, 1.1f, -10f);
 
@@ -33,7 +38,7 @@ namespace Sayne
         public CharacterPreviewStage()
         {
             _root = new GameObject("CharacterPreviewStage");
-            _root.transform.position = StagePosition;
+            _root.transform.position = StagePosition + Vector3.right * StageSpacing * _stageCount++;
 
             _texture = new RenderTexture(TextureSize, TextureSize, 16, RenderTextureFormat.ARGB32);
 

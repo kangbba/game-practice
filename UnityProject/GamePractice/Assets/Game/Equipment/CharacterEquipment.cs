@@ -24,7 +24,7 @@ namespace Sayne
         public EquipmentPart this[EquipmentSlot slot] => _parts[slot].Value;
 
         /// <summary>낀 무기. 사거리·간격 같은 싸움 방식은 여기서 꺼낸다 — 맨손도 무기라 스폰 뒤엔 항상 있다.</summary>
-        public Weapon Weapon => (Weapon)this[EquipmentSlot.MainHand];
+        public WeaponPart Weapon => (WeaponPart)this[EquipmentSlot.MainHand];
 
         /// <summary>낀 파츠 전부가 얹는 스탯의 합. 캐릭터의 "장비" 근원 하나로 합류한다.</summary>
         public CharacterStats TotalStats()

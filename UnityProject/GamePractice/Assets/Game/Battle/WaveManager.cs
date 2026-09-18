@@ -107,10 +107,13 @@ namespace Sayne
             return goal;
         }
 
-        /// <summary>그 번호의 표기. HUD 명패도 시작 알림도 로그도 전부 이 한 곳에서 나온 글자를 쓴다.</summary>
+        /// <summary>
+        /// 그 번호의 표기. HUD 명패도 시작 알림도 로그도 전부 이 한 곳에서 나온 글자를 쓴다.
+        /// 평소엔 "STAGE 1-2", 보스 판은 번호 대신 "STAGE 1 BOSS" — 명패 폭 안에 들어가게 짧게 쓴다.
+        /// </summary>
         public string GetLabel(int stage, int wave)
         {
-            return $"STAGE {stage} - {(GetStagePlan(stage).IsBossWave(wave) ? "BOSS" : wave.ToString())}";
+            return GetStagePlan(stage).IsBossWave(wave) ? $"STAGE {stage} BOSS" : $"STAGE {stage}-{wave}";
         }
     }
 }

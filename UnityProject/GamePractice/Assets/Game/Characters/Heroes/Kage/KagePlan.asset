@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: KagePlan
   m_EditorClassIdentifier:
   _heroID: Kage
-  _maxHP: 100
+  _maxHP: 200
   _moveSpeed: 4.5
   _attackPower: 5
   _mainHand: Sword
@@ -33,8 +33,3 @@ MonoBehaviour:
       _name: 초승달 베기
       _powerMultiplier: 1.8
       _cooldown: 10
-    _ultimate:
-      _name: 수확
-      _powerMultiplier: 3
-      _cooldown: 45
-    _ultimateParticleID: 

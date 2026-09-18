@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4342e93c0b874f828bbc9dca499a0a43, type: 3}
+  m_Name: KageBootsPlan
+  m_EditorClassIdentifier:
+  _equipmentID: KageBoots
+  _displayName: 카게의 끈 장화
+  _description: 종아리까지 끈으로 단단히 동여맨 긴 장화. 든든하지만 그만큼 무겁다.
+  _maxHP: 35
+  _moveSpeed: -0.3
+  _attackPower: 0

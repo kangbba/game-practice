@@ -13,8 +13,8 @@ namespace Sayne
         /// <summary>이만큼 좌우로 움직여야 방향을 바꾼다. 위아래로만 걸을 때 안 뒤집히게 하는 값이다.</summary>
         private const float FacingThreshold = 0.35f;
 
-        private const float HitRecoilDistance = 0.2f;
-        private const float HitRecoilDuration = 0.18f;
+        private const float HitRecoilDistance = 0.28f;
+        private const float HitRecoilDuration = 0.24f;
         private const float HitFlashDuration = 0.12f;
 
         private static readonly int FlashAmount = Shader.PropertyToID("_FlashAmount");
@@ -34,6 +34,15 @@ namespace Sayne
 
         /// <summary>그림이 오른쪽을 보고 있나. 연출은 전부 이 값을 본다.</summary>
         public bool IsFacingRight { get; private set; } = true;
+
+        /// <summary>쓰러지는 모션 길이(초).</summary>
+        public float DeathSeconds => _clipLengths[CharacterAnimations.Death];
+
+        /// <summary>그 모션의 클립 길이(초). 컨트롤러에 실린 클립을 그대로 읽는다.</summary>
+        public float GetClipSeconds(int stateHash)
+        {
+            return _clipLengths[stateHash];
+        }
 
         private void Awake()
         {
@@ -99,7 +108,6 @@ namespace Sayne
                 return;
             }
 
-            _animator.speed = CharacterAnimations.ActionPlaybackSpeed;
             _animator.Play(stateHash, CharacterAnimations.BaseLayer, startNormalized);
 
             // 다음 프레임을 기다리지 않고 그 자리에서 첫 포즈로 바꾼다.
@@ -108,10 +116,19 @@ namespace Sayne
             _oneShotReturn?.Dispose();
             _isPlayingOneShot = true;
 
-            var remain = duration * (1f - startNormalized) / CharacterAnimations.ActionPlaybackSpeed;
+            var remain = duration * (1f - startNormalized);
             _oneShotReturn = Observable.Timer(TimeSpan.FromSeconds(remain))
                 .Subscribe(this, (_, self) => self.ReturnToState())
                 .AddTo(this);
+        }
+
+        /// <summary>
+        /// 클립 키프레임의 애니메이션 이벤트가 부른다(CharacterAnimations.HitFrameEvent). 무기가 뻗는 프레임 = 맞는 순간.
+        /// 궁극기처럼 한 모션에 여러 번 때리는 기술은 타격 시점을 클립이 들고 있고, 여기서 싸움 담당에게 넘긴다.
+        /// </summary>
+        public void OnHitFrame()
+        {
+            _character.Combat.HitFrame();
         }
 
         private void OnDestroy()
@@ -161,7 +178,8 @@ namespace Sayne
             // 죽음·피격·걷기는 한 번짜리 모션을 끊고 들어간다.
             if (state == CharacterStateType.Hit || state == CharacterStateType.Death || state == CharacterStateType.Walk)
             {
-                // 기술을 끊는 사유는 피격과 죽음뿐이다. 걷기는 캐스팅 중엔 아예 들어오지 않는다 — 이동 명령이 잠겨 있다.
+                // 기술을 끊는 사유는 쓰러짐(HP 0)과 죽음이다. 움찔은 캐스팅 중엔 걸리지 않는다(Character.Stagger).
+                // 걷기는 컨트롤러가 이미 CancelCast 로 스킬을 끊은 뒤에만 들어온다.
                 if (state != CharacterStateType.Walk)
                 {
                     _character.Combat.CancelCast();
@@ -176,7 +194,6 @@ namespace Sayne
                 return;
             }
 
-            _animator.speed = 1f;
             _animator.Play(StateHash(state), CharacterAnimations.BaseLayer, 0f);
             _animator.Update(0f);
         }

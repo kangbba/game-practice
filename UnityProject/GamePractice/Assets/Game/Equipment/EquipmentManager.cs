@@ -60,16 +60,22 @@ namespace Sayne
             return icon;
         }
 
+        /// <summary>그 장비가 끼는 부위. 부위는 장비 프리팹의 부위 스크립트가 스스로 밝힌 것이다.</summary>
+        public EquipmentSlot GetSlot(string equipmentID)
+        {
+            return _visuals.Get(equipmentID).GetComponent<IEquipment>().Slot;
+        }
+
+        /// <summary>아이템 카드(스탯)와 장비 프리팹(부위·그 부위만의 것)을 묶어 끼울 수 있는 한 벌의 조각으로 만든다.</summary>
         public EquipmentPart CreatePart(string equipmentID)
         {
             var plan = _plans.Get(equipmentID);
+            var visual = _visuals.Get(equipmentID);
+            var slot = visual.GetComponent<IEquipment>().Slot;
 
-            // 맨손이나 적 무기처럼 그림이 없는 장비도 있다. 뼈에 아무것도 안 달 뿐이다.
-            var visual = _visuals.Contains(equipmentID) ? _visuals.Get(equipmentID) : null;
-
-            return plan.IsWeapon
-                ? new Weapon(equipmentID, visual, plan.Weapon, plan.Stats)
-                : new Cosmetic(equipmentID, visual, plan.Slot, plan.Stats);
+            return slot == EquipmentSlot.MainHand
+                ? new WeaponPart(equipmentID, visual, plan.Stats)
+                : new Cosmetic(equipmentID, visual, slot, plan.Stats);
         }
 
         /// <summary>자리별 ID 묶음을 실제 파츠 한 벌로 바꾼다. 비어 있는 자리는 벗은 채로 둔다 — 무기 자리만 맨손이 든다.</summary>

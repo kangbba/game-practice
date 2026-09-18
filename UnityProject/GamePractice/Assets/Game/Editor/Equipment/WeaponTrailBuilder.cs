@@ -41,7 +41,7 @@ namespace Sayne.Editor
 
         private static void Plant(TrailSpec spec)
         {
-            var path = $"{WeaponFolder}/{spec.Prefab}.prefab";
+            var path = $"{WeaponFolder}/{spec.Prefab}/{spec.Prefab}.prefab";
             var root = PrefabUtility.LoadPrefabContents(path);
 
             try
@@ -52,12 +52,13 @@ namespace Sayne.Editor
                     Object.DestroyImmediate(old.gameObject);
                 }
 
-                var sprite = root.GetComponent<SpriteRenderer>();
-                var bounds = sprite.sprite.bounds;
+                // 무기 규격상 뿌리가 쥐는 점이고 끝은 +Y 위에 있다. 궤적은 그 선 위, 끝에서 살짝 안쪽에 둔다.
+                var visual = root.GetComponent<Weapon>();
+                var sprite = root.GetComponentInChildren<SpriteRenderer>();
 
                 var child = new GameObject(TrailName);
                 child.transform.SetParent(root.transform, false);
-                child.transform.localPosition = new Vector3(bounds.center.x, bounds.max.y * TipRatio, 0f);
+                child.transform.localPosition = root.transform.InverseTransformPoint(visual.Tip.position) * TipRatio;
 
                 var trail = child.AddComponent<TrailRenderer>();
                 Configure(trail, sprite, spec);

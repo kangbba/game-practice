@@ -13,15 +13,22 @@ namespace Sayne
         private const string ElbowPath = ArmPath + "/Forearm";
         private const string WeaponPath = ElbowPath + "/Weapon";
 
-        private readonly struct Pose
-        {
-            internal readonly float X, Y, Lean, Arm, Elbow, Blade, Reach, Step, RearStep, Lift, RearLift;
+        /// <summary>
+        /// 관절 지연·꼬리 회수는 클립 길이 대비 비율로 적어 두었다. 이보다 긴 클립(7초 궁극기)에서는
+        /// 그 비율이 초 단위로 너무 늘어지므로, 이 길이의 클립이 갖던 초를 넘지 않게 잡는다.
+        /// </summary>
+        private const float LagReferenceSeconds = 1.8f;
 
+        internal readonly struct Pose
+        {
+            internal readonly float X, Y, Lean, Arm, Elbow, Blade, Reach, Step, RearStep, Lift, RearLift, Spin;
+
+            /// <param name="spin">Root(골반) 회전. 공중제비용이라 다른 관절과 달리 꼬리 회수를 안 한다 — 360 은 0 과 같다.</param>
             internal Pose(float x, float y, float lean, float arm, float elbow, float blade,
-                float reach, float step, float rearStep, float lift = 0f, float rearLift = 0f)
+                float reach, float step, float rearStep, float lift = 0f, float rearLift = 0f, float spin = 0f)
             {
                 X = x; Y = y; Lean = lean; Arm = arm; Elbow = elbow; Blade = blade;
-                Reach = reach; Step = step; RearStep = rearStep; Lift = lift; RearLift = rearLift;
+                Reach = reach; Step = step; RearStep = rearStep; Lift = lift; RearLift = rearLift; Spin = spin;
             }
 
             internal static Pose Lerp(Pose a, Pose b, float t)
@@ -31,8 +38,44 @@ namespace Sayne
                     Mathf.Lerp(a.Elbow, b.Elbow, t), Mathf.Lerp(a.Blade, b.Blade, t),
                     Mathf.Lerp(a.Reach, b.Reach, t), Mathf.Lerp(a.Step, b.Step, t),
                     Mathf.Lerp(a.RearStep, b.RearStep, t), Mathf.Lerp(a.Lift, b.Lift, t),
-                    Mathf.Lerp(a.RearLift, b.RearLift, t));
+                    Mathf.Lerp(a.RearLift, b.RearLift, t), Mathf.Lerp(a.Spin, b.Spin, t));
             }
+        }
+
+        /// <summary>키프레임 사이를 어떻게 잇나. 베기·낙하처럼 속도를 살릴 구간과 준비·회수처럼 부드럽게 이을 구간을 가른다.</summary>
+        internal enum Ease
+        {
+            Smooth,
+            Linear,
+            /// <summary>빠르게 시작해 느리게 멈춤 — 도약, 휘두른 뒤 여운.</summary>
+            Out,
+            /// <summary>느리게 시작해 빠르게 도착 — 낙하.</summary>
+            In,
+        }
+
+        /// <summary>한 모션의 악보. 포즈와 시각(0~1), 구간별 이음새, 무기를 얼마나 키우고 어디에 꽂을지.</summary>
+        internal sealed class Script
+        {
+            internal Pose[] Poses;
+            internal float[] Times;
+
+            /// <summary>Eases[i] 는 Poses[i-1] → Poses[i] 구간. 0 번은 안 쓴다.</summary>
+            internal Ease[] Eases;
+
+            /// <summary>영웅 원점 기준 무기 끝 반경. 스킬이 쓴다. 0 이면 확대 없음.</summary>
+            internal float Radius;
+
+            /// <summary>무기 길이(유닛). 궁극기가 쓴다 — 몸이 원점에서 멀리 떠나도 크기가 유지된다. 0 이면 안 씀.</summary>
+            internal float BladeLength;
+
+            /// <summary>t 에서 무기를 얼마나 키우나(0~1).</summary>
+            internal Func<float, float> Expansion = _ => 0f;
+
+            /// <summary>t 에서 칼끝을 땅에 얼마나 맞추나(0~1). 낙하 강타용.</summary>
+            internal Func<float, float> GroundAim = _ => 0f;
+
+            /// <summary>맞는 순간(초). 클립에 OnHitFrame 이벤트로 박힌다. 비어 있으면 타격은 런타임 타이머가 낸다.</summary>
+            internal float[] HitSeconds = Array.Empty<float>();
         }
 
         private sealed class Bone
@@ -95,57 +138,59 @@ namespace Sayne
                 var bones = graphic.GetComponentsInChildren<Transform>(true)
                     .Where(b => b != graphic && !AnimationUtility.CalculateTransformPath(b, graphic).Split('/').Contains("Skin"))
                     .Select(b => new Bone(b, graphic)).ToDictionary(b => b.Path);
+                var root = bones["Root"];
                 var front = bones["Root/FrontLeg"];
                 var rear = bones["Root/RearLeg"];
                 var frontSole = Sole(front.Transform, graphic);
                 var rearSole = Sole(rear.Transform, graphic);
                 var frontEnd = front.Transform.InverseTransformPoint(graphic.TransformPoint(frontSole));
                 var rearEnd = rear.Transform.InverseTransformPoint(graphic.TransformPoint(rearSole));
-                var poses = Poses(hero, action);
-                poses = poses.Select(pose => Exaggerate(pose, hero, action)).ToArray();
+                var script = action == 4 ? HeroUltimateChoreography.Build() : ActionScript(hero, action);
                 var weapon = bones[WeaponPath];
                 var weaponTip = GetWeaponTip(hero);
-                var radius = action == 3 ? 7f : action == 4 ? 10f : 0f;
-                var times = action == 3
-                    ? new[] { 0f, .08f, .18f, CharacterAnimations.SkillImpact, .32f, .40f, .51f, .64f, .67f, .76f, .87f, .95f, 1f }
-                    : action == 4
-                        ? new[] { 0f, .10f, .20f, .38f, .46f, CharacterAnimations.UltimateImpact, .56f, .68f, .82f, .94f, 1f }
-                        : new[] { 0f, .10f, .24f, .36f, .40f, .51f, .69f, .87f, 1f };
+                var lagScale = Mathf.Min(1f, LagReferenceSeconds / duration);
                 var samples = Mathf.CeilToInt(duration * 60f);
                 for (var frame = 0; frame <= samples; frame++)
                 {
                     var t = (float)frame / samples;
                     foreach (var bone in bones.Values) bone.Reset();
-                    var pose = Sample(poses, times, t);
-                    var torso = Sample(poses, times, Mathf.Max(0f, t - .012f));
-                    var arm = Sample(poses, times, Mathf.Max(0f, t - .024f));
-                    var elbow = Sample(poses, times, Mathf.Max(0f, t - .038f));
+                    var pose = Sample(script, t);
+                    var torso = Sample(script, Mathf.Max(0f, t - .012f * lagScale));
+                    var arm = Sample(script, Mathf.Max(0f, t - .024f * lagScale));
+                    var elbow = Sample(script, Mathf.Max(0f, t - .038f * lagScale));
                     // 지연된 관절도 마지막에는 기본 자세로 돌아온다.
-                    var tail = Mathf.Clamp01((1f - t) / .08f);
-                    bones["Root"].Transform.localPosition += new Vector3(pose.X, pose.Y, 0f);
+                    var tail = Mathf.Clamp01((1f - t) / (.08f * lagScale));
+                    root.Transform.localPosition += new Vector3(pose.X, pose.Y, 0f);
+                    root.Rotate(pose.Spin);
                     bones[TorsoPath].Rotate(torso.Lean * tail);
                     bones[TorsoPath].Transform.localScale = new Vector3(1f + pose.Reach * .045f, 1f - pose.Reach * .035f, 1f);
                     bones[ArmPath].Rotate(arm.Arm * tail);
                     bones[ElbowPath].Rotate(elbow.Elbow * tail);
                     // 무기 방향을 어깨/팔꿈치 각도의 합에서 분리해 칼끝이 의도한 호를 지난다.
                     bones[WeaponPath].Rotate((pose.Blade - torso.Lean - arm.Arm - elbow.Elbow) * tail);
-                    if (action == 4)
-                        AimSlamAtGround(weapon, graphic, weaponTip, radius, t);
-                    if (radius > 0f)
-                        ExpandWeapon(weapon, graphic, weaponTip, radius, GetExpansion(action, t));
-                    var lag = Sample(poses, times, Mathf.Max(0f, t - .065f));
+                    if (script.BladeLength > 0f)
+                    {
+                        // 길이를 먼저 정해야 땅에 닿는 지점을 알 수 있다.
+                        ExpandWeaponToLength(weapon, graphic, weaponTip, script.BladeLength, script.Expansion(t));
+                        AimAtGround(weapon, graphic, weaponTip, script.GroundAim(t));
+                    }
+                    if (script.Radius > 0f)
+                        ExtendWeapon(weapon, graphic, weaponTip, script.Radius, script.Expansion(t));
+                    var lag = Sample(script, Mathf.Max(0f, t - .065f * lagScale));
                     Rotate(bones, TorsoPath + "/BackArm", (-lag.Arm * .48f - pose.Lean * .35f) * tail);
                     Rotate(bones, TorsoPath + "/BackArm/Forearm", (22f * pose.Reach - lag.Elbow * .55f) * tail);
                     Rotate(bones, TorsoPath + "/Head", (-torso.Lean * .72f + lag.Lean * .12f) * tail);
-                    var drag = Sample(poses, times, Mathf.Max(0f, t - .105f));
-                    var velocity = (pose.X - Sample(poses, times, Mathf.Max(0f, t - .03f)).X) / .03f;
-                    var capeLimit = radius > 0f ? 85f : 48f;
-                    var scarfLimit = radius > 0f ? 110f : 65f;
+                    var drag = Sample(script, Mathf.Max(0f, t - .105f * lagScale));
+                    var velocityWindow = .03f * lagScale;
+                    var velocity = (pose.X - Sample(script, Mathf.Max(0f, t - velocityWindow)).X) / velocityWindow;
+                    var isBig = script.Radius > 0f || script.BladeLength > 0f;
+                    var capeLimit = isBig ? 85f : 48f;
+                    var scarfLimit = isBig ? 110f : 65f;
                     Rotate(bones, TorsoPath + "/Cape", Mathf.Clamp(-drag.Lean * .9f - velocity * 8f, -capeLimit, capeLimit) * tail);
                     Rotate(bones, TorsoPath + "/Scarf", Mathf.Clamp(-drag.Lean * 1.2f - velocity * 11f, -scarfLimit, scarfLimit) * tail);
                     Rotate(bones, TorsoPath + "/Head/Hair", (-drag.Lean * .35f - velocity * 3f) * tail);
-                    Plant(front, graphic, frontSole + new Vector3(pose.Step, pose.Lift, 0f), frontEnd);
-                    Plant(rear, graphic, rearSole + new Vector3(pose.RearStep, pose.RearLift, 0f), rearEnd);
+                    Plant(front, graphic, root, frontSole + new Vector3(pose.Step, pose.Lift, 0f), frontEnd, pose.Spin);
+                    Plant(rear, graphic, root, rearSole + new Vector3(pose.RearStep, pose.RearLift, 0f), rearEnd, pose.Spin);
                     if (frame == 0 || frame == samples)
                         foreach (var bone in bones.Values) bone.Reset();
                     foreach (var bone in bones.Values) bone.Record(t * duration);
@@ -168,6 +213,10 @@ namespace Sayne
                 var settings = AnimationUtility.GetAnimationClipSettings(clip);
                 settings.loopTime = false;
                 AnimationUtility.SetAnimationClipSettings(clip, settings);
+                // 무기가 뻗는 키프레임에 타격 이벤트를 박는다. 런타임은 이 이벤트로 맞는 순간을 안다.
+                AnimationUtility.SetAnimationEvents(clip, script.HitSeconds
+                    .Select(seconds => new AnimationEvent { time = seconds, functionName = CharacterAnimations.HitFrameEvent })
+                    .ToArray());
                 return clip;
             }
             finally { UnityEngine.Object.DestroyImmediate(instance); }
@@ -197,12 +246,31 @@ namespace Sayne
             return keep.Select(i => keys[i]).ToArray();
         }
 
+        /// <summary>평타·스킬 악보. 포즈 셋(준비·베기·여운)을 과장해 시각표에 얹는다.</summary>
+        private static Script ActionScript(string hero, int action)
+        {
+            var poses = Poses(hero, action).Select(pose => Exaggerate(pose, hero, action)).ToArray();
+            var times = action == 3
+                ? new[] { 0f, .08f, .18f, CharacterAnimations.SkillImpact, .32f, .40f, .51f, .64f, .67f, .76f, .87f, .95f, 1f }
+                : new[] { 0f, .10f, .24f, .36f, .40f, .51f, .69f, .87f, 1f };
+            // 베기와 관성 구간은 속도를 유지하고, 준비와 회수만 부드럽게 잇는다.
+            var eases = times.Select((_, i) => i == 3 || i == 5 ? Ease.Linear : Ease.Smooth).ToArray();
+            return new Script
+            {
+                Poses = poses,
+                Times = times,
+                Eases = eases,
+                Radius = action == 3 ? 7f : 0f,
+                Expansion = t => GetExpansion(t),
+            };
+        }
+
         private static Pose Exaggerate(Pose pose, string hero, int action)
         {
             var travel = action switch { 0 => .7f, 1 => 1.1f, 2 => 1.6f, 5 => 2.6f,
-                3 => hero == "Nyx" ? 6f : 5f, _ => hero == "Nyx" ? 8f : 9f };
-            var height = action == 4 ? 5f : action == 3 ? 2.5f : action == 5 ? 1.8f : 1f;
-            var power = action == 4 ? 1.7f : action == 3 ? 1.4f : action == 5 ? 1.25f : 1f;
+                3 => hero == "Nyx" ? 6f : 5f, _ => throw new ArgumentOutOfRangeException(nameof(action)) };
+            var height = action == 3 ? 2.5f : action == 5 ? 1.8f : 1f;
+            var power = action == 3 ? 1.4f : action == 5 ? 1.25f : 1f;
             var x = pose.X * travel;
             var y = pose.Y >= 0f ? pose.Y * height : pose.Y * 1.2f;
             // 전신 이동을 발에도 더해 큰 보폭에서 다리가 늘어나지 않게 한다.
@@ -218,42 +286,68 @@ namespace Sayne
         private static Vector3 GetWeaponTip(string hero)
         {
             var name = hero == "Kage" ? "Sword" : hero == "Aldric" ? "Scythe" : "Staff";
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/Weapon/{name}.prefab");
-            var sprite = prefab.GetComponent<SpriteRenderer>();
-            var bounds = sprite.sprite.bounds;
-            return prefab.transform.localPosition + prefab.transform.localRotation *
-                Vector3.Scale(prefab.transform.localScale, new Vector3(bounds.center.x, bounds.max.y, 0f));
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Equipment/Weapon/{name}/{name}.prefab");
+
+            // 무기는 소켓 아래 WeaponMount 에 붙는다. 끝은 무기 규격상 뿌리(쥐는 점)에서 +Y 로 뻗은 곳이고,
+            // Mount 가 그 방향을 소켓 기준으로 돌려 놓는다.
+            var heroPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Characters/Heroes/{hero}/{hero}.prefab");
+            var mount = heroPrefab.GetComponentsInChildren<Transform>(true).First(t => t.name == "WeaponMount");
+            var tip = prefab.transform.InverseTransformPoint(prefab.GetComponent<Weapon>().Tip.position);
+            return mount.localRotation * tip;
         }
 
-        private static float GetExpansion(int action, float t)
+        /// <summary>스킬에서 무기가 손을 떠나 뻗는 비중. 준비 끝에서 나가기 시작해 타격에 끝까지 뻗고, 회수하며 손으로 돌아온다.</summary>
+        private static float GetExpansion(float t)
         {
-            var start = action == 3 ? .18f : .30f;
-            var impact = action == 3 ? CharacterAnimations.SkillImpact : CharacterAnimations.UltimateImpact;
-            var release = action == 3 ? .76f : .78f;
-            var grow = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, impact, t));
-            var shrink = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(release, .96f, t));
+            var grow = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.18f, CharacterAnimations.SkillImpact, t));
+            var shrink = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.76f, .96f, t));
             return grow * shrink;
         }
 
-        private static void AimSlamAtGround(Bone weapon, Transform graphic, Vector3 tip, float radius, float t)
+        /// <summary>
+        /// 칼끝이 발 앞 땅(y=0)에 닿도록 무기를 돌린다. 지금 무기 길이로 닿을 수 있는 가장 먼 땅을 겨눈다.
+        /// 몸통이 Reach 로 비균등하게 늘어나 있으면 로컬 회전각과 그림 공간 회전각이 어긋나므로, 몇 번 되풀이해 맞춘다.
+        /// </summary>
+        private static void AimAtGround(Bone weapon, Transform graphic, Vector3 tip, float weight)
         {
-            var weight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.46f, CharacterAnimations.UltimateImpact, t))
-                * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.68f, .94f, t)));
-            var target = weapon.Transform.parent.InverseTransformPoint(graphic.TransformPoint(new Vector3(radius, 0f, 0f)))
-                - weapon.Transform.localPosition;
-            var blade = weapon.Transform.localRotation * Vector3.Scale(weapon.Transform.localScale, tip);
-            var angle = Vector2.SignedAngle(blade, target);
-            weapon.Transform.localRotation = Quaternion.AngleAxis(angle * weight, Vector3.forward) * weapon.Transform.localRotation;
+            if (weight <= 0f) return;
+            var rest = weapon.Transform.localRotation;
+            for (var pass = 0; pass < 6; pass++)
+            {
+                var grip = (Vector2)graphic.InverseTransformPoint(weapon.Transform.position);
+                var blade = (Vector2)graphic.InverseTransformVector(weapon.Transform.TransformVector(tip));
+                var reach = Mathf.Sqrt(Mathf.Max(0f, blade.sqrMagnitude - grip.y * grip.y));
+                var target = new Vector2(grip.x + reach, 0f) - grip;
+                var angle = Vector2.SignedAngle(blade, target);
+                weapon.Transform.localRotation = Quaternion.AngleAxis(angle, Vector3.forward) * weapon.Transform.localRotation;
+            }
+            weapon.Transform.localRotation = Quaternion.Slerp(rest, weapon.Transform.localRotation, weight);
         }
 
-        private static void ExpandWeapon(Bone weapon, Transform graphic, Vector3 tip, float radius, float weight)
+        /// <summary>
+        /// 스킬: 무기 크기는 그대로 두고, 무기가 뻗는 방향으로 손에서 밀어낸다 — 칼이 손을 떠나 날아가는 느낌이다.
+        /// 끝이 영웅 원점에서 반경 radius 에 닿는 만큼만 민다. 판정 반경은 키우던 때와 같다.
+        /// </summary>
+        private static void ExtendWeapon(Bone weapon, Transform graphic, Vector3 tip, float radius, float weight)
         {
             var grip = (Vector2)graphic.InverseTransformPoint(weapon.Transform.position);
             var blade = (Vector2)graphic.InverseTransformVector(weapon.Transform.TransformVector(tip));
-            // 기본 장착 무기의 끝이 영웅 원점에서 반경 7/10에 닿도록 손잡이를 기준으로 키운다.
-            var projection = Vector2.Dot(grip, blade);
-            var discriminant = projection * projection + blade.sqrMagnitude * (radius * radius - grip.sqrMagnitude);
-            var scale = Mathf.Max(1f, (-projection + Mathf.Sqrt(Mathf.Max(0f, discriminant))) / blade.sqrMagnitude);
+            var end = grip + blade;
+            var along = blade.normalized;
+
+            // |end + along * distance| = radius 인 distance. 이미 닿아 있으면 밀지 않는다.
+            var projection = Vector2.Dot(end, along);
+            var distance = Mathf.Max(0f, -projection + Mathf.Sqrt(Mathf.Max(0f, projection * projection - end.sqrMagnitude + radius * radius)));
+
+            var offset = weapon.Transform.parent.InverseTransformVector(graphic.TransformVector(along * distance * weight));
+            weapon.Transform.localPosition += offset;
+        }
+
+        /// <summary>손잡이에서 칼끝까지가 length 유닛이 되도록 키운다. 몸이 어디에 있든 크기가 같다.</summary>
+        private static void ExpandWeaponToLength(Bone weapon, Transform graphic, Vector3 tip, float length, float weight)
+        {
+            var blade = (Vector2)graphic.InverseTransformVector(weapon.Transform.TransformVector(tip));
+            var scale = Mathf.Max(1f, length / blade.magnitude);
             weapon.Transform.localScale = weapon.Scale * Mathf.Lerp(1f, scale, weight);
         }
 
@@ -264,8 +358,14 @@ namespace Sayne
             return graphic.InverseTransformPoint(new Vector3(bounds.center.x, bounds.min.y + .015f, leg.position.z));
         }
 
-        private static void Plant(Bone leg, Transform graphic, Vector3 target, Vector3 restEnd)
+        /// <summary>
+        /// 발바닥을 target(그림 좌표)에 붙인다. 골반이 도는 중(spin)이면 발도 골반을 축으로 같이 돈다 —
+        /// 공중제비에서 발이 땅을 향해 버티지 않게.
+        /// </summary>
+        private static void Plant(Bone leg, Transform graphic, Bone root, Vector3 target, Vector3 restEnd, float spin)
         {
+            var hip = root.Transform.localPosition;
+            target = hip + Quaternion.Euler(0f, 0f, spin) * (target - hip);
             var delta = leg.Transform.parent.InverseTransformVector(graphic.TransformPoint(target) - leg.Transform.position);
             var angle = Vector2.SignedAngle(restEnd, delta);
             leg.Transform.localRotation = Quaternion.Euler(0f, 0f, angle);
@@ -278,39 +378,27 @@ namespace Sayne
             if (bones.TryGetValue(path, out var bone)) bone.Rotate(offset);
         }
 
-        private static Pose Sample(Pose[] poses, float[] times, float t)
+        private static Pose Sample(Script script, float t)
         {
+            var times = script.Times;
             for (var i = 1; i < times.Length; i++)
             {
                 if (t > times[i]) continue;
                 var u = Mathf.InverseLerp(times[i - 1], times[i], t);
-                // 베기와 관성 구간은 속도를 유지하고, 준비와 회수만 부드럽게 잇는다.
-                if (i != 3 && i != 5) u = u * u * (3f - 2f * u);
-                return Pose.Lerp(poses[i - 1], poses[i], u);
+                u = script.Eases[i] switch
+                {
+                    Ease.Linear => u,
+                    Ease.Out => 1f - (1f - u) * (1f - u),
+                    Ease.In => u * u,
+                    _ => u * u * (3f - 2f * u),
+                };
+                return Pose.Lerp(script.Poses[i - 1], script.Poses[i], u);
             }
             return default;
         }
 
-        private static Pose[] UltimatePoses(string hero)
-        {
-            var advance = hero == "Kage" ? .50f : hero == "Aldric" ? .36f : .24f;
-            var apexHeight = hero == "Nyx" ? 1.35f : 1.15f;
-            var crouch = new Pose(-.08f,-.25f,28,55,-70,45,-.7f,-.18f,-.28f);
-            var takeoff = new Pose(advance * .35f,.65f,-12,150,-75,40,-.3f,
-                advance * .35f,advance * .35f-.15f,.78f,.90f);
-            var apex = new Pose(advance * .75f,apexHeight,18,165,-80,20,-.5f,
-                advance * .75f+.05f,advance * .75f-.12f,apexHeight+.25f,apexHeight+.38f);
-            var dive = new Pose(advance,.82f,-18,155,-50,0,.5f,
-                advance+.12f,advance-.10f,.95f,1.08f);
-            var impact = new Pose(advance,-.22f,-40,78,8,-110,1.6f,advance+.22f,advance-.18f);
-            var follow = new Pose(advance+.04f,-.16f,-36,48,22,-145,1.1f,advance+.24f,advance-.14f);
-            return new[] { default(Pose), crouch, takeoff, apex, dive, impact, impact, follow,
-                Pose.Lerp(follow, default, .55f), Pose.Lerp(follow, default, .94f), default };
-        }
-
         private static Pose[] Poses(string hero, int action)
         {
-            if (action == 4) return UltimatePoses(hero);
             Pose windup, strike, follow;
             if (hero == "Kage")
             {

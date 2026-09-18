@@ -36,7 +36,8 @@ namespace Sayne
 
         /// <summary>지금 눌러서 받아 갈 수 있나.</summary>
         public Observable<bool> IsClaimable =>
-            CurrentQuest.CombineLatest(_progress, (quest, progress) => quest != null && progress >= quest.Goal);
+            CurrentQuest.CombineLatest(_progress, (quest, progress) => quest != null && progress >= quest.Goal)
+                .DistinctUntilChanged();
 
         /// <summary>한 장을 받아 갔다. 보상 연출·토스트가 이걸 본다.</summary>
         public Observable<QuestPlan> Claimed => _claimed;

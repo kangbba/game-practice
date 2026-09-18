@@ -33,6 +33,9 @@ namespace Sayne
 
         [EnemyIDPicker] [SerializeField] private string _enemyID;
 
+        /// <summary>보스인가. 화면이 보스를 따로 다룬다 — HP 바가 영웅처럼 머리 위 UI 로 뜬다.</summary>
+        [SerializeField] private bool _isBoss;
+
         [Header("몸")]
         [SerializeField] private int _maxHP = 50;
         [SerializeField] private float _moveSpeed = 1.5f;
@@ -58,6 +61,8 @@ namespace Sayne
 
         /// <summary>이 설계값의 주인.</summary>
         public string EnemyID => _enemyID;
+
+        public bool IsBoss => _isBoss;
 
         public CharacterStats Body => new CharacterStats(_maxHP, _moveSpeed, _attackPower);
 

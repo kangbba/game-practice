@@ -34,7 +34,11 @@ namespace Sayne
         {
         }
 
-        public void Play(string particleID, Vector3 position, float scale, bool isFacingRight)
+        /// <summary>
+        /// 이펙트를 한 번 터뜨린다. 궁극기 무대 위 캐릭터에서 나는 것이면 궁극기 백그라운드에 가려지지 않게
+        /// 무대 이펙트 레이어로 띄운다.
+        /// </summary>
+        public void Play(string particleID, Vector3 position, float scale, bool isFacingRight, bool onUltimateStage)
         {
             var prefab = _particleAssets.Get(particleID);
             if (prefab == null)
@@ -47,6 +51,14 @@ namespace Sayne
             var instance = Object.Instantiate(prefab, position, rotation);
 
             instance.transform.localScale *= scale;
+
+            if (onUltimateStage)
+            {
+                foreach (var renderer in instance.GetComponentsInChildren<Renderer>())
+                {
+                    renderer.sortingLayerName = SortingLayers.UltimateEffect;
+                }
+            }
 
             Object.Destroy(instance, Lifetime(instance));
         }
@@ -63,13 +75,13 @@ namespace Sayne
             character.Damaged
                 .Subscribe((self: this, character, graphic), (_, state) =>
                     state.self.Play(ParticleID.HitSpark, ChestPoint(state.character), HitEffectScale,
-                        state.graphic.IsFacingRight))
+                        state.graphic.IsFacingRight, state.character.IsOnUltimateStage.CurrentValue))
                 .RegisterTo(LifeToken);
 
             character.Died
                 .Subscribe((self: this, graphic), (died, state) =>
                     state.self.Play(ParticleID.DeathSmoke, died.transform.position, DeathEffectScale,
-                        state.graphic.IsFacingRight))
+                        state.graphic.IsFacingRight, died.IsOnUltimateStage.CurrentValue))
                 .RegisterTo(LifeToken);
         }
 
@@ -79,7 +91,7 @@ namespace Sayne
             if (attack == character.Combat.Ultimate && character.Combat.UltimateParticleID != null)
             {
                 Play(character.Combat.UltimateParticleID, character.transform.position, UltimateEffectScale,
-                    graphic.IsFacingRight);
+                    graphic.IsFacingRight, character.IsOnUltimateStage.CurrentValue);
             }
         }
 

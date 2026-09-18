@@ -15,6 +15,7 @@ namespace Sayne
         public const string DropPortraitsLabel = "DropPortraits";
 
         public const string OverlayHPBar = "OverlayHPBar";
+        public const string WorldHPBar = "WorldHPBar";
         public const string UltimateCutscenePanel = "UltimateCutscenePanel";
         public const string DamageText = "DamageText";
         public const string BattlePanel = "BattlePanel";
@@ -23,6 +24,11 @@ namespace Sayne
         public const string DropItem = "DropItem";
         public const string TutorialWidget = "TutorialWidget";
         public const string OverlaySpeechBubble = "OverlaySpeechBubble";
+        public const string WorldSpeechBubble = "WorldSpeechBubble";
+
+        // 팝업. 종류와의 짝은 PopupTypes.GetAddress 가 든다.
+        public const string GrowthWindow = "GrowthWindow";
+        public const string EquipmentWindow = "EquipmentWindow";
 
         /// <summary>골드 드랍 구슬에 들어가는 동전 그림.</summary>
         public const string GoldPortrait = "Gold";

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using R3;
 using UnityEngine;
@@ -12,7 +13,7 @@ namespace Sayne
     /// 게임 쪽은 이 매니저를 모른다 — 궁극기가 나갔다, 웨이브가 시작됐다는 신호를 듣고 끼어들 뿐이다.
     ///
     /// 궁극기 컷인: 도는 동안 게임이 멈춘다. 그 연결은 "IsPlaying 인 동안 중단" 한 줄이다.
-    /// 시전 모션은 첫 프레임에서 얼었다가 컷인이 끝나면 이어진다.
+    /// 컷인만은 신호를 듣지 않고 불려서 돈다 — 궁극기 연출의 한 단계라 UltimateDirector 가 순서에 맞춰 부르고 기다린다.
     /// 웨이브 시작 알림: 게임을 멈추지 않는다. 잠깐 떴다가 혼자 사라진다.
     /// 저체력 경고: 피가 얼마 안 남은 동안 계속 떠 있다. 히어로 체력을 구독해 저절로 켜고 끈다.
     /// </summary>
@@ -62,16 +63,6 @@ namespace Sayne
 
             _pauseManager.PauseWhile(_isPlaying);
 
-            _heroManager.Spawned
-                .Subscribe(this, (character, self) =>
-                {
-                    if (character is Hero hero)
-                    {
-                        self.BindHero(hero);
-                    }
-                })
-                .RegisterTo(LifeToken);
-
             _waveManager.WaveStarted
                 .Subscribe(this, (number, self) => self.PlayWaveStartAsync(number.stage, number.wave).Forget())
                 .RegisterTo(LifeToken);
@@ -103,15 +94,8 @@ namespace Sayne
             scaler.referenceResolution = ReferenceResolution;
         }
 
-        private void BindHero(Hero hero)
-        {
-            hero.Combat.Attacked
-                .Where(hero, (attack, owner) => attack == owner.Combat.Ultimate)
-                .Subscribe((self: this, hero), (_, state) => state.self.PlayUltimateAsync(state.hero).Forget())
-                .RegisterTo(hero.destroyCancellationToken);
-        }
-
-        private async UniTaskVoid PlayUltimateAsync(Hero hero)
+        /// <summary>궁극기 컷인을 틀고 끝날 때까지 기다린다. 도는 동안 게임은 멈춰 있다.</summary>
+        public async UniTask PlayUltimateCutsceneAsync(Hero hero, CancellationToken token)
         {
             var profile = _profiles.Get(hero.ID);
 
@@ -119,7 +103,7 @@ namespace Sayne
 
             var panel = Object.Instantiate(_ultimatePanelPrefab, _canvas.transform);
             await panel.PlayAsync(profile.Portrait, profile.DisplayName, hero.Combat.Ultimate.Name,
-                profile.ThemeColor, LifeToken);
+                profile.ThemeColor, token);
             Object.Destroy(panel.gameObject);
 
             _isPlaying.Value = false;
@@ -148,14 +132,14 @@ namespace Sayne
                 .RegisterTo(hero.destroyCancellationToken);
         }
 
-        /// <summary>웨이브 시작 알림. 2초 떠 있다가 사라진다. 게임은 멈추지 않는다.</summary>
+        /// <summary>웨이브 시작 알림. 1.5초 떠 있다가 사라진다. 게임은 멈추지 않는다.</summary>
         private async UniTaskVoid PlayWaveStartAsync(int stage, int wave)
         {
             var panel = Object.Instantiate(_waveStartPanelPrefab, _canvas.transform);
             panel.Init(_waveManager.GetLabel(stage, wave));
 
             // 창이 열려 게임이 멈춰 있어도 알림은 제 시간에 사라진다. 패널 연출도 unscaled 로 돈다.
-            await UniTask.Delay(TimeSpan.FromSeconds(2f), DelayType.UnscaledDeltaTime, cancellationToken: LifeToken);
+            await UniTask.Delay(TimeSpan.FromSeconds(1.5f), DelayType.UnscaledDeltaTime, cancellationToken: LifeToken);
 
             Object.Destroy(panel.gameObject);
         }

@@ -55,25 +55,32 @@ namespace Sayne
             var cameraManager = AddManager(new CameraManager());
             var cameraDirector = AddManager(new CameraDirector(cameraManager, heroManager));
 
-            var screenUIManager = AddManager(new ScreenUIManager(pauseManager, cameraManager,
-                heroManager, enemyManager, waveManager, questManager, currencyManager, growthManager,
-                equipmentManager, profileAssetManager, heroAssetManager,
-                uiAssetManager.BattlePanelPrefab,
-                uiAssetManager.OverlayHPBarPrefab, uiAssetManager.DamageTextPrefab));
-
             var uiDirectionManager = AddManager(new UIDirectionManager(pauseManager, heroManager, waveManager,
                 profileAssetManager, uiAssetManager.UltimateCutscenePanelPrefab, uiAssetManager.WaveStartPanelPrefab,
                 uiAssetManager.LowHealthPanelPrefab));
+
+            // 궁극기 연출은 컷씬(UI 연출)을 부르고, HP바·적 AI·웨이브가 이걸 본다 — 그 사이에 선다.
+            var ultimateDirector = AddManager(new UltimateDirector(heroManager, enemyManager, cameraManager,
+                uiDirectionManager));
+
+            var screenBlurManager = AddManager(new ScreenBlurManager());
+            var popupManager = AddManager(new PopupManager(pauseManager, screenBlurManager, uiAssetManager));
+            var screenUIManager = AddManager(new ScreenUIManager(pauseManager, cameraManager,
+                heroManager, enemyManager, waveManager, questManager, currencyManager, growthManager,
+                equipmentManager, ultimateDirector, popupManager, profileAssetManager, heroAssetManager,
+                uiAssetManager.BattlePanelPrefab,
+                uiAssetManager.OverlayHPBarPrefab, uiAssetManager.WorldHPBarPrefab, uiAssetManager.DamageTextPrefab));
 
             var tutorialManager = AddManager(new TutorialManager(pauseManager, cameraManager,
                 uiAssetManager.TutorialWidgetPrefab, uiAssetManager.OverlaySpeechBubblePrefab));
 
             var heroControlManager = AddManager(new HeroControlManager(pauseManager, heroManager, enemyManager, screenUIManager.BattlePanel));
-            var enemyAIManager = AddManager(new EnemyAIManager(pauseManager, heroManager, enemyManager));
+            var enemyAIManager = AddManager(new EnemyAIManager(pauseManager, heroManager, enemyManager, ultimateDirector));
 
-            var tutorialDirector = AddManager(new TutorialDirector(tutorialManager, heroManager, enemyManager, waveManager));
+            var tutorialDirector = AddManager(new TutorialDirector(tutorialManager, heroManager, enemyManager, waveManager,
+                uiAssetManager.WorldSpeechBubblePrefab));
 
-            var inGamePhase = new InGamePhase(mapManager, heroManager, enemyManager, waveManager);
+            var inGamePhase = new InGamePhase(mapManager, heroManager, enemyManager, waveManager, ultimateDirector);
             phaseManager.RunAsync(new LoadingPhase(inGamePhase)).Forget();
         }
 

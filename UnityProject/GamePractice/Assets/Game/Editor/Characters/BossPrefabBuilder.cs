@@ -15,7 +15,7 @@ namespace Sayne.Editor
         private const string OutputPath = OutputFolderParent + "/" + OutputFolderName + "/OgreBoss.prefab";
 
         /// <summary>보스는 같은 리그를 키워서 쓴다. 덩치가 보스임을 말하게 한다.</summary>
-        private const float Scale = 1.6f;
+        private const float Scale = 4.2f;
 
         /// <summary>살짝 붉은 기운. 같은 오우거라도 한눈에 보스로 읽히게 한다.</summary>
         private static readonly Color Tint = new Color(1f, 0.76f, 0.7f);

@@ -9,8 +9,8 @@ namespace Sayne.Editor
     /// </summary>
     public static class ProjectileBuilder
     {
-        private const string ArrowPath = "Assets/Game/Equipment/Projectiles/Arrow.prefab";
-        private const string ArrowSpritePath = "Assets/Game/Equipment/Projectiles/Arrow.png";
+        private const string ArrowPath = "Assets/Game/Equipment/Weapon/Projectiles/Arrow.prefab";
+        private const string ArrowSpritePath = "Assets/Game/Equipment/Weapon/Projectiles/Arrow.png";
 
         /// <summary>화살 그림 크기. 1.28 유닛짜리 스프라이트라 이 배율이면 히어로 키의 절반쯤 된다.</summary>
         private const float ArrowScale = 1.4f;

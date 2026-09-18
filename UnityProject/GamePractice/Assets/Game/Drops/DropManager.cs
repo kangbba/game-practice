@@ -104,7 +104,7 @@ namespace Sayne
 
             foreach (var drop in _magnetTargets)
             {
-                if (drop == null || drop.IsAbsorbing)
+                if (drop == null || !drop.CanBeAbsorbed)
                 {
                     continue;
                 }

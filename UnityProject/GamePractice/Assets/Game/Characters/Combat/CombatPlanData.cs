@@ -11,7 +11,7 @@ namespace Sayne
     [Serializable]
     public class CombatPlanData
     {
-        /// <summary>쿨타임 기술 한 개(스킬·궁극기). 이름이 비어 있으면 그 기술은 없다.</summary>
+        /// <summary>쿨타임 기술 한 개. 이름이 비어 있으면 그 기술은 없다. 궁극기는 여기 없다 — 든 무기가 가진다.</summary>
         [Serializable]
         public class SkillData
         {
@@ -34,17 +34,10 @@ namespace Sayne
         [SerializeField] private bool _comboStaggers = true;
 
         [SerializeField] private SkillData _skill = new SkillData();
-        [SerializeField] private SkillData _ultimate = new SkillData();
-
-        /// <summary>궁극기 전용 연출. 비우면 평타와 같은 베기 연출을 쓴다.</summary>
-        [ParticleIDPicker(allowEmpty: true)] [SerializeField] private string _ultimateParticleID;
 
         public CombatPlan ToPlan()
         {
-            return new CombatPlan(_comboStaggers,
-                _skill.ToSkill(CharacterAnimations.SkillName),
-                _ultimate.ToSkill(CharacterAnimations.UltimateName),
-                string.IsNullOrEmpty(_ultimateParticleID) ? null : _ultimateParticleID);
+            return new CombatPlan(_comboStaggers, _skill.ToSkill(CharacterAnimations.SkillName));
         }
     }
 }

@@ -29,7 +29,7 @@ namespace Sayne.Editor
             count += MarkFolder(settings, group, EnemiesRoot, AssetAddresses.EnemiesLabel);
             count += MarkFolder(settings, group, ParticlesRoot, AssetAddresses.ParticlesLabel);
             count += MarkFolder(settings, group, MapsRoot, AssetAddresses.MapsLabel);
-            count += MarkFolder(settings, group, EquipmentRoot, AssetAddresses.EquipmentLabel);
+            count += MarkEquipment(settings, group);
 
             // 프로필은 캐릭터 폴더에 같이 둔다. 에셋 이름 = 캐릭터 ID.
             count += MarkFolder(settings, group, HeroesRoot, AssetAddresses.ProfilesLabel, "t:CharacterProfile");
@@ -41,7 +41,7 @@ namespace Sayne.Editor
             // 히어로 설계값도 마찬가지로 히어로 폴더에 같이 둔다.
             count += MarkFolder(settings, group, HeroesRoot, AssetAddresses.HeroPlansLabel, "t:HeroPlan");
 
-            // 장비 설계값도 장비 폴더에 같이 둔다. 자리·이름·스탯·무기 수치가 전부 여기 한 장에 있다.
+            // 장비 설계값(아이템 카드)은 그 아이템 폴더에 프리팹과 같이 둔다.
             count += MarkFolder(settings, group, EquipmentRoot, AssetAddresses.EquipmentPlansLabel, "t:EquipmentPlan");
 
             count += MarkFolder(settings, group, "Assets/Game/Drops/Art/Portraits",
@@ -50,17 +50,53 @@ namespace Sayne.Editor
             count += Mark(settings, group, "Assets/Game/Drops/DropItem.prefab", null);
 
             count += Mark(settings, group, "Assets/Game/UI/OverlayHPBar.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/WorldHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/DamageText.prefab", null);
             count += Mark(settings, group, "Assets/Game/UIDirection/UltimateCutscenePanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/BattlePanel.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/Popup/GrowthWindow.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/Popup/EquipmentWindow.prefab", null);
             count += Mark(settings, group, "Assets/Game/UIDirection/UIPrefab_WaveStart.prefab", null);
             count += Mark(settings, group, "Assets/Game/UIDirection/UIPrefab_LowHealth.prefab", null);
 
             count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/TutorialWidget.prefab", null);
             count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/OverlaySpeechBubble.prefab", null);
+            count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/WorldSpeechBubble.prefab", null);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"AddressablesSetup: {count} 개 에셋 등록 완료");
+        }
+
+        /// <summary>
+        /// 장비 프리팹만 장비로 올린다 — 부위 스크립트(IEquipment)가 붙은 것만. 장비 폴더엔 화살처럼 장비가 아닌 프리팹도 있다.
+        /// 주소는 프리팹 이름 = 장비 ID.
+        /// </summary>
+        private static int MarkEquipment(AddressableAssetSettings settings, AddressableAssetGroup group)
+        {
+            if (!settings.GetLabels().Contains(AssetAddresses.EquipmentLabel))
+            {
+                settings.AddLabel(AssetAddresses.EquipmentLabel);
+            }
+
+            var count = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { EquipmentRoot }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(path).TryGetComponent<IEquipment>(out _))
+                {
+                    count += Mark(settings, group, path, AssetAddresses.EquipmentLabel);
+                    continue;
+                }
+
+                // 예전에 장비로 잘못 올라간 것(화살 등)은 장비 라벨을 뗀다.
+                var stale = settings.FindAssetEntry(guid);
+                if (stale != null)
+                {
+                    stale.SetLabel(AssetAddresses.EquipmentLabel, false);
+                }
+            }
+
+            return count;
         }
 
         private static int MarkFolder(AddressableAssetSettings settings, AddressableAssetGroup group,

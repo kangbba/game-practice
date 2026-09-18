@@ -100,7 +100,7 @@ namespace Sayne
             }
 
             _closeBtn.onClick.AsObservable()
-                .Subscribe(this, (_, self) => self.Hide())
+                .Subscribe(this, (_, self) => self.Close())
                 .AddTo(this);
 
             _actionBtn.onClick.AsObservable()
@@ -161,19 +161,6 @@ namespace Sayne
                 .AddTo(this);
         }
 
-        /// <summary>장비 메뉴 버튼이 누르는 문. 열려 있으면 닫고, 닫혀 있으면 연다.</summary>
-        public void Toggle()
-        {
-            if (IsOpen.CurrentValue)
-            {
-                Hide();
-            }
-            else
-            {
-                Show();
-            }
-        }
-
         private void SetHero(Hero hero)
         {
             // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 입은 한 벌이 그대로 입혀진다.
@@ -197,7 +184,7 @@ namespace Sayne
         private void DrawPart(EquipmentSlot slot, EquipmentPart part)
         {
             // 맨손은 싸움에선 무기지만 창에선 빈 자리다. 스탯만은 실제로 얹히는 값이라 그대로 넘긴다.
-            var isEmpty = part == null || part is Weapon { IsBareHands: true };
+            var isEmpty = part == null || part is WeaponPart { IsBareHands: true };
 
             SetEquipped(slot, isEmpty ? string.Empty : part.ID, part?.Stats ?? default);
             _previewStage.Wear(slot, part?.Visual);
@@ -220,7 +207,7 @@ namespace Sayne
                 }
 
                 var plan = _equipmentManager.GetPlan(equipmentID);
-                candidates.Add((equipmentID, plan.Slot, plan.DisplayName, _equipmentManager.GetIcon(equipmentID),
+                candidates.Add((equipmentID, _equipmentManager.GetSlot(equipmentID), plan.DisplayName, _equipmentManager.GetIcon(equipmentID),
                     plan.Description, plan.Stats));
             }
 

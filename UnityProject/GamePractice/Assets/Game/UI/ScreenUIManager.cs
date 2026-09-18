@@ -15,6 +15,7 @@ namespace Sayne
     {
         private const string RootName = "ScreenUIRoot";
         private const string HPBarRootName = "HPBarRoot";
+        private const string WorldHPBarRootName = "WorldHPBarCanvas";
         private const string DamageTextRootName = "DamageTextRoot";
         private const string EventSystemName = "EventSystem";
 
@@ -26,11 +27,22 @@ namespace Sayne
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-        /// <summary>머리 꼭대기에서 바까지 띄우는 간격.</summary>
+        // HP 바는 둘로 나뉜다. 영웅과 보스는 머리 위 UI(오버레이), 일반 적은 발밑 월드.
+
+        /// <summary>머리 위 바: 머리 꼭대기에서 바까지 띄우는 간격.</summary>
         private const float HPBarHeadGap = 0.25f;
 
-        /// <summary>머리 지점에서 화면상으로 더 띄우는 값. 기준 해상도 단위라 거리와 상관없이 간격이 같다.</summary>
-        private static readonly Vector2 HPBarScreenOffset = new Vector2(0f, 0f);
+        /// <summary>머리 위 바: 머리 지점에서 화면상으로 더 띄우는 값. 기준 해상도 단위라 거리와 상관없이 간격이 같다.</summary>
+        private static readonly Vector2 HeadHPBarScreenOffset = new Vector2(0f, 22f);
+
+        /// <summary>발밑 바: 발에서 화면 아래쪽으로 내리는 월드 거리.</summary>
+        private const float FootHPBarGap = 0.2f;
+
+        /// <summary>발밑 바: 프리팹 1픽셀이 월드 몇 단위인가. 160픽셀 폭이면 0.8 단위다.</summary>
+        private const float FootHPBarScale = 0.005f;
+
+        /// <summary>발밑 바는 적 레이어에서 몸보다 위에 그린다 — 무리 속에서도 바가 몸에 묻히지 않는다.</summary>
+        private const int FootHPBarSortingOrder = 100;
 
         /// <summary>머리 꼭대기에서 데미지 숫자가 뜨기 시작하는 곳까지의 간격. HP 바보다 위라야 바에 안 가린다.</summary>
         private const float DamageTextHeadGap = 0.55f;
@@ -44,14 +56,18 @@ namespace Sayne
         private readonly CurrencyManager _currencyManager;
         private readonly GrowthManager _growthManager;
         private readonly EquipmentManager _equipmentManager;
+        private readonly UltimateDirector _ultimateDirector;
+        private readonly PopupManager _popupManager;
         private readonly IAssets<CharacterProfile> _profiles;
         private readonly IAssets<Hero> _heroAssets;
         private readonly BattlePanel _battlePanelPrefab;
         private readonly OverlayHPBar _hpBarPrefab;
+        private readonly WorldHPBar _worldHPBarPrefab;
         private readonly DamageText _damageTextPrefab;
 
         private Canvas _canvas;
         private Canvas _hpBarCanvas;
+        private Canvas _worldHPBarCanvas;
         private Canvas _damageTextCanvas;
 
         /// <summary>전투 HUD. OnInit 이후 접근 가능.</summary>
@@ -60,8 +76,8 @@ namespace Sayne
         public ScreenUIManager(PauseManager pauseManager, CameraManager cameraManager,
             HeroManager heroManager, EnemyManager enemyManager, WaveManager waveManager, QuestManager questManager,
             CurrencyManager currencyManager, GrowthManager growthManager, EquipmentManager equipmentManager,
-            IAssets<CharacterProfile> profiles, IAssets<Hero> heroAssets,
-            BattlePanel battlePanelPrefab, OverlayHPBar hpBarPrefab, DamageText damageTextPrefab)
+            UltimateDirector ultimateDirector, PopupManager popupManager, IAssets<CharacterProfile> profiles, IAssets<Hero> heroAssets,
+            BattlePanel battlePanelPrefab, OverlayHPBar hpBarPrefab, WorldHPBar worldHPBarPrefab, DamageText damageTextPrefab)
         {
             _pauseManager = pauseManager;
             _cameraManager = cameraManager;
@@ -72,10 +88,13 @@ namespace Sayne
             _currencyManager = currencyManager;
             _growthManager = growthManager;
             _equipmentManager = equipmentManager;
+            _ultimateDirector = ultimateDirector;
+            _popupManager = popupManager;
             _profiles = profiles;
             _heroAssets = heroAssets;
             _battlePanelPrefab = battlePanelPrefab;
             _hpBarPrefab = hpBarPrefab;
+            _worldHPBarPrefab = worldHPBarPrefab;
             _damageTextPrefab = damageTextPrefab;
         }
 
@@ -83,6 +102,7 @@ namespace Sayne
         {
             _canvas = CreateCanvas(RootName, 0, true);
             _hpBarCanvas = CreateCanvas(HPBarRootName, HPBarSortingOrder, false);
+            _worldHPBarCanvas = CreateWorldCanvas(WorldHPBarRootName, FootHPBarSortingOrder);
             _damageTextCanvas = CreateCanvas(DamageTextRootName, DamageTextSortingOrder, false);
 
             if (EventSystem.current == null)
@@ -92,13 +112,13 @@ namespace Sayne
 
             BattlePanel = Object.Instantiate(_battlePanelPrefab, _canvas.transform);
             BattlePanel.Init(_heroManager, _waveManager, _questManager, _currencyManager, _growthManager,
-                _equipmentManager, _profiles, _heroAssets);
+                _profiles, _popupManager);
 
-            // 창이 하나라도 열려 있는 동안 게임은 멈춘다.
-            foreach (var popup in BattlePanel.Popups)
-            {
-                _pauseManager.PauseWhile(popup.IsOpen);
-            }
+            // 전투 HUD 의 메뉴가 여는 창들. 만들고 여닫는 건 팝업 매니저, 무엇을 볼지는 여기서 넣어 준다.
+            _popupManager.Create<GrowthWindow>(PopupType.Growth)
+                .Init(_growthManager, _currencyManager, _heroManager, _heroAssets);
+            _popupManager.Create<EquipmentWindow>(PopupType.Equipment)
+                .Init(_equipmentManager, _heroManager, _heroAssets);
 
             _heroManager.Spawned
                 .Merge(_enemyManager.Spawned)
@@ -110,10 +130,12 @@ namespace Sayne
         {
             Destroy(_canvas);
             Destroy(_hpBarCanvas);
+            Destroy(_worldHPBarCanvas);
             Destroy(_damageTextCanvas);
 
             _canvas = null;
             _hpBarCanvas = null;
+            _worldHPBarCanvas = null;
             _damageTextCanvas = null;
             BattlePanel = null;
         }
@@ -125,6 +147,17 @@ namespace Sayne
 
             CreateHPBar(character, height);
             BindDamageText(character, height);
+        }
+
+        /// <summary>월드에 뜨는 UI 를 모으는 캔버스. 자식은 각자 월드 위치에 서고, 그리는 순서는 정렬 레이어가 정한다.</summary>
+        private static Canvas CreateWorldCanvas(string name, int sortingOrder)
+        {
+            var canvas = new GameObject(name, typeof(Canvas)).GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.sortingLayerName = SortingLayers.Enemy;
+            canvas.sortingOrder = sortingOrder;
+
+            return canvas;
         }
 
         private static Canvas CreateCanvas(string name, int sortingOrder, bool isInteractive)
@@ -154,8 +187,6 @@ namespace Sayne
 
         private void CreateHPBar(Character owner, float height)
         {
-            var hpBar = Object.Instantiate(_hpBarPrefab, _hpBarCanvas.transform);
-
             var currentHP = owner.CurrentHP
                 .Select(hp => (float)hp)
                 .ToReadOnlyReactiveProperty();
@@ -165,8 +196,30 @@ namespace Sayne
                 .Select(stats => (float)stats.MaxHP)
                 .ToReadOnlyReactiveProperty();
 
-            hpBar.Attach(_cameraManager.Camera, owner.transform, HeadOffset(height + HPBarHeadGap),
-                HPBarScreenOffset, currentHP, maxHP);
+            // 영웅과 보스는 머리 위 UI, 일반 적은 발밑 월드.
+            var camera = _cameraManager.Camera;
+            HPBar hpBar;
+
+            if (owner is Hero || owner is Enemy { IsBoss: true })
+            {
+                var overlay = Object.Instantiate(_hpBarPrefab, _hpBarCanvas.transform);
+                overlay.Attach(camera, owner.transform, HeadOffset(height + HPBarHeadGap), HeadHPBarScreenOffset,
+                    currentHP, maxHP);
+                hpBar = overlay;
+            }
+            else
+            {
+                var world = Object.Instantiate(_worldHPBarPrefab, _worldHPBarCanvas.transform);
+                world.Attach(camera, owner.transform, -camera.transform.up * FootHPBarGap, FootHPBarScale,
+                    currentHP, maxHP);
+                hpBar = world;
+            }
+
+            // 궁극기 연출(복귀까지) 동안은 무대에 오른 캐릭터의 바만 보인다. 무대 밖 몸은 배경에 덮였는데 바만 뜨면 안 된다.
+            _ultimateDirector.IsPlaying
+                .CombineLatest(owner.IsOnUltimateStage, (playing, onStage) => !playing || onStage)
+                .Subscribe(hpBar, (visible, bar) => bar.gameObject.SetActive(visible))
+                .RegisterTo(hpBar.destroyCancellationToken);
 
             owner.Died
                 .Subscribe((hpBar, currentHP, maxHP), (_, state) =>

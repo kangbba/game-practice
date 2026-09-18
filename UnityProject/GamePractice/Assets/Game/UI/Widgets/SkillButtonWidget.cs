@@ -26,13 +26,25 @@ namespace Sayne
                 .AddTo(this);
         }
 
-        /// <summary>구독은 그 히어로의 수명을 따라간다 — 죽으면 같이 풀린다.</summary>
+        /// <summary>
+        /// 구독은 그 히어로의 수명을 따라간다 — 죽으면 같이 풀린다.
+        /// 궁극기는 든 무기의 것이라 무기를 바꿔 들 때마다 이름과 쓸 수 있는지가 다시 정해진다.
+        /// </summary>
         private void SetHero(Character hero, SkillSlotType slot)
         {
-            var skill = slot == SkillSlotType.Skill ? hero.Combat.Skill : hero.Combat.Ultimate;
             var cooldown = slot == SkillSlotType.Skill ? hero.Combat.SkillCooldown : hero.Combat.UltimateCooldown;
 
-            _label.text = skill != null ? skill.Name : EmptyName(slot);
+            var skillChanged = slot == SkillSlotType.Skill
+                ? Observable.Return(Unit.Default)
+                : hero.Equipment.Observe(EquipmentSlot.MainHand).Select(_ => Unit.Default);
+
+            skillChanged
+                .Subscribe((self: this, hero, slot), (_, state) =>
+                {
+                    var skill = SkillOf(state.hero, state.slot);
+                    state.self._label.text = skill != null ? skill.Name : EmptyName(state.slot);
+                })
+                .AddTo(hero);
 
             cooldown.RemainRatio
                 .Subscribe(this, (ratio, self) => self._cooldownFill.fillAmount = ratio)
@@ -43,9 +55,15 @@ namespace Sayne
                 .AddTo(hero);
 
             cooldown.RemainSeconds
-                .CombineLatest(hero.Combat.Casting, (remain, casting) => skill != null && remain <= 0f && !casting)
-                .Subscribe(this, (canUse, self) => self._button.interactable = canUse)
+                .CombineLatest(hero.Combat.Casting, skillChanged, (remain, casting, _) => (remain, casting))
+                .Subscribe((self: this, hero, slot), (state, owner) => owner.self._button.interactable =
+                    SkillOf(owner.hero, owner.slot) != null && state.remain <= 0f && !state.casting)
                 .AddTo(hero);
+        }
+
+        private static CharacterSkill SkillOf(Character hero, SkillSlotType slot)
+        {
+            return slot == SkillSlotType.Skill ? hero.Combat.Skill : hero.Combat.Ultimate;
         }
 
         /// <summary>구독 없이 최종 모습만 그린다. 프리팹을 굽거나 미리보기를 찍을 때 쓰는 문이다.</summary>

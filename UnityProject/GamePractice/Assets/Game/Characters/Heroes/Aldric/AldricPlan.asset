@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AldricPlan
   m_EditorClassIdentifier:
   _heroID: Aldric
-  _maxHP: 100
+  _maxHP: 200
   _moveSpeed: 4.5
   _attackPower: 5
   _mainHand: Scythe
@@ -30,11 +30,6 @@ MonoBehaviour:
     - 1.2
     _comboStaggers: 1
     _skill:
-      _name: 빛가르기
+      _name: 그림자가르기
       _powerMultiplier: 2
       _cooldown: 10
-    _ultimate:
-      _name: 백야
-      _powerMultiplier: 3.5
-      _cooldown: 45
-    _ultimateParticleID: AldricUltimate

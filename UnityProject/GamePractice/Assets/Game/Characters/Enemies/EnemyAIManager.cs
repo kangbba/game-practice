@@ -15,15 +15,18 @@ namespace Sayne
         private readonly PauseManager _pauseManager;
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
+        private readonly UltimateDirector _ultimateDirector;
 
         private readonly Dictionary<Enemy, float> _nextThinkTime = new Dictionary<Enemy, float>();
         private readonly Dictionary<Enemy, Vector3> _aimPoint = new Dictionary<Enemy, Vector3>();
 
-        public EnemyAIManager(PauseManager pauseManager, HeroManager heroManager, EnemyManager enemyManager)
+        public EnemyAIManager(PauseManager pauseManager, HeroManager heroManager, EnemyManager enemyManager,
+            UltimateDirector ultimateDirector)
         {
             _pauseManager = pauseManager;
             _heroManager = heroManager;
             _enemyManager = enemyManager;
+            _ultimateDirector = ultimateDirector;
         }
 
         protected override void OnInit()
@@ -43,8 +46,15 @@ namespace Sayne
 
             // 중단 중에도 Update 는 돈다 — 멈춘 게임에서 적이 판단을 내리면 안 된다.
             Observable.EveryUpdate(UnityFrameProvider.Update)
-                .Where(_ => !_pauseManager.IsPaused.CurrentValue)
+                .Where(this, (_, self) => !self._pauseManager.IsPaused.CurrentValue
+                    && !self._ultimateDirector.IsPlaying.CurrentValue)
                 .Subscribe(this, (_, self) => self.UpdateAI())
+                .RegisterTo(LifeToken);
+
+            // 궁극기 연출이 도는 동안 적은 그 자리에 선다. 판단을 멈춰도 걷던 방향은 남으니 발도 같이 세운다.
+            _ultimateDirector.IsPlaying
+                .Where(playing => playing)
+                .Subscribe(this, (_, self) => self.StopAll())
                 .RegisterTo(LifeToken);
         }
 
@@ -68,9 +78,22 @@ namespace Sayne
             }
         }
 
-        /// <summary>③ 판정에 걸린 대상에게 피해를 준다. 사이 벌어졌으면 헛친다.</summary>
+        private void StopAll()
+        {
+            foreach (var enemy in _enemyManager.CurrentEnemies)
+            {
+                enemy.StopMove();
+            }
+        }
+
+        /// <summary>③ 판정에 걸린 대상에게 피해를 준다. 사이 벌어졌으면 헛친다. 궁극기 연출 중엔 휘두르던 것도 안 맞는다.</summary>
         private void ApplyHit(Enemy enemy, BasicAttack attack)
         {
+            if (_ultimateDirector.IsPlaying.CurrentValue)
+            {
+                return;
+            }
+
             var target = enemy.Target;
             if (target == null || !target.IsAlive)
             {
