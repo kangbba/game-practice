@@ -1,11 +1,22 @@
+using System;
 using R3;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace Sayne
 {
+    /// <summary>화면 UI 매니저가 찍어내는 프리팹들. 창고를 통째로 받지 않으려고 쓰는 쪽에서 필요한 것만 적어 둔다.</summary>
+    public interface IScreenUIAssets
+    {
+        BattlePanel BattlePanelPrefab { get; }
+        OverlayHPBar OverlayHPBarPrefab { get; }
+        WorldHPBar WorldHPBarPrefab { get; }
+        DamageText DamageTextPrefab { get; }
+    }
+
     /// <summary>
     /// 화면 UI 전부의 주인. 캔버스를 만들고 그 위에 프리팹을 올린다.
     /// 두 갈래를 맡는다 — 한 벌뿐이라 계속 사는 전투 HUD 와, 캐릭터마다 딸려 태어나고 죽는 HP 바·데미지 숫자.
@@ -60,10 +71,7 @@ namespace Sayne
         private readonly PopupManager _popupManager;
         private readonly IAssets<CharacterProfile> _profiles;
         private readonly IAssets<Hero> _heroAssets;
-        private readonly BattlePanel _battlePanelPrefab;
-        private readonly OverlayHPBar _hpBarPrefab;
-        private readonly WorldHPBar _worldHPBarPrefab;
-        private readonly DamageText _damageTextPrefab;
+        private readonly IScreenUIAssets _assets;
 
         private Canvas _canvas;
         private Canvas _hpBarCanvas;
@@ -77,7 +85,7 @@ namespace Sayne
             HeroManager heroManager, EnemyManager enemyManager, WaveManager waveManager, QuestManager questManager,
             CurrencyManager currencyManager, GrowthManager growthManager, EquipmentManager equipmentManager,
             UltimateDirector ultimateDirector, PopupManager popupManager, IAssets<CharacterProfile> profiles, IAssets<Hero> heroAssets,
-            BattlePanel battlePanelPrefab, OverlayHPBar hpBarPrefab, WorldHPBar worldHPBarPrefab, DamageText damageTextPrefab)
+            IScreenUIAssets assets)
         {
             _pauseManager = pauseManager;
             _cameraManager = cameraManager;
@@ -92,10 +100,7 @@ namespace Sayne
             _popupManager = popupManager;
             _profiles = profiles;
             _heroAssets = heroAssets;
-            _battlePanelPrefab = battlePanelPrefab;
-            _hpBarPrefab = hpBarPrefab;
-            _worldHPBarPrefab = worldHPBarPrefab;
-            _damageTextPrefab = damageTextPrefab;
+            _assets = assets;
         }
 
         protected override void OnInit()
@@ -110,7 +115,7 @@ namespace Sayne
                 new GameObject(EventSystemName, typeof(EventSystem), typeof(InputSystemUIInputModule));
             }
 
-            BattlePanel = Object.Instantiate(_battlePanelPrefab, _canvas.transform);
+            BattlePanel = Object.Instantiate(_assets.BattlePanelPrefab, _canvas.transform);
             BattlePanel.Init(_heroManager, _waveManager, _questManager, _currencyManager, _growthManager,
                 _profiles, _popupManager);
 
@@ -193,23 +198,25 @@ namespace Sayne
 
             // 최대치도 스탯에서 흘려보낸다 — 성장으로 MaxHP 가 오르면 바와 수치가 그 자리에서 맞춰진다.
             var maxHP = owner.CurrentStats
-                .Select(stats => (float)stats.MaxHP)
+                .Select(stats => stats.Get(StatType.MaxHP))
                 .ToReadOnlyReactiveProperty();
 
             // 영웅과 보스는 머리 위 UI, 일반 적은 발밑 월드.
             var camera = _cameraManager.Camera;
-            HPBar hpBar;
+
+            // 두 바는 붙는 곳도 따라가는 방식도 달라 공통 조상이 없다. 여기서 쓰는 건 몸통과 수명뿐이다.
+            MonoBehaviour hpBar;
 
             if (owner is Hero || owner is Enemy { IsBoss: true })
             {
-                var overlay = Object.Instantiate(_hpBarPrefab, _hpBarCanvas.transform);
+                var overlay = Object.Instantiate(_assets.OverlayHPBarPrefab, _hpBarCanvas.transform);
                 overlay.Attach(camera, owner.transform, HeadOffset(height + HPBarHeadGap), HeadHPBarScreenOffset,
                     currentHP, maxHP);
                 hpBar = overlay;
             }
             else
             {
-                var world = Object.Instantiate(_worldHPBarPrefab, _worldHPBarCanvas.transform);
+                var world = Object.Instantiate(_assets.WorldHPBarPrefab, _worldHPBarCanvas.transform);
                 world.Attach(camera, owner.transform, -camera.transform.up * FootHPBarGap, FootHPBarScale,
                     currentHP, maxHP);
                 hpBar = world;
@@ -221,14 +228,29 @@ namespace Sayne
                 .Subscribe(hpBar, (visible, bar) => bar.gameObject.SetActive(visible))
                 .RegisterTo(hpBar.destroyCancellationToken);
 
+            // 바의 수명은 만든 쪽이 쥔다. 몸이 죽는 순간 치우고, 죽지 않고 몸이 치워져도(판 비우기) 같이 치운다 —
+            // 어느 쪽이 먼저 와도 한 번만 돈다.
+            var reap = Disposable.Create((hpBar, currentHP, maxHP),
+                state => DestroyHPBar(state.hpBar, state.currentHP, state.maxHP));
+
             owner.Died
-                .Subscribe((hpBar, currentHP, maxHP), (_, state) =>
-                {
-                    state.currentHP.Dispose();
-                    state.maxHP.Dispose();
-                    Object.Destroy(state.hpBar.gameObject);
-                })
-                .RegisterTo(LifeToken);
+                .Subscribe(reap, (_, disposable) => disposable.Dispose())
+                .RegisterTo(owner.destroyCancellationToken);
+
+            reap.RegisterTo(owner.destroyCancellationToken);
+        }
+
+        /// <summary>바를 치운다. 만든 게 여기라 없애는 것도 여기서만 한다 — 바는 스스로 사라지지 않는다.</summary>
+        private static void DestroyHPBar(MonoBehaviour hpBar, IDisposable currentHP, IDisposable maxHP)
+        {
+            currentHP.Dispose();
+            maxHP.Dispose();
+
+            // 캔버스가 먼저 내려갔으면 몸은 이미 없다.
+            if (hpBar != null)
+            {
+                Object.Destroy(hpBar.gameObject);
+            }
         }
 
         private void BindDamageText(Character owner, float height)
@@ -239,7 +261,7 @@ namespace Sayne
             owner.Damaged
                 .Subscribe((self: this, owner, offset), (damage, state) =>
                     state.self.SpawnDamageText(state.owner, state.offset, damage))
-                .RegisterTo(LifeToken);
+                .RegisterTo(owner.destroyCancellationToken);
         }
 
         private void SpawnDamageText(Character owner, Vector3 offset, int damage)
@@ -249,7 +271,7 @@ namespace Sayne
             var canvasRect = (RectTransform)_damageTextCanvas.transform;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPoint, null, out var localPoint);
 
-            var damageText = Object.Instantiate(_damageTextPrefab, _damageTextCanvas.transform);
+            var damageText = Object.Instantiate(_assets.DamageTextPrefab, _damageTextCanvas.transform);
             damageText.RectTransform.anchoredPosition = localPoint;
             damageText.Show(damage.ToString());
         }

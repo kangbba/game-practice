@@ -8,18 +8,10 @@ namespace Sayne
     public class PhaseManager : ManagerBase
     {
         private readonly ReactiveProperty<PhaseBase> _currentPhase = new ReactiveProperty<PhaseBase>();
-        private readonly CancellationToken _ownerToken;
-        private readonly string _name;
 
         private CancellationTokenSource _phaseCts;
 
         public ReadOnlyReactiveProperty<PhaseBase> CurrentPhase => _currentPhase;
-
-        public PhaseManager(string name, CancellationToken ownerToken)
-        {
-            _name = name;
-            _ownerToken = ownerToken;
-        }
 
         protected override void OnInit()
         {
@@ -34,29 +26,35 @@ namespace Sayne
         /// <summary>페이즈가 돌려준 다음 페이즈를 따라 끝까지 흐른다. null 이 나오면 거기서 끝이다.</summary>
         public async UniTask RunAsync(PhaseBase phase)
         {
-            while (phase != null)
+            // 나가는 길은 하나다 — 취소든 예외든 정상 종료든 페이즈를 접고 링크 등록을 떼어낸다.
+            try
             {
-                SetPhase(phase);
-
-                var result = await phase.MainLogicAsync(_phaseCts.Token).SuppressCancellationThrow();
-                if (result.IsCanceled)
+                while (phase != null)
                 {
-                    return;
+                    SetPhase(phase);
+
+                    var result = await phase.MainLogicAsync(_phaseCts.Token).SuppressCancellationThrow();
+                    if (result.IsCanceled)
+                    {
+                        return;
+                    }
+
+                    phase = result.Result;
                 }
-
-                phase = result.Result;
             }
-
-            ClearPhase();
+            finally
+            {
+                ClearPhase();
+            }
         }
 
         private void SetPhase(PhaseBase phase)
         {
-            Debug.Log($"{_name}: {_currentPhase.Value?.Key ?? "(none)"} -> {phase.Key}");
+            Debug.Log($"Phase: {_currentPhase.Value?.Key ?? "(none)"} -> {phase.Key}");
 
             ClearPhase();
 
-            _phaseCts = CancellationTokenSource.CreateLinkedTokenSource(_ownerToken);
+            _phaseCts = CancellationTokenSource.CreateLinkedTokenSource(LifeToken);
             _currentPhase.Value = phase;
 
             phase.Enter(_phaseCts.Token);

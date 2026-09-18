@@ -40,7 +40,8 @@ namespace Sayne
         protected override void OnInit()
         {
             _heroManager.Spawned
-                .Subscribe(this, (hero, self) => self._heroBubble = WorldSpeechBubble.Create(self._bubblePrefab, hero))
+                .Subscribe(this, (hero, self) =>
+                    self._heroBubble = WorldSpeechBubble.Create(self._bubblePrefab, hero.transform, hero.GetHeight()))
                 .RegisterTo(LifeToken);
 
             _waveManager.WaveStarted

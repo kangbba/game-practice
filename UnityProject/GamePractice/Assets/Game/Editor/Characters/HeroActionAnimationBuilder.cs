@@ -122,7 +122,7 @@ namespace Sayne
                         if (Mathf.Abs(recovery) > .001f)
                             throw new InvalidOperationException("Action does not recover: " + path + "/" + binding.path);
                     }
-                    foreach (var leg in new[] { "Root/FrontLeg", "Root/RearLeg" })
+                    foreach (var leg in new[] { "Root/RightLeg", "Root/LeftLeg" })
                     {
                         var curve = AnimationUtility.GetEditorCurve(clip, EditorCurveBinding.FloatCurve(leg, typeof(Transform), "localEulerAnglesRaw.z"));
                         if (curve == null || curve.keys.Max(key => key.value) - curve.keys.Min(key => key.value) < 5)
@@ -149,7 +149,7 @@ namespace Sayne
                 var fourthReach = AnimationUtility.GetEditorCurve(step4, travel).keys.Max(key => key.value);
                 if (fourthReach - thirdReach < .5f)
                     throw new InvalidOperationException($"{hero}: combo finisher needs a distinct step.");
-                var weapon = graphic.transform.Find("Root/Torso/Arm/Forearm/Weapon").GetComponentInChildren<SpriteRenderer>();
+                var weapon = graphic.transform.Find("Root/Torso/RightArm/Forearm/Weapon").GetComponentInChildren<SpriteRenderer>();
                 var tip = new Vector3(weapon.sprite.bounds.center.x, weapon.sprite.bounds.max.y, 0f);
                 Vector3 TipNow() => graphic.transform.InverseTransformPoint(weapon.transform.TransformPoint(tip));
 
@@ -308,7 +308,7 @@ namespace Sayne
             var bounds = new Bounds();
             var hasBounds = false;
             // 거대해진 무기는 빼고 몸이 지나는 자리만 본다 — 무기까지 넣으면 인물이 점이 된다.
-            var weaponBone = graphic.transform.Find("Root/Torso/Arm/Forearm/Weapon");
+            var weaponBone = graphic.transform.Find("Root/Torso/RightArm/Forearm/Weapon");
             var renderers = graphic.GetComponentsInChildren<SpriteRenderer>()
                 .Where(renderer => !renderer.transform.IsChildOf(weaponBone)).ToArray();
             var steps = Mathf.Max(60, Mathf.CeilToInt(clip.length * 30f));

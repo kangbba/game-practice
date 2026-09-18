@@ -20,7 +20,7 @@ namespace Sayne
         [SerializeField] private GrowthStatWidget[] _statWidgets;
         [SerializeField] private RawImage _preview;
 
-        private readonly Subject<GrowthStatType> _upgradeRequested = new Subject<GrowthStatType>();
+        private readonly Subject<StatType> _upgradeRequested = new Subject<StatType>();
 
         private GrowthManager _growthManager;
         private CurrencyManager _currencyManager;
@@ -50,7 +50,6 @@ namespace Sayne
         {
             base.OnDestroy();
 
-            _previewStage?.Dispose();
             _upgradeRequested.Dispose();
         }
 
@@ -61,9 +60,7 @@ namespace Sayne
             _currencyManager = currencyManager;
             _heroAssets = heroAssets;
 
-            _previewStage = new CharacterPreviewStage();
-            _preview.texture = _previewStage.Texture;
-            _preview.enabled = true;
+            _previewStage = new CharacterPreviewStage(_preview);
 
             // 인형은 창이 열려 있는 동안만 돌린다.
             IsOpen
@@ -128,16 +125,16 @@ namespace Sayne
                     continue;
                 }
 
-                widget.SetLevel(GrowthPlan.DisplayName(stat), _growthManager.StatLevel(stat).CurrentValue);
+                widget.SetLevel(StatTypes.DisplayName(stat), _growthManager.StatLevel(stat).CurrentValue);
                 widget.SetValue(
-                    _hero != null ? GrowthPlan.ValueOf(stat, _hero.BaseStats) : 0,
-                    _hero != null ? GrowthPlan.ValueOf(stat, _hero.GrowthBonus) : 0);
+                    _hero != null ? (int)_hero.BaseStats.Get(stat) : 0,
+                    _hero != null ? (int)_hero.GrowthBonus.Get(stat) : 0);
                 widget.SetCost(_growthManager.CostToUpgrade(stat),
                     _growthManager.CanUpgrade(stat), _growthManager.IsMaxLevel(stat));
             }
         }
 
-        private GrowthStatWidget Widget(GrowthStatType stat)
+        private GrowthStatWidget Widget(StatType stat)
         {
             var index = Array.IndexOf(GrowthPlan.All, stat);
 

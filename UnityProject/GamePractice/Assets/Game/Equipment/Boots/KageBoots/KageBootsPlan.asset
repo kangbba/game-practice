@@ -15,6 +15,8 @@ MonoBehaviour:
   _equipmentID: KageBoots
   _displayName: 카게의 끈 장화
   _description: 종아리까지 끈으로 단단히 동여맨 긴 장화. 든든하지만 그만큼 무겁다.
-  _maxHP: 35
-  _moveSpeed: -0.3
-  _attackPower: 0
+  _stats:
+  - _type: 1
+    _value: 35
+  - _type: 2
+    _value: -0.3

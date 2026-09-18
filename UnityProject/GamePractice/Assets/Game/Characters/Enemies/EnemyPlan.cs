@@ -11,35 +11,14 @@ namespace Sayne
     [CreateAssetMenu(menuName = "Game/Enemy Plan", fileName = "EnemyPlan")]
     public class EnemyPlan : ScriptableObject
     {
-        /// <summary>죽을 때 굴리는 항목 하나. 항목끼리는 독립이라 확률 하나가 다른 항목의 당첨을 막지 않는다.</summary>
-        [Serializable]
-        private class DropEntry
-        {
-            [SerializeField] private DropType _type;
-
-            [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _equipmentID;
-
-            [SerializeField] private long _goldAmount;
-
-            [Range(0f, 1f)] [SerializeField] private float _chance = 0.1f;
-
-            public float Chance => _chance;
-
-            /// <summary>장비 드랍인데 장비를 안 고른 줄은 굴려도 줄 게 없다.</summary>
-            public bool IsValid => _type != DropType.Equipment || !string.IsNullOrEmpty(_equipmentID);
-
-            public DropReward Reward => new DropReward(_type, _equipmentID, _goldAmount);
-        }
-
         [EnemyIDPicker] [SerializeField] private string _enemyID;
 
         /// <summary>보스인가. 화면이 보스를 따로 다룬다 — HP 바가 영웅처럼 머리 위 UI 로 뜬다.</summary>
         [SerializeField] private bool _isBoss;
 
+        /// <summary>맨몸의 스탯. 무기 공격력은 여기 없고 장비 설계값이 얹는다.</summary>
         [Header("몸")]
-        [SerializeField] private int _maxHP = 50;
-        [SerializeField] private float _moveSpeed = 1.5f;
-        [SerializeField] private int _attackPower;
+        [SerializeField] private Stat[] _stats;
 
         /// <summary>비워 두면 자기 ID 의 프리팹을 쓴다. 같은 몸에 다른 장비를 입힌 변종은 여기만 채운다.</summary>
         [EnemyIDPicker(allowEmpty: true)] [SerializeField] private string _prefabID;
@@ -57,14 +36,14 @@ namespace Sayne
 
         [Header("죽으면 주는 것")]
         [SerializeField] private int _expReward;
-        [SerializeField] private DropEntry[] _drops = Array.Empty<DropEntry>();
+        [SerializeField] private DropItemData[] _drops = Array.Empty<DropItemData>();
 
         /// <summary>이 설계값의 주인.</summary>
         public string EnemyID => _enemyID;
 
         public bool IsBoss => _isBoss;
 
-        public CharacterStats Body => new CharacterStats(_maxHP, _moveSpeed, _attackPower);
+        public StatGroup Body => new StatGroup(_stats);
 
         /// <summary>몸으로 쓸 프리팹의 ID. 따로 정하지 않았으면 자기 자신이다.</summary>
         public string PrefabID => string.IsNullOrEmpty(_prefabID) ? _enemyID : _prefabID;
@@ -78,14 +57,14 @@ namespace Sayne
         /// <summary>죽을 때 주는 경험치. 드랍과 달리 확률 없이 언제나 준다.</summary>
         public int ExpReward => _expReward;
 
-        /// <summary>죽는 순간 한 번 굴린다. 당첨된 전리품들이 나온다 — 아무것도 안 나올 수도 있다.</summary>
-        public IEnumerable<DropReward> Roll()
+        /// <summary>죽는 순간 한 번 굴린다. 당첨된 줄들이 나온다 — 아무것도 안 나올 수도 있다.</summary>
+        public IEnumerable<DropItemData> Roll()
         {
             foreach (var entry in _drops)
             {
                 if (entry.IsValid && UnityEngine.Random.value < entry.Chance)
                 {
-                    yield return entry.Reward;
+                    yield return entry;
                 }
             }
         }

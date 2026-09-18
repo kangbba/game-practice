@@ -42,7 +42,7 @@ namespace Sayne
 
             // 최대치도 같이 구독한다 — 성장으로 MaxHP 가 변해도 "현재/최대" 가 그 자리에서 맞는다.
             hero.CurrentHP
-                .CombineLatest(hero.CurrentStats, (hp, stats) => (hp, max: stats.MaxHP))
+                .CombineLatest(hero.CurrentStats, (hp, stats) => (hp, max: (int)stats.Get(StatType.MaxHP)))
                 .Subscribe(this, (pair, self) => self.DrawHP(pair.hp, pair.max))
                 .AddTo(hero);
         }

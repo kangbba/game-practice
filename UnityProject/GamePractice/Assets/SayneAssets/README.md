@@ -49,6 +49,21 @@ await bubble.PlayAsync("저 고블린부터 잡자!", token);
 
 프리팹은 폰트(`Assets/Fonts/TMP/SB_Aggro_Bold SDF`)를 참조한다. 다른 프로젝트로 옮기면 폰트만 다시 지정한다.
 
+## UI / DamageText
+
+맞은 자리에 떠오르는 숫자. 의존: DOTween, TextMeshPro.
+
+| 파일 | 역할 |
+|---|---|
+| `DamageText` | 튀어오르고, 떠오르며, 흐려지고 스스로 사라진다. `Show(text)` 하나뿐이고, **문자열을 그대로 띄운다** — 얼마나 아팠는지·크리티컬인지 같은 해석은 부르는 쪽이 끝내고 온다. |
+| `DamageText.example.prefab` | 흰 글자 + 검은 아웃라인 견본. 같은 폴더의 `DamageTextOutline.mat` 을 써서 혼자 선다. 게임에서는 이걸 복제해 자기 폴더에 두고 글꼴·색을 갈아끼운다. |
+
+```csharp
+var text = Object.Instantiate(damageTextPrefab, screenCanvas.transform);   // 스크린 오버레이 캔버스
+text.RectTransform.position = camera.WorldToScreenPoint(hitPoint);
+text.Show("128");
+```
+
 ## 사용법
 
 ### 0. 새 프로젝트에 도입

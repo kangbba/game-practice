@@ -9,7 +9,7 @@ namespace Sayne
     internal static class HeroActionPoseAuthoring
     {
         private const string TorsoPath = "Root/Torso";
-        private const string ArmPath = TorsoPath + "/Arm";
+        private const string ArmPath = TorsoPath + "/RightArm";
         private const string ElbowPath = ArmPath + "/Forearm";
         private const string WeaponPath = ElbowPath + "/Weapon";
 
@@ -139,8 +139,8 @@ namespace Sayne
                     .Where(b => b != graphic && !AnimationUtility.CalculateTransformPath(b, graphic).Split('/').Contains("Skin"))
                     .Select(b => new Bone(b, graphic)).ToDictionary(b => b.Path);
                 var root = bones["Root"];
-                var front = bones["Root/FrontLeg"];
-                var rear = bones["Root/RearLeg"];
+                var front = bones["Root/RightLeg"];
+                var rear = bones["Root/LeftLeg"];
                 var frontSole = Sole(front.Transform, graphic);
                 var rearSole = Sole(rear.Transform, graphic);
                 var frontEnd = front.Transform.InverseTransformPoint(graphic.TransformPoint(frontSole));
@@ -177,8 +177,8 @@ namespace Sayne
                     if (script.Radius > 0f)
                         ExtendWeapon(weapon, graphic, weaponTip, script.Radius, script.Expansion(t));
                     var lag = Sample(script, Mathf.Max(0f, t - .065f * lagScale));
-                    Rotate(bones, TorsoPath + "/BackArm", (-lag.Arm * .48f - pose.Lean * .35f) * tail);
-                    Rotate(bones, TorsoPath + "/BackArm/Forearm", (22f * pose.Reach - lag.Elbow * .55f) * tail);
+                    Rotate(bones, TorsoPath + "/LeftArm", (-lag.Arm * .48f - pose.Lean * .35f) * tail);
+                    Rotate(bones, TorsoPath + "/LeftArm/Forearm", (22f * pose.Reach - lag.Elbow * .55f) * tail);
                     Rotate(bones, TorsoPath + "/Head", (-torso.Lean * .72f + lag.Lean * .12f) * tail);
                     var drag = Sample(script, Mathf.Max(0f, t - .105f * lagScale));
                     var velocityWindow = .03f * lagScale;

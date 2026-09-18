@@ -204,12 +204,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 58040600121a4bfaa09e4c6760f3382f
-    m_Address: Kage
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - Heroes
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6aa254ca57124c9aa26f7001f5d7283e
     m_Address: DeathSmoke
     m_ReadOnly: 0
@@ -281,7 +275,7 @@ MonoBehaviour:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 8bf3d3a66a9614bf58e6a28a22eab572
-    m_Address: UIPrefab_LowHealth
+    m_Address: LowHealthPanel
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -400,12 +394,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - EquipmentPlans
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: cf3d70cbfb5247d2b18b62c10c1fda7d
-    m_Address: Nyx
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - Heroes
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d1acfe4c36294acaa1a7daf2f3e40dd6
     m_Address: KageBootsPlan
     m_ReadOnly: 0
@@ -429,12 +417,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: d912bb82791f46eb949b5ca93df8d3ef
-    m_Address: Aldric
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - Heroes
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: dcb0b0a0bf4843a9906b81510b04ff72
     m_Address: ScythePlan
     m_ReadOnly: 0
@@ -448,7 +430,7 @@ MonoBehaviour:
     - DropPortraits
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e59e85f5cfc474418ae2dd4bbb285ae7
-    m_Address: TutorialWidget
+    m_Address: SpeechBubbleWidget
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -483,7 +465,7 @@ MonoBehaviour:
     - Profiles
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f9171d1b6c48245efb809ff5b387a3d7
-    m_Address: UIPrefab_WaveStart
+    m_Address: WaveStartPanel
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

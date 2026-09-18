@@ -23,7 +23,7 @@ namespace Sayne.Editor
         private const string SourceAction = "Attack1";
         private const float SourceMoment = 0.4f;
 
-        [MenuItem("★Sayne★/6. 원거리 궁극기 자세 빌드", false, 6)]
+        [MenuItem("★Sayne★/공통/원거리 궁극기 자세 빌드", false, 53)]
         public static void Build()
         {
             foreach (var hero in Heroes)

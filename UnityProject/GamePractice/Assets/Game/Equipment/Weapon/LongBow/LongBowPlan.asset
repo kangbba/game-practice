@@ -15,6 +15,8 @@ MonoBehaviour:
   _equipmentID: LongBow
   _displayName: 장궁
   _description: 사람 키만 한 활. 당기는 데 오래 걸리지만 가장 멀리, 가장 세게 꽂힌다.
-  _maxHP: 0
-  _moveSpeed: -0.3
-  _attackPower: 16
+  _stats:
+  - _type: 0
+    _value: 16
+  - _type: 2
+    _value: -0.3

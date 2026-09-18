@@ -28,7 +28,7 @@ namespace Sayne
 
         public override void Enter(CancellationToken token)
         {
-            _mapManager.CreateMap(MapID.World);
+            _mapManager.CreateMainMap();
             _heroManager.SpawnHero(HeroID.Aldric, Vector3.zero);
         }
 

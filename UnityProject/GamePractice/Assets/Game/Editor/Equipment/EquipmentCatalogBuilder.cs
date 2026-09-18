@@ -247,9 +247,18 @@ namespace Sayne.Editor
         /// 신발 자리 = 원래 다리 그림 안에서 신발이 있던 곳의 밑창 가운데, 크기는 그 신발의 너비.
         /// 프리팹의 다리는 신발을 뗀 바지 그림이다 — 프리팹은 벗은 몸이고, 신발은 장비로만 신는다.
         /// </summary>
+        /// <summary>
+        /// 그 쪽 신발이 붙는 다리 본. 아트 접미사(Front·Rear)는 파일명 규칙이고 본 이름은 좌우라서,
+        /// 둘을 여기서 한 번 이어 준다 — 아트 파일명을 바꾸지 않고 본만 좌우로 통일했기 때문이다.
+        /// </summary>
+        private static string LegBone(string side)
+        {
+            return side == Boots.FrontSide ? "RightLeg" : "LeftLeg";
+        }
+
         private static void FitBoots(SerializedProperty entries, Transform root, string hero, string side)
         {
-            var leg = Bone(root, $"{side}Leg");
+            var leg = Bone(root, LegBone(side));
             var skin = leg.Find("Skin").GetComponent<SpriteRenderer>();
             var stale = leg.Find("Pants");
             if (stale != null) Object.DestroyImmediate(stale.gameObject);

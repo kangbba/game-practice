@@ -28,19 +28,19 @@ namespace Sayne
 
         private readonly PauseManager _pauseManager;
         private readonly CameraManager _cameraManager;
-        private readonly TutorialWidget _widgetPrefab;
+        private readonly SpeechBubbleWidget _widgetPrefab;
         private readonly OverlaySpeechBubble _overlayBubblePrefab;
 
         private readonly ReactiveProperty<bool> _isPlaying = new ReactiveProperty<bool>(false);
 
         private Canvas _canvas;
-        private TutorialWidget _widget;
+        private SpeechBubbleWidget _widget;
         private OverlaySpeechBubble _overlayBubble;
 
         public ReadOnlyReactiveProperty<bool> IsPlaying => _isPlaying;
 
         public TutorialManager(PauseManager pauseManager, CameraManager cameraManager,
-            TutorialWidget widgetPrefab, OverlaySpeechBubble overlayBubblePrefab)
+            SpeechBubbleWidget widgetPrefab, OverlaySpeechBubble overlayBubblePrefab)
         {
             _pauseManager = pauseManager;
             _cameraManager = cameraManager;

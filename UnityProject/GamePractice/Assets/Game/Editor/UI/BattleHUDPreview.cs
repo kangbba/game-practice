@@ -31,7 +31,7 @@ namespace Sayne.Editor
             File.Delete(CaptureRequest);
             // UI 프리팹 전부(HUD·팝업, 튜토리얼·말풍선)를 굽고, 어드레서블에 올린 뒤 찍는다. 튜토리얼 빌더가 등록까지 한다.
             BattlePhaseUIBuilder.Build();
-            TutorialWidgetBuilder.Build();
+            SpeechBubbleBuilder.Build();
             Capture();
         }
 
@@ -103,7 +103,7 @@ namespace Sayne.Editor
                 if (isEquipment)
                 {
                     // 팝업은 HUD 밖 독립 프리팹이다. 게임처럼 HUD 위에 화면을 꽉 채워 띄운다.
-                    var popupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/UI/Popup/EquipmentWindow.prefab");
+                    var popupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Equipment/UI/EquipmentWindow.prefab");
                     var window = Object.Instantiate(popupPrefab, canvas.transform, false).GetComponent<EquipmentWindow>();
                     ValidateBindings(window.gameObject);
                     PreviewEquipment(window);
@@ -221,7 +221,7 @@ namespace Sayne.Editor
 
             stage.Dispose();
 
-            var items = new List<(string, EquipmentSlot, string, Sprite, string, CharacterStats)>();
+            var entries = new List<EquipmentEntry>();
 
             foreach (var guid in AssetDatabase.FindAssets("t:EquipmentPlan", new[] { "Assets/Game/Equipment" }))
             {
@@ -231,17 +231,23 @@ namespace Sayne.Editor
                 if (plan.EquipmentID == EquipmentID.Weapon.BareHands) continue;
 
                 icons.TryGetValue(plan.EquipmentID, out var icon);
-                items.Add((plan.EquipmentID, slots[plan.EquipmentID], plan.DisplayName, icon, plan.Description, plan.Stats));
+                entries.Add(new EquipmentEntry(plan.EquipmentID, slots[plan.EquipmentID], plan.DisplayName, icon,
+                    plan.Description, plan.Stats));
             }
 
-            var equipped = new Dictionary<EquipmentSlot, string>
+            var worn = new Dictionary<EquipmentSlot, string>
             {
                 [EquipmentSlot.MainHand] = "Sword",
                 [EquipmentSlot.Chest] = EquipmentID.Armor.NyxDress,
                 [EquipmentSlot.Boots] = EquipmentID.Armor.AldricBoots,
             };
 
-            window.Preview(items, equipped, new CharacterStats(maxHP: 120, moveSpeed: 4f, attackPower: 10), EquipmentID.Armor.KageArmor);
+            var bodyStats = new StatGroup(
+                new Stat(StatType.AttackPower, 10),
+                new Stat(StatType.MaxHP, 120),
+                new Stat(StatType.MoveSpeed, 4f));
+
+            window.Preview(entries, worn, bodyStats, EquipmentID.Armor.KageArmor);
         }
 
         private static void ValidateBindings(GameObject root)

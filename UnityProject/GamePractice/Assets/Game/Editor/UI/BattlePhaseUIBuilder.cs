@@ -13,12 +13,15 @@ namespace Sayne.Editor
     public static class BattlePhaseUIBuilder
     {
         private const string PanelPath = "Assets/Game/UI/BattlePanel.prefab";
-        private const string WaveStartPanelPath = "Assets/Game/UIDirection/UIPrefab_WaveStart.prefab";
-        private const string LowHealthPanelPath = "Assets/Game/UIDirection/UIPrefab_LowHealth.prefab";
+        private const string WaveStartPanelPath = "Assets/Game/ScreenPerformance/WaveStartPanel.prefab";
+        private const string LowHealthPanelPath = "Assets/Game/ScreenPerformance/LowHealthPanel.prefab";
         private const string WidgetFolder = "Assets/Game/UI/Widgets";
         private const string PopupFolder = "Assets/Game/UI/Popup";
+
+        /// <summary>장비창과 그 부품들은 장비 기능 폴더 안에 산다. 장비를 들어내면 창도 같이 따라 나간다.</summary>
+        private const string EquipmentUIFolder = "Assets/Game/Equipment/UI";
+
         private const string PopupBlurMaterialPath = PopupFolder + "/PopupBlur.mat";
-        private const string SayneSpriteFolder = "Assets/SayneAssets/UI/Sprites";
         /// <summary>정산 화면에 늘어놓을 전리품 칸 수. 넘치면 "+N" 으로 접힌다.</summary>
 
         /// <summary>가방 한 칸. 6열 × 4행 = EquipmentWindow.BagCapacity 칸이 564×352 안에 딱 들어가는 크기다.</summary>
@@ -54,10 +57,8 @@ namespace Sayne.Editor
         private static Sprite _ring;
         private static Sprite _gauge;
         private static Sprite _glow;
-        private static Sprite _circleSolid;
-        private static Sprite _circleOutline;
 
-        [MenuItem("★Sayne★/1. 전투 HUD 빌드", false, 1)]
+        [MenuItem("★Sayne★/1. 전투 HUD 빌드 (조이스틱 전용 스프라이트 반영)", false, 1)]
         public static void Build()
         {
             BattleHUDArtBuilder.Build();
@@ -69,12 +70,15 @@ namespace Sayne.Editor
             _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
             _rounded = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             _circle = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
-            _circleSolid = SayneSprite("CircleSolid");
-            _circleOutline = SayneSprite("CircleOutline");
 
             if (!AssetDatabase.IsValidFolder(WidgetFolder))
             {
                 AssetDatabase.CreateFolder("Assets/Game/UI", "Widgets");
+            }
+
+            if (!AssetDatabase.IsValidFolder(EquipmentUIFolder))
+            {
+                AssetDatabase.CreateFolder("Assets/Game/Equipment", "UI");
             }
 
             var heroProfilePrefab = BuildHeroProfileWidget();
@@ -400,7 +404,7 @@ namespace Sayne.Editor
             so.FindProperty("_icon").objectReferenceValue = icon;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            return SaveWidget(root.gameObject);
+            return SaveWidget(root.gameObject, EquipmentUIFolder);
         }
 
         private static GameObject BuildEquipmentCandidateWidget()
@@ -443,7 +447,7 @@ namespace Sayne.Editor
             so.FindProperty("_selectedMark").objectReferenceValue = selectedMark.gameObject;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            return SaveWidget(root.gameObject);
+            return SaveWidget(root.gameObject, EquipmentUIFolder);
         }
 
         /// <summary>장비창 스탯 한 줄. 이름 · 값("지금 > 바뀔 값") · 증감 칩. 칩은 변화가 있을 때만 창이 켠다.</summary>
@@ -474,7 +478,7 @@ namespace Sayne.Editor
             so.FindProperty("_deltaText").objectReferenceValue = deltaText;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            return SaveWidget(root.gameObject);
+            return SaveWidget(root.gameObject, EquipmentUIFolder);
         }
 
         /// <summary>
@@ -514,17 +518,19 @@ namespace Sayne.Editor
             Text(Rect(root, "StatHeader", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(statX, top), new Vector2(282f, 26f)),
                 "능력치", 16f, TextGray, HorizontalAlignmentOptions.Left);
 
-            var statLabels = new[] { "공격력", "체력", "이동속도" };
-            var statRows = new EquipmentStatRowWidget[statLabels.Length];
-            for (var i = 0; i < statLabels.Length; i++)
+            // 스탯 줄은 StatTypes.All 을 그대로 따른다 — 스탯이 늘면 줄도 따라 늘고, 여기 고칠 것은 없다.
+            var statRows = new EquipmentStatRowWidget[StatTypes.All.Length];
+            for (var i = 0; i < statRows.Length; i++)
             {
                 statRows[i] = Place<EquipmentStatRowWidget>(statRowPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(statX, top - 32f - 60f * i));
-                statRows[i].SetLabel(statLabels[i]);
+                statRows[i].Setup(StatTypes.All[i]);
             }
 
+            // 안내문은 마지막 줄 아래에 붙는다 — 스탯이 늘어 줄이 내려가도 겹치지 않게.
+            var statHintY = top - 100f - 60f * (statRows.Length - 1);
             var statHint = Text(
-                Rect(root, "StatHint", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(statX, top - 220f), new Vector2(282f, 60f)),
+                Rect(root, "StatHint", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(statX, statHintY), new Vector2(282f, 60f)),
                 "장비를 고르면 끼었을 때 오르는 값은 초록, 내리는 값은 빨강으로 보인다", 13f, TextGray, HorizontalAlignmentOptions.Left);
             statHint.verticalAlignment = VerticalAlignmentOptions.Top;
             statHint.textWrappingMode = TextWrappingModes.Normal;
@@ -624,9 +630,12 @@ namespace Sayne.Editor
             so.FindProperty("_candidatePrefab").objectReferenceValue = candidatePrefab.GetComponent<EquipmentCandidateWidget>();
             so.FindProperty("_closeBtn").objectReferenceValue = closeBtn;
             so.FindProperty("_preview").objectReferenceValue = preview;
-            so.FindProperty("_statAttack").objectReferenceValue = statRows[0];
-            so.FindProperty("_statHP").objectReferenceValue = statRows[1];
-            so.FindProperty("_statMoveSpeed").objectReferenceValue = statRows[2];
+            var rows = so.FindProperty("_statRows");
+            rows.arraySize = statRows.Length;
+            for (var i = 0; i < statRows.Length; i++)
+            {
+                rows.GetArrayElementAtIndex(i).objectReferenceValue = statRows[i];
+            }
             so.FindProperty("_descriptionIcon").objectReferenceValue = descIcon;
             so.FindProperty("_descriptionName").objectReferenceValue = descName;
             so.FindProperty("_descriptionStats").objectReferenceValue = descStats;
@@ -635,7 +644,7 @@ namespace Sayne.Editor
             so.FindProperty("_actionBtnLabel").objectReferenceValue = actionBtnLabel;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            return SavePopup(popup.gameObject);
+            return SavePopup(popup.gameObject, EquipmentUIFolder);
         }
 
         /// <summary>성장 항목 한 줄. 이름·레벨, "기본 + 성장" 분해, 값이 붙은 강화 버튼. 값은 창이 구독해서 채운다.</summary>
@@ -792,12 +801,12 @@ namespace Sayne.Editor
         // ---- 패널 조립 ----
 
         /// <summary>
-        /// 웨이브 시작 화면. 화면 전체를 덮는다. UIDirectionManager 가 웨이브마다 만들어 띄우고 치운다.
+        /// 웨이브 시작 화면. 화면 전체를 덮는다. ScreenPerformanceManager 가 웨이브마다 만들어 띄우고 치운다.
         /// 어두운 바탕 위에 판 하나, 그 위에 웨이브 이름과 "시작" 만 있다.
         /// </summary>
         private static void ComposeWaveStartPanel()
         {
-            var panelRoot = new GameObject("UIPrefab_WaveStart", typeof(RectTransform), typeof(WaveStartPanel));
+            var panelRoot = new GameObject("WaveStartPanel", typeof(RectTransform), typeof(WaveStartPanel));
             var panelRect = (RectTransform)panelRoot.transform;
             panelRect.anchorMin = Vector2.zero;
             panelRect.anchorMax = Vector2.one;
@@ -841,11 +850,11 @@ namespace Sayne.Editor
         /// <summary>구역 머리말 한 줄. 왼쪽 정렬 소제목이다.</summary>
         /// <summary>
         /// 저체력 경고 막. 화면 전체를 덮되 가운데는 비어 있고 가장자리만 붉다.
-        /// 켜고 끄는 건 UIDirectionManager 가, 울렁이는 건 패널 자신이 한다.
+        /// 켜고 끄는 건 ScreenPerformanceManager 가, 울렁이는 건 패널 자신이 한다.
         /// </summary>
         private static void ComposeLowHealthPanel()
         {
-            var panelRoot = new GameObject("UIPrefab_LowHealth", typeof(RectTransform), typeof(CanvasGroup),
+            var panelRoot = new GameObject("LowHealthPanel", typeof(RectTransform), typeof(CanvasGroup),
                 typeof(LowHealthPanel));
             var panelRect = (RectTransform)panelRoot.transform;
             panelRect.anchorMin = Vector2.zero;
@@ -1016,9 +1025,9 @@ namespace Sayne.Editor
             var joystick = touchArea.gameObject.AddComponent<FloatingJoystick>();
 
             var baseRT = Rect(touchArea, "JoystickBase", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(240f, 240f));
-            Img(baseRT, new Color(1f, 1f, 1f, 0.35f), _circleOutline);
+            Img(baseRT, new Color(1f, 1f, 1f, 0.35f), JoystickSprite("JoystickBase"));
             var knobRT = Rect(baseRT, "JoystickKnob", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(100f, 100f));
-            Img(knobRT, new Color(1f, 1f, 1f, 0.8f), _circleSolid);
+            Img(knobRT, new Color(1f, 1f, 1f, 0.8f), JoystickSprite("JoystickKnob"));
             baseRT.gameObject.SetActive(false);
 
             var so = new SerializedObject(joystick);
@@ -1056,10 +1065,11 @@ namespace Sayne.Editor
             return sprite;
         }
 
-        private static Sprite SayneSprite(string name)
+        /// <summary>조이스틱은 자기 폴더의 그림을 쓴다 — SayneAssets 만 들고 가도 그대로 선다.</summary>
+        private static Sprite JoystickSprite(string name)
         {
-            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{SayneSpriteFolder}/{name}.png");
-            if (sprite == null) throw new System.InvalidOperationException($"Sayne sprite missing: {name}");
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/SayneAssets/UI/Joystick/Sprites/{name}.png");
+            if (sprite == null) throw new System.InvalidOperationException($"Joystick sprite missing: {name}");
             return sprite;
         }
 
@@ -1111,9 +1121,10 @@ namespace Sayne.Editor
             return rt;
         }
 
-        private static GameObject SaveWidget(GameObject temp)
+        /// <summary>어느 기능에도 매이지 않은 위젯만 공용 위젯 폴더로 간다. 기능 전용 위젯은 그 기능 폴더를 받아 간다.</summary>
+        private static GameObject SaveWidget(GameObject temp, string folder = WidgetFolder)
         {
-            var path = $"{WidgetFolder}/{temp.name}.prefab";
+            var path = $"{folder}/{temp.name}.prefab";
             foreach (var component in temp.GetComponentsInChildren<Component>(true))
             {
                 if (PrefabUtility.IsPartOfPrefabInstance(component))
@@ -1169,9 +1180,9 @@ namespace Sayne.Editor
             return material;
         }
 
-        private static GameObject SavePopup(GameObject temp)
+        private static GameObject SavePopup(GameObject temp, string folder = PopupFolder)
         {
-            var prefab = PrefabUtility.SaveAsPrefabAsset(temp, $"{PopupFolder}/{temp.name}.prefab");
+            var prefab = PrefabUtility.SaveAsPrefabAsset(temp, $"{folder}/{temp.name}.prefab");
             Object.DestroyImmediate(temp);
             return prefab;
         }

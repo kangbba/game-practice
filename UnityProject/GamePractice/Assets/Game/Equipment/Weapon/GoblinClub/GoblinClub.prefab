@@ -54,7 +54,7 @@ MonoBehaviour:
   _grip: {fileID: 9185983189889995828}
   _tip: {fileID: 2588719926654509235}
   _sizeScale: 1
-  _ultimateName: 마구 휘두르기
+  _ultimateName: "\uB9C8\uAD6C \uD718\uB450\uB974\uAE30"
   _ultimatePowerMultiplier: 3
   _ultimateCooldown: 30
   _ultimateParticleID: 

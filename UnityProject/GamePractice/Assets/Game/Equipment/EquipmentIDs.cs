@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Sayne
@@ -45,7 +46,8 @@ namespace Sayne
                 EquipmentSlot.Helmet => _helmet,
                 EquipmentSlot.Chest => _chest,
                 EquipmentSlot.Greaves => _greaves,
-                _ => _boots
+                EquipmentSlot.Boots => _boots,
+                _ => throw new ArgumentOutOfRangeException(nameof(slot), slot, null)
             };
         }
     }

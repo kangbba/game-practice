@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: ArmedOgrePlan
   m_EditorClassIdentifier:
   _enemyID: ArmedOgre
-  _maxHP: 120
-  _moveSpeed: 1.2
-  _attackPower: 0
+  _stats:
+  - _type: 1
+    _value: 120
+  - _type: 2
+    _value: 1.2
   _prefabID: Ogre
   _mainHand: OgreClub
   _offHand: 

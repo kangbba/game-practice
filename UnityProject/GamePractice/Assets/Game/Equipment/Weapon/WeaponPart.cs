@@ -19,7 +19,7 @@ namespace Sayne
         /// <summary>무기를 안 든 상태인가. 싸움에선 무기지만 장비창에선 빈 자리로 보인다.</summary>
         public bool IsBareHands => ID == EquipmentID.Weapon.BareHands;
 
-        public WeaponPart(string id, GameObject visual, CharacterStats stats)
+        public WeaponPart(string id, GameObject visual, StatGroup stats)
             : base(id, visual, stats)
         {
             Model = visual.GetComponent<Weapon>();

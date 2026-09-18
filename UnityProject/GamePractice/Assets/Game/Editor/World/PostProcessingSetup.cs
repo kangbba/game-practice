@@ -15,7 +15,7 @@ namespace Sayne.Editor
     {
         private const string ProfilePath = "Assets/Settings/SampleSceneProfile.asset";
 
-        [MenuItem("★Sayne★/5. 화면 후처리 세팅", false, 5)]
+        [MenuItem("★Sayne★/공통/화면 후처리 세팅", false, 52)]
         public static void Setup()
         {
             var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(ProfilePath);

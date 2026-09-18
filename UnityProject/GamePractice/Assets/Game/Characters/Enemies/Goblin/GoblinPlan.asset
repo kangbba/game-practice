@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: GoblinPlan
   m_EditorClassIdentifier:
   _enemyID: Goblin
-  _maxHP: 50
-  _moveSpeed: 1.5
-  _attackPower: 0
+  _stats:
+  - _type: 1
+    _value: 50
+  - _type: 2
+    _value: 1.5
   _prefabID: 
   _mainHand: GoblinClub
   _offHand: 

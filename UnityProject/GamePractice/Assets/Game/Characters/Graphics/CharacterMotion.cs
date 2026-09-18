@@ -219,7 +219,8 @@ namespace Sayne
                 CharacterStateType.Walk => CharacterAnimations.Walk,
                 CharacterStateType.Hit => CharacterAnimations.Hit,
                 CharacterStateType.Death => CharacterAnimations.Death,
-                _ => CharacterAnimations.Idle
+                CharacterStateType.Idle => CharacterAnimations.Idle,
+                _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
             };
         }
     }

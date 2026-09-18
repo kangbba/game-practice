@@ -15,11 +15,11 @@ namespace Sayne
         /// 그래서 무기든 투구든 어떤 자리든, 구조체에 있는 어떤 스탯이든 얹을 수 있다.
         /// 얹을 게 없으면 0 일 뿐, 구조는 같다.
         /// </summary>
-        public CharacterStats Stats { get; }
+        public StatGroup Stats { get; }
 
         public abstract EquipmentSlot Slot { get; }
 
-        protected EquipmentPart(string id, GameObject visual, CharacterStats stats = default)
+        protected EquipmentPart(string id, GameObject visual, StatGroup stats = default)
         {
             ID = id;
             Visual = visual;
@@ -32,7 +32,7 @@ namespace Sayne
     {
         public override EquipmentSlot Slot { get; }
 
-        public Cosmetic(string id, GameObject visual, EquipmentSlot slot, CharacterStats stats = default)
+        public Cosmetic(string id, GameObject visual, EquipmentSlot slot, StatGroup stats = default)
             : base(id, visual, stats)
         {
             Slot = slot;

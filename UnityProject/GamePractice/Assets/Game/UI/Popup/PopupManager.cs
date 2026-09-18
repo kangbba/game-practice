@@ -6,6 +6,14 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
+    /// 팝업 매니저가 찍어내는 프리팹. 무엇을 쓸지 런타임에 종류로 고르는 것이라 목록이 아니라 묻는 문으로 낸다.
+    /// </summary>
+    public interface IPopupAssets
+    {
+        PopupWindow GetPopupPrefab(PopupType type);
+    }
+
+    /// <summary>
     /// 팝업의 주인. 종류(PopupType)에 짝지은 프리팹으로 창을 만들고, 여닫고, 열린 동안 게임을 멈춘다.
     /// 여는 문은 여기 하나다 — 블러를 깔지는 종류가 정하고, 그 순서(투명하게 열기 → 화면 찍기 → 드러내기)는 여기서만 돈다.
     /// 닫기는 창 안의 X 가 스스로 해도 된다. 열림 상태는 창이 들고 있고 멈춤은 그걸 구독한다.
@@ -21,17 +29,17 @@ namespace Sayne
 
         private readonly PauseManager _pauseManager;
         private readonly ScreenBlurManager _screenBlurManager;
-        private readonly UIAssetManager _uiAssetManager;
+        private readonly IPopupAssets _assets;
 
         private readonly Dictionary<PopupType, PopupWindow> _popups = new Dictionary<PopupType, PopupWindow>();
 
         private Canvas _canvas;
 
-        public PopupManager(PauseManager pauseManager, ScreenBlurManager screenBlurManager, UIAssetManager uiAssetManager)
+        public PopupManager(PauseManager pauseManager, ScreenBlurManager screenBlurManager, IPopupAssets assets)
         {
             _pauseManager = pauseManager;
             _screenBlurManager = screenBlurManager;
-            _uiAssetManager = uiAssetManager;
+            _assets = assets;
         }
 
         protected override void OnInit()
@@ -64,7 +72,7 @@ namespace Sayne
         /// </summary>
         public T Create<T>(PopupType type) where T : PopupWindow
         {
-            var popup = Object.Instantiate(_uiAssetManager.GetPopupPrefab(type), _canvas.transform, false);
+            var popup = Object.Instantiate(_assets.GetPopupPrefab(type), _canvas.transform, false);
             popup.gameObject.SetActive(false);
 
             _popups.Add(type, popup);

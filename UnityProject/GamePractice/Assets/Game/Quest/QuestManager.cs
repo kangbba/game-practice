@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using R3;
 using UnityEngine;
 
@@ -8,18 +7,17 @@ namespace Sayne
     /// 퀘스트의 주인. 선언 목록을 위에서부터 한 장씩 내주고, 다 채우면 받아 갈 수 있는 상태로 둔다.
     /// 보상은 저절로 들어오지 않는다 — 눌러서 Claim 해야 골드가 들어오고 다음 장으로 넘어간다.
     ///
-    /// 처치 수는 퀘스트와 상관없이 판이 시작된 뒤로 계속 센다. 그래서 이미 채운 조건의 퀘스트를 받으면
+    /// 무엇을 얼마나 했는지는 세지 않는다. 그건 RecordManager 가 판이 시작된 뒤로 계속 세고 있고,
+    /// 여기서는 지금 퀘스트가 보는 기록 하나만 들여다본다. 그래서 이미 채운 조건의 퀘스트를 받으면
     /// 받자마자 완료로 떠서 누르기만 하면 된다 — 건너뛰는 게 따로 있는 게 아니라 그냥 바로 받아진다.
     /// </summary>
     public class QuestManager : ManagerBase
     {
-        private readonly EnemyManager _enemyManager;
-        private readonly GrowthManager _growthManager;
+        private readonly RecordManager _recordManager;
         private readonly CurrencyManager _currencyManager;
 
-        /// <summary>적 ID 마다 통산 처치 수. 아무거나 세는 퀘스트는 이 값들의 합을 본다.</summary>
-        private readonly Dictionary<string, int> _killCounts = new Dictionary<string, int>();
-        private int _totalKills;
+        /// <summary>지금 퀘스트가 보는 기록 한 줄. 다음 장으로 넘어가면 보던 줄을 놓고 새 줄을 잡는다.</summary>
+        private readonly SerialDisposable _watchedRecord = new SerialDisposable();
 
         private readonly ReactiveProperty<int> _currentIndex = new ReactiveProperty<int>(0);
         private readonly ReactiveProperty<int> _progress = new ReactiveProperty<int>(0);
@@ -42,21 +40,18 @@ namespace Sayne
         /// <summary>한 장을 받아 갔다. 보상 연출·토스트가 이걸 본다.</summary>
         public Observable<QuestPlan> Claimed => _claimed;
 
-        public QuestManager(EnemyManager enemyManager, GrowthManager growthManager, CurrencyManager currencyManager)
+        public QuestManager(RecordManager recordManager, CurrencyManager currencyManager)
         {
-            _enemyManager = enemyManager;
-            _growthManager = growthManager;
+            _recordManager = recordManager;
             _currencyManager = currencyManager;
         }
 
         protected override void OnInit()
         {
-            _enemyManager.Died
-                .Subscribe(this, (enemy, self) => self.CountKill(enemy.ID))
-                .RegisterTo(LifeToken);
+            _watchedRecord.RegisterTo(LifeToken);
 
-            _growthManager.Level
-                .Subscribe(this, (_, self) => self.RefreshProgress())
+            CurrentQuest
+                .Subscribe(this, (quest, self) => self.Watch(quest))
                 .RegisterTo(LifeToken);
         }
 
@@ -83,43 +78,20 @@ namespace Sayne
             _claimed.OnNext(quest);
 
             _currentIndex.Value++;
-            RefreshProgress();
         }
 
-        private void CountKill(string enemyID)
+        /// <summary>진행도는 들고 있는 게 아니라 지금 퀘스트가 보는 기록을 그대로 흘려보낸 값이다.</summary>
+        private void Watch(QuestPlan quest)
         {
-            _killCounts.TryGetValue(enemyID, out var count);
-            _killCounts[enemyID] = count + 1;
-            _totalKills++;
-
-            RefreshProgress();
-        }
-
-        /// <summary>진행도는 들고 있는 게 아니라 지금 퀘스트를 보고 그때그때 읽어 온 값이다.</summary>
-        private void RefreshProgress()
-        {
-            var quest = QuestPlans.Get(_currentIndex.Value);
-
             if (quest == null)
             {
+                _watchedRecord.Disposable = null;
                 _progress.Value = 0;
                 return;
             }
 
-            _progress.Value = quest.Type == QuestType.LevelReach
-                ? _growthManager.Level.CurrentValue
-                : KillsOf(quest.TargetEnemyID);
-        }
-
-        private int KillsOf(string enemyID)
-        {
-            if (string.IsNullOrEmpty(enemyID))
-            {
-                return _totalKills;
-            }
-
-            _killCounts.TryGetValue(enemyID, out var killed);
-            return killed;
+            _watchedRecord.Disposable = _recordManager.Get(quest.Type, quest.Key)
+                .Subscribe(this, (value, self) => self._progress.Value = (int)value);
         }
     }
 }

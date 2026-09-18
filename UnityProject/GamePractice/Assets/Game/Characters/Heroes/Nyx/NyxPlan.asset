@@ -13,9 +13,13 @@ MonoBehaviour:
   m_Name: NyxPlan
   m_EditorClassIdentifier:
   _heroID: Nyx
-  _maxHP: 200
-  _moveSpeed: 4.5
-  _attackPower: 5
+  _stats:
+  - _type: 0
+    _value: 5
+  - _type: 1
+    _value: 200
+  - _type: 2
+    _value: 4.5
   _mainHand: Staff
   _offHand: 
   _helmet: 

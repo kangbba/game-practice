@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _enemyID: OgreBoss
   _isBoss: 1
-  _maxHP: 600
-  _moveSpeed: 1.1
-  _attackPower: 0
+  _stats:
+  - _type: 1
+    _value: 600
+  - _type: 2
+    _value: 1.1
   _prefabID: 
   _mainHand: OgreClub
   _offHand: 

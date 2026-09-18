@@ -13,26 +13,19 @@ namespace Sayne
         /// <summary>절대수치 라벨. 없는 바(라벨 미배선)면 비율만 그린다.</summary>
         private readonly TMP_Text _label;
 
-        private HPBarStyle _style;
+        private readonly HPBarMotion _motion;
         private IDisposable _subscription;
 
         private float _currentRatio = 1f;
         private float _chaseRatio = 1f;
         private float _chaseHoldTime;
 
-        public HPBarCore(SlicedFillBar frontFill, SlicedFillBar backFill, TMP_Text label, HPBarStyle style)
+        public HPBarCore(SlicedFillBar frontFill, SlicedFillBar backFill, TMP_Text label, HPBarMotion motion)
         {
             _frontFill = frontFill;
             _backFill = backFill;
             _label = label;
-            _style = style;
-        }
-
-        public float Ratio => _currentRatio;
-
-        public void SetStyle(HPBarStyle style)
-        {
-            _style = style;
+            _motion = motion;
         }
 
         /// <summary>최대치도 구독한다 — 성장으로 MaxHP 가 변하면 비율과 라벨이 같이 따라온다.</summary>
@@ -61,11 +54,11 @@ namespace Sayne
             }
         }
 
-        public void SetRatio(float ratio)
+        private void SetRatio(float ratio)
         {
             ratio = Mathf.Clamp01(ratio);
 
-            if (ratio < _currentRatio) _chaseHoldTime = _style.ChaseDelay;
+            if (ratio < _currentRatio) _chaseHoldTime = _motion.ChaseDelay;
             else _chaseRatio = ratio;
 
             _currentRatio = ratio;
@@ -73,7 +66,8 @@ namespace Sayne
             if (_backFill != null) _backFill.FillAmount = _chaseRatio;
         }
 
-        public void Tick(float deltaTime)
+        /// <summary>뒤채움을 앞채움 쪽으로 한 프레임분 밀어준다.</summary>
+        public void Advance(float deltaTime)
         {
             if (_backFill == null || Mathf.Approximately(_chaseRatio, _currentRatio)) return;
 
@@ -83,7 +77,7 @@ namespace Sayne
                 return;
             }
 
-            _chaseRatio = Mathf.Lerp(_chaseRatio, _currentRatio, 1f - Mathf.Exp(-_style.ChaseSpeed * deltaTime));
+            _chaseRatio = Mathf.Lerp(_chaseRatio, _currentRatio, 1f - Mathf.Exp(-_motion.ChaseSpeed * deltaTime));
             if (Mathf.Abs(_chaseRatio - _currentRatio) < 0.001f) _chaseRatio = _currentRatio;
 
             _backFill.FillAmount = _chaseRatio;

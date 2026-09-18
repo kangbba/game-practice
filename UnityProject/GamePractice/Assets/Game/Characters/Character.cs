@@ -11,7 +11,7 @@ namespace Sayne
         [SerializeField] private CharacterMotion _motion;
         [SerializeField] private CharacterSkin _skin;
 
-        private readonly ReactiveProperty<CharacterStats> _currentStats = new ReactiveProperty<CharacterStats>();
+        private readonly ReactiveProperty<StatGroup> _currentStats = new ReactiveProperty<StatGroup>();
 
         private readonly ReactiveProperty<int> _currentHP = new ReactiveProperty<int>();
         private readonly ReactiveProperty<CharacterStateType> _state = new ReactiveProperty<CharacterStateType>(CharacterStateType.Idle);
@@ -32,27 +32,27 @@ namespace Sayne
         /// <summary>내가 누구인지. 이름·초상화 같은 건 이 ID 로 전역 테이블에서 찾는다.</summary>
         public abstract string ID { get; }
 
-        private CharacterStats _baseStats;
-        private CharacterStats _growthBonus;
-        private CharacterStats _equipmentBonus;
+        private StatGroup _baseStats;
+        private StatGroup _growthBonus;
+        private StatGroup _equipmentBonus;
 
         /// <summary>타고난 몸. Init 이후 변하지 않는다.</summary>
-        public CharacterStats BaseStats => _baseStats;
+        public StatGroup BaseStats => _baseStats;
 
         /// <summary>성장이 얹은 몫. 성장 없는 캐릭터(적)는 0 이다.</summary>
-        public CharacterStats GrowthBonus => _growthBonus;
+        public StatGroup GrowthBonus => _growthBonus;
 
         /// <summary>낀 장비 전부가 얹은 몫. 무기 공격력도 여기로 들어온다.</summary>
-        public CharacterStats EquipmentBonus => _equipmentBonus;
+        public StatGroup EquipmentBonus => _equipmentBonus;
 
         /// <summary>최종 스탯. 기본 + 성장 + 장비 합성 하나뿐이다 — 직접 쓰는 값이 아니라 파생값이다.</summary>
-        public ReadOnlyReactiveProperty<CharacterStats> CurrentStats => _currentStats;
+        public ReadOnlyReactiveProperty<StatGroup> CurrentStats => _currentStats;
 
         /// <summary>최종 공격력. 합성은 CurrentStats 가 이미 했다.</summary>
-        public int FinalAttackPower => _currentStats.Value.AttackPower;
+        public int FinalAttackPower => (int)_currentStats.Value.Get(StatType.AttackPower);
 
         /// <summary>최종 체력. 합성은 CurrentStats 가 이미 했다.</summary>
-        public int FinalMaxHP => _currentStats.Value.MaxHP;
+        public int FinalMaxHP => (int)_currentStats.Value.Get(StatType.MaxHP);
 
         /// <summary>뭘 입고 있나. 입기·벗기·구독은 전부 여기 있다.</summary>
         public CharacterEquipment Equipment { get; } = new CharacterEquipment();
@@ -138,7 +138,7 @@ namespace Sayne
         }
 
         /// <summary>스폰 직후 호출. 프리팹은 벗은 상태이고, 여기서 받은 한 벌을 그때 입는다. 맨손도 무기 한 종류다.</summary>
-        public void Init(CharacterStats stats, CombatPlan combatPlan, EquipmentSet equipment)
+        public void Init(StatGroup stats, CombatPlan combatPlan, EquipmentSet equipment)
         {
             _baseStats = stats;
             _growthBonus = default;
@@ -167,9 +167,9 @@ namespace Sayne
         }
 
         /// <summary>성장 몫을 갈아끼운다. 성장은 오르기만 하고, 늘어난 MaxHP 만큼 현재 HP 도 같이 차오른다 — 성장이 벌점이 되지 않게.</summary>
-        public void SetGrowthBonus(CharacterStats bonus)
+        public void SetGrowthBonus(StatGroup bonus)
         {
-            var maxHPGain = bonus.MaxHP - _growthBonus.MaxHP;
+            var maxHPGain = (int)(bonus.Get(StatType.MaxHP) - _growthBonus.Get(StatType.MaxHP));
 
             _growthBonus = bonus;
             RefreshStats();
@@ -178,7 +178,7 @@ namespace Sayne
         }
 
         /// <summary>장비 몫을 갈아끼운다. 입고 벗는 건 회복이 아니라서 현재 HP 는 건드리지 않는다.</summary>
-        private void SetEquipmentBonus(CharacterStats bonus)
+        private void SetEquipmentBonus(StatGroup bonus)
         {
             _equipmentBonus = bonus;
             RefreshStats();
@@ -282,7 +282,7 @@ namespace Sayne
                 return;
             }
 
-            transform.Translate(_moveDirection * (_currentStats.Value.MoveSpeed * Time.deltaTime));
+            transform.Translate(_moveDirection * (_currentStats.Value.Get(StatType.MoveSpeed) * Time.deltaTime));
         }
 
         /// <summary>

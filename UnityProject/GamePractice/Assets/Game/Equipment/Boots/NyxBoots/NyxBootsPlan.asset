@@ -15,6 +15,6 @@ MonoBehaviour:
   _equipmentID: NyxBoots
   _displayName: 닉스의 굽 장화
   _description: 붉은 띠를 두른 굽 높은 장화. 발놀림이 눈에 띄게 가벼워진다.
-  _maxHP: 0
-  _moveSpeed: 1.5
-  _attackPower: 0
+  _stats:
+  - _type: 2
+    _value: 1.5

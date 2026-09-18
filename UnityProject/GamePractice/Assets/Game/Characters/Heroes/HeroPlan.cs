@@ -11,12 +11,9 @@ namespace Sayne
     {
         [HeroIDPicker] [SerializeField] private string _heroID;
 
+        /// <summary>맨몸의 스탯. 무기 공격력은 여기 없고 장비 설계값이 얹는다.</summary>
         [Header("몸")]
-        [SerializeField] private int _maxHP = 100;
-        [SerializeField] private float _moveSpeed = 4.5f;
-
-        /// <summary>맨몸의 공격력. 무기 공격력은 여기 없고 장비 설계값이 얹는다.</summary>
-        [SerializeField] private int _attackPower = 5;
+        [SerializeField] private Stat[] _stats;
 
         [Header("입고 나오는 한 벌")]
         [EquipmentIDPicker(allowEmpty: true)] [SerializeField] private string _mainHand;
@@ -32,7 +29,7 @@ namespace Sayne
         /// <summary>이 설계값의 주인.</summary>
         public string HeroID => _heroID;
 
-        public CharacterStats Body => new CharacterStats(_maxHP, _moveSpeed, _attackPower);
+        public StatGroup Body => new StatGroup(_stats);
 
         public EquipmentIDs Outfit => new EquipmentIDs(_mainHand, _offHand, _helmet, _chest, _greaves, _boots);
 

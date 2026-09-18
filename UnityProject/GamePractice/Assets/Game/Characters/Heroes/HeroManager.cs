@@ -64,7 +64,7 @@ namespace Sayne
         }
 
         /// <summary>성장 몫만 갈아끼운다. 최종 스탯은 캐릭터 안에서 기본 + 성장으로 합성된다.</summary>
-        private void ApplyGrowth(CharacterStats bonus)
+        private void ApplyGrowth(StatGroup bonus)
         {
             foreach (var hero in _currentHeroes)
             {
@@ -88,6 +88,10 @@ namespace Sayne
             var plan = _heroPlans.Get(heroID);
             var hero = Object.Instantiate(_heroAssets.Get(heroID));
             hero.transform.position = position;
+
+            // 몸을 만들기 전에 자기 설계값부터 쥐여 준다 — 자기가 누구인지는 여기서 나온다.
+            hero.SetPlan(plan);
+
             // 몸은 기본 플랜 그대로 태어나고, 성장 몫은 그 위에 얹는다. 부활도 같은 길이라 성장분 풀피로 살아난다.
             hero.Init(plan.Body, plan.Combat, _equipmentManager.CreateSet(plan.Outfit));
             hero.SetGrowthBonus(_growthManager.Bonus.CurrentValue);
@@ -97,7 +101,7 @@ namespace Sayne
             // 히어로는 죽음을 미루지 않는다. HP 가 0 이 되는 그 자리에서 죽음처리한다.
             hero.Fell
                 .Subscribe(hero, (_, owner) => owner.Die())
-                .RegisterTo(LifeToken);
+                .RegisterTo(hero.destroyCancellationToken);
 
             // 맞지 않고 한동안 지나면 조금씩 찬다. 맞으면 기다림을 처음부터 다시 센다.
             hero.Damaged
@@ -110,7 +114,7 @@ namespace Sayne
 
             hero.Died
                 .Subscribe((self: this, heroID, hero), (_, state) => state.self.ReviveAsync(state.heroID, state.hero).Forget())
-                .RegisterTo(LifeToken);
+                .RegisterTo(hero.destroyCancellationToken);
 
             _spawned.OnNext(hero);
             return hero;

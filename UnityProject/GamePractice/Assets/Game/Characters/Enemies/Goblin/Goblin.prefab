@@ -537,7 +537,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2275022126618024299}
   m_Layer: 0
-  m_Name: RearLeg
+  m_Name: LeftLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -703,7 +703,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9026593920805395964}
   m_Layer: 0
-  m_Name: Arm
+  m_Name: RightArm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -930,7 +930,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 4900433508789360004}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e99328a056e7442b8f4cbf694744a8c2, type: 3}
+  m_Script: {fileID: 11500000, guid: 781cf089e2bb341db96a0b5e4f5629d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _motion: {fileID: 1906624212208644041}
@@ -945,7 +945,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1767906629139903827}
   m_Layer: 0
-  m_Name: FrontLeg
+  m_Name: RightLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1622,7 +1622,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7847703331187611377}
   m_Layer: 0
-  m_Name: BackArm
+  m_Name: LeftArm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

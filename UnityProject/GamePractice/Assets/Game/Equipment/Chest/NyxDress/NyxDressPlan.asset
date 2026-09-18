@@ -15,6 +15,8 @@ MonoBehaviour:
   _equipmentID: NyxDress
   _displayName: 닉스의 핏빛 드레스
   _description: 붉은 안감을 댄 검은 드레스. 가벼워서 움직임을 방해하지 않는다.
-  _maxHP: 30
-  _moveSpeed: 0.3
-  _attackPower: 0
+  _stats:
+  - _type: 1
+    _value: 30
+  - _type: 2
+    _value: 0.3

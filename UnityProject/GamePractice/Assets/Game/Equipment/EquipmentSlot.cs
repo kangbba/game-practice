@@ -1,3 +1,5 @@
+using System;
+
 namespace Sayne
 {
     /// <summary>
@@ -36,7 +38,8 @@ namespace Sayne
                 EquipmentSlot.Helmet => "투구",
                 EquipmentSlot.Chest => "몸통갑옷",
                 EquipmentSlot.Greaves => "정강이",
-                _ => "신발"
+                EquipmentSlot.Boots => "신발",
+                _ => throw new ArgumentOutOfRangeException(nameof(slot), slot, null)
             };
         }
     }

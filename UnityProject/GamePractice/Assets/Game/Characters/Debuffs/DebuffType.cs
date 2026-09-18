@@ -1,3 +1,5 @@
+using System;
+
 namespace Sayne
 {
     /// <summary>
@@ -46,7 +48,8 @@ namespace Sayne
                 DebuffType.Root => "속박",
                 DebuffType.Silence => "침묵",
                 DebuffType.Slow => "둔화",
-                _ => "중독"
+                DebuffType.Poison => "중독",
+                _ => throw new ArgumentOutOfRangeException(nameof(debuff), debuff, null)
             };
         }
     }

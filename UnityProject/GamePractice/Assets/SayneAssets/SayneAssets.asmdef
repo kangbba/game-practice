@@ -6,6 +6,7 @@
         "Unity.TextMeshPro",
         "UniTask",
         "UniTask.Addressables",
+        "DOTween.Runtime",
         "Unity.Addressables",
         "Unity.ResourceManager"
     ],

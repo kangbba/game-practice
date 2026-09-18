@@ -17,8 +17,6 @@ namespace Sayne
 
         private async UniTaskVoid StartAsync()
         {
-            var token = destroyCancellationToken;
-
             // 1단계: 에셋 매니저를 만들고 전부 한꺼번에 로드한다.
             var mapAssetManager = AddManager(new MapAssetManager());
             var heroAssetManager = AddManager(new HeroAssetManager());
@@ -26,19 +24,18 @@ namespace Sayne
             var particleAssetManager = AddManager(new ParticleAssetManager());
             var equipmentAssetManager = AddManager(new EquipmentAssetManager());
             var uiAssetManager = AddManager(new UIAssetManager());
-            var profileAssetManager = AddManager(new ProfileAssetManager());
+            var profileAssetManager = AddManager(new CharacterProfileAssetManager());
             var enemyPlanAssetManager = AddManager(new EnemyPlanAssetManager());
             var heroPlanAssetManager = AddManager(new HeroPlanAssetManager());
             var equipmentPlanAssetManager = AddManager(new EquipmentPlanAssetManager());
-            var dropPortraitAssetManager = AddManager(new DropPortraitAssetManager());
+            var itemAssetManager = AddManager(new ItemAssetManager());
 
             await LoadAllAsync();
 
             // 2단계: 게임플레이 매니저 조립. 로드 전에 Get 을 부르면 에셋 매니저가 에러 로그로 알려준다.
             // 중단이 맨 앞이다 — 창·컷씬·조작·AI 가 전부 이걸 본다.
             var pauseManager = AddManager(new PauseManager());
-            var phaseManager = AddManager(new PhaseManager("RootPhase", token));
-            var mapManager = AddManager(new MapManager(mapAssetManager));
+            var mapManager = AddManager(new MapManager(mapAssetManager.MainMap));
             var equipmentManager = AddManager(new EquipmentManager(equipmentAssetManager, equipmentPlanAssetManager));
             var enemyManager = AddManager(new EnemyManager(enemyAssetManager, enemyPlanAssetManager, equipmentManager));
             var currencyManager = AddManager(new CurrencyManager());
@@ -47,38 +44,45 @@ namespace Sayne
             var growthManager = AddManager(new GrowthManager(enemyManager, currencyManager));
             var heroManager = AddManager(new HeroManager(heroAssetManager, heroPlanAssetManager, equipmentManager, growthManager));
             var particleManager = AddManager(new ParticleManager(particleAssetManager, heroManager, enemyManager));
-            var dropManager = AddManager(new DropManager(enemyManager, heroManager, currencyManager,
-                equipmentManager, dropPortraitAssetManager, uiAssetManager.DropItemPrefab));
+            // 구슬을 뿌리는 쪽과, 무엇을 주울 때 무슨 일이 나는지 정하는 쪽을 나눈다.
+            var dropManager = AddManager(new DropManager(heroManager, itemAssetManager));
+            var dropDirector = AddManager(new DropDirector(enemyManager, dropManager, currencyManager,
+                heroManager, equipmentManager, itemAssetManager));
             var waveManager = AddManager(new WaveManager(enemyManager));
-            var questManager = AddManager(new QuestManager(enemyManager, growthManager, currencyManager));
+            // 기록은 보기만 하는 놈이라 볼 대상이 다 태어난 뒤에 선다. 퀘스트는 이제 기록만 본다.
+            var recordManager = AddManager(new RecordManager(enemyManager, growthManager, currencyManager, waveManager));
+            var questManager = AddManager(new QuestManager(recordManager, currencyManager));
 
             var cameraManager = AddManager(new CameraManager());
             var cameraDirector = AddManager(new CameraDirector(cameraManager, heroManager));
 
-            var uiDirectionManager = AddManager(new UIDirectionManager(pauseManager, heroManager, waveManager,
+            var screenPerformanceManager = AddManager(new ScreenPerformanceManager(pauseManager, heroManager, waveManager,
                 profileAssetManager, uiAssetManager.UltimateCutscenePanelPrefab, uiAssetManager.WaveStartPanelPrefab,
                 uiAssetManager.LowHealthPanelPrefab));
 
             // 궁극기 연출은 컷씬(UI 연출)을 부르고, HP바·적 AI·웨이브가 이걸 본다 — 그 사이에 선다.
             var ultimateDirector = AddManager(new UltimateDirector(heroManager, enemyManager, cameraManager,
-                uiDirectionManager));
+                screenPerformanceManager));
 
             var screenBlurManager = AddManager(new ScreenBlurManager());
             var popupManager = AddManager(new PopupManager(pauseManager, screenBlurManager, uiAssetManager));
             var screenUIManager = AddManager(new ScreenUIManager(pauseManager, cameraManager,
                 heroManager, enemyManager, waveManager, questManager, currencyManager, growthManager,
                 equipmentManager, ultimateDirector, popupManager, profileAssetManager, heroAssetManager,
-                uiAssetManager.BattlePanelPrefab,
-                uiAssetManager.OverlayHPBarPrefab, uiAssetManager.WorldHPBarPrefab, uiAssetManager.DamageTextPrefab));
+                uiAssetManager));
 
             var tutorialManager = AddManager(new TutorialManager(pauseManager, cameraManager,
-                uiAssetManager.TutorialWidgetPrefab, uiAssetManager.OverlaySpeechBubblePrefab));
+                uiAssetManager.SpeechBubbleWidgetPrefab, uiAssetManager.OverlaySpeechBubblePrefab));
 
             var heroControlManager = AddManager(new HeroControlManager(pauseManager, heroManager, enemyManager, screenUIManager.BattlePanel));
             var enemyAIManager = AddManager(new EnemyAIManager(pauseManager, heroManager, enemyManager, ultimateDirector));
 
             var tutorialDirector = AddManager(new TutorialDirector(tutorialManager, heroManager, enemyManager, waveManager,
                 uiAssetManager.WorldSpeechBubblePrefab));
+
+            // 게임을 굴리는 놈이라 맨 마지막에 태어난다 — 역순 해제에서 제일 먼저 멈춰야 한다.
+            // 부품(적·히어로·UI)을 뜯기 전에 엔진이 꺼지는 순서다.
+            var phaseManager = AddManager(new PhaseManager());
 
             var inGamePhase = new InGamePhase(mapManager, heroManager, enemyManager, waveManager, ultimateDirector);
             phaseManager.RunAsync(new LoadingPhase(inGamePhase)).Forget();

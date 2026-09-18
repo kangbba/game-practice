@@ -419,7 +419,7 @@ GameObject:
   m_Component:
   - component: {fileID: 835114803305491748}
   m_Layer: 0
-  m_Name: FrontLeg
+  m_Name: RightLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -483,7 +483,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5801149179160854544}
   m_Layer: 0
-  m_Name: BackArm
+  m_Name: LeftArm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -607,7 +607,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6769022273062599652}
   m_Layer: 0
-  m_Name: Arm
+  m_Name: RightArm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1222,7 +1222,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8462067284956310633}
   m_Layer: 0
-  m_Name: RearLeg
+  m_Name: LeftLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1288,7 +1288,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5354668105082477232}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 039e033e5ee14c96a4b9e9b2b7630e5e, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ec5d7c3f2315407aa2738284ba72f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::Sayne.Kage
   _motion: {fileID: 2662813530137644326}

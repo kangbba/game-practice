@@ -18,7 +18,7 @@ namespace Sayne.Editor
         private const string MapsRoot = "Assets/Game/Maps";
         private const string EquipmentRoot = "Assets/Game/Equipment";
 
-        [MenuItem("★Sayne★/2. 어드레서블 셋업", false, 2)]
+        [MenuItem("★Sayne★/3. 어드레서블 셋업 (SpeechBubbleWidget·Gold 주소)", false, 3)]
         public static void Setup()
         {
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
@@ -44,24 +44,22 @@ namespace Sayne.Editor
             // 장비 설계값(아이템 카드)은 그 아이템 폴더에 프리팹과 같이 둔다.
             count += MarkFolder(settings, group, EquipmentRoot, AssetAddresses.EquipmentPlansLabel, "t:EquipmentPlan");
 
-            count += MarkFolder(settings, group, "Assets/Game/Drops/Art/Portraits",
-                AssetAddresses.DropPortraitsLabel, "t:Sprite");
-
+            count += Mark(settings, group, "Assets/Game/Drops/Art/Portraits/Gold.png", null);
             count += Mark(settings, group, "Assets/Game/Drops/DropItem.prefab", null);
 
             count += Mark(settings, group, "Assets/Game/UI/OverlayHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/WorldHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/DamageText.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UIDirection/UltimateCutscenePanel.prefab", null);
+            count += Mark(settings, group, "Assets/Game/ScreenPerformance/UltimateCutscenePanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/BattlePanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/Popup/GrowthWindow.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UI/Popup/EquipmentWindow.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UIDirection/UIPrefab_WaveStart.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UIDirection/UIPrefab_LowHealth.prefab", null);
+            count += Mark(settings, group, "Assets/Game/Equipment/UI/EquipmentWindow.prefab", null);
+            count += Mark(settings, group, "Assets/Game/ScreenPerformance/WaveStartPanel.prefab", null);
+            count += Mark(settings, group, "Assets/Game/ScreenPerformance/LowHealthPanel.prefab", null);
 
-            count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/TutorialWidget.prefab", null);
-            count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/OverlaySpeechBubble.prefab", null);
-            count += Mark(settings, group, "Assets/SayneAssets/UI/Tutorial/WorldSpeechBubble.prefab", null);
+            count += Mark(settings, group, "Assets/SayneAssets/UI/Speech/SpeechBubbleWidget.prefab", null);
+            count += Mark(settings, group, "Assets/SayneAssets/UI/Speech/OverlaySpeechBubble.prefab", null);
+            count += Mark(settings, group, "Assets/SayneAssets/UI/Speech/WorldSpeechBubble.prefab", null);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"AddressablesSetup: {count} 개 에셋 등록 완료");

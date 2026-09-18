@@ -21,8 +21,8 @@ namespace Sayne
             [SerializeField] private SpriteRenderer[] _coveredSprites = Array.Empty<SpriteRenderer>();
 
             /// <summary>
-            /// 이 자리가 신발의 어느 발인가(Boots.FrontSide·RearSide). 한 켤레가 두 발 자리에 각각 붙으므로
-            /// 자리마다 자기 발의 그림만 남기라고 신발에게 알린다. 신발 자리가 아니면 비워 둔다.
+            /// 이 자리가 리그의 어느 다리 본인가(Boots.FrontSide·RearSide). 한 켤레가 두 다리 자리에
+            /// 각각 붙으므로, 자리마다 자기 쪽 그림만 남기라고 신발에게 알린다. 신발 자리가 아니면 비워 둔다.
             /// </summary>
             [SerializeField] private string _variant;
             [SerializeField] private bool _overrideSortingOrder;

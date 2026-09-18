@@ -27,9 +27,9 @@ namespace Sayne
         public WeaponPart Weapon => (WeaponPart)this[EquipmentSlot.MainHand];
 
         /// <summary>낀 파츠 전부가 얹는 스탯의 합. 캐릭터의 "장비" 근원 하나로 합류한다.</summary>
-        public CharacterStats TotalStats()
+        public StatGroup TotalStats()
         {
-            var total = new CharacterStats();
+            var total = new StatGroup();
 
             foreach (var property in _parts.Values)
             {

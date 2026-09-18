@@ -50,7 +50,7 @@ namespace Sayne
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
         private readonly CameraManager _cameraManager;
-        private readonly UIDirectionManager _uiDirectionManager;
+        private readonly ScreenPerformanceManager _screenPerformanceManager;
 
         private readonly ReactiveProperty<bool> _isPlaying = new ReactiveProperty<bool>();
 
@@ -60,12 +60,12 @@ namespace Sayne
         public ReadOnlyReactiveProperty<bool> IsPlaying => _isPlaying;
 
         public UltimateDirector(HeroManager heroManager, EnemyManager enemyManager, CameraManager cameraManager,
-            UIDirectionManager uiDirectionManager)
+            ScreenPerformanceManager screenPerformanceManager)
         {
             _heroManager = heroManager;
             _enemyManager = enemyManager;
             _cameraManager = cameraManager;
-            _uiDirectionManager = uiDirectionManager;
+            _screenPerformanceManager = screenPerformanceManager;
         }
 
         protected override void OnInit()
@@ -117,7 +117,7 @@ namespace Sayne
             _isPlaying.Value = true;
 
             // ① 컷씬
-            await _uiDirectionManager.PlayUltimateCutsceneAsync(hero, token);
+            await _screenPerformanceManager.PlayUltimateCutsceneAsync(hero, token);
 
             // ② 무대 — 올린 적은 ⑥ 에서 다시 내려야 하므로, 그때까지 시체가 치워지지 않게 쥔다.
             var targets = CollectTargets(hero);

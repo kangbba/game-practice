@@ -15,6 +15,8 @@ MonoBehaviour:
   _equipmentID: AldricBoots
   _displayName: 알드릭의 버클 장화
   _description: 발목까지 오는 검은 가죽 장화. 가볍고 질겨 오래 걸어도 발이 편하다.
-  _maxHP: 15
-  _moveSpeed: 0.5
-  _attackPower: 0
+  _stats:
+  - _type: 1
+    _value: 15
+  - _type: 2
+    _value: 0.5

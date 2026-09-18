@@ -7,22 +7,23 @@ namespace Sayne
         public const string EnemiesLabel = "Enemies";
         public const string ParticlesLabel = "Particles";
         public const string MapsLabel = "Maps";
+        public const string MainMap = "WorldMap";
         public const string EquipmentLabel = "Equipment";
         public const string ProfilesLabel = "Profiles";
         public const string EnemyPlansLabel = "EnemyPlans";
         public const string HeroPlansLabel = "HeroPlans";
         public const string EquipmentPlansLabel = "EquipmentPlans";
-        public const string DropPortraitsLabel = "DropPortraits";
 
         public const string OverlayHPBar = "OverlayHPBar";
         public const string WorldHPBar = "WorldHPBar";
         public const string UltimateCutscenePanel = "UltimateCutscenePanel";
         public const string DamageText = "DamageText";
         public const string BattlePanel = "BattlePanel";
-        public const string UIPrefab_WaveStart = "UIPrefab_WaveStart";
-        public const string UIPrefab_LowHealth = "UIPrefab_LowHealth";
-        public const string DropItem = "DropItem";
-        public const string TutorialWidget = "TutorialWidget";
+        public const string WaveStartPanel = "WaveStartPanel";
+        public const string LowHealthPanel = "LowHealthPanel";
+        /// <summary>월드에 떨어지는 구슬 프리팹.</summary>
+        public const string DropOrb = "DropItem";
+        public const string SpeechBubbleWidget = "SpeechBubbleWidget";
         public const string OverlaySpeechBubble = "OverlaySpeechBubble";
         public const string WorldSpeechBubble = "WorldSpeechBubble";
 
@@ -31,6 +32,7 @@ namespace Sayne
         public const string EquipmentWindow = "EquipmentWindow";
 
         /// <summary>골드 드랍 구슬에 들어가는 동전 그림.</summary>
-        public const string GoldPortrait = "Gold";
+        /// <summary>코인 그림. 에셋 파일명이 Gold 라 주소도 그대로다.</summary>
+        public const string CoinIcon = "Gold";
     }
 }

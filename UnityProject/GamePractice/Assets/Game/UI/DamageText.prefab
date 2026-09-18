@@ -149,5 +149,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 422dcc899d58542da8e1c8b4674563fc, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Game::Sayne.DamageText
+  m_EditorClassIdentifier: SayneAssets::Sayne.DamageText
   _label: {fileID: 345851623247768323}

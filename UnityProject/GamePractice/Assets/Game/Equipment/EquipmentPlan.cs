@@ -19,12 +19,9 @@ namespace Sayne
         [SerializeField] private string _displayName;
         [TextArea(2, 4)] [SerializeField] private string _description;
 
+        /// <summary>얹는 스탯. 무기의 공격력이 곧 무기 위력이다 — 위력과 스탯을 두 벌로 적지 않는다.</summary>
         [Header("얹는 스탯")]
-        [SerializeField] private int _maxHP;
-        [SerializeField] private float _moveSpeed;
-
-        /// <summary>공격력. 무기면 이 값이 곧 무기 위력이다 — 위력과 스탯을 두 벌로 적지 않는다.</summary>
-        [SerializeField] private int _attackPower;
+        [SerializeField] private Stat[] _stats;
 
         /// <summary>이 카드의 주인.</summary>
         public string EquipmentID => _equipmentID;
@@ -35,6 +32,6 @@ namespace Sayne
         public string Description => _description;
 
         /// <summary>이 장비가 얹는 스탯. 최종 스탯의 "장비" 근원으로 합류한다.</summary>
-        public CharacterStats Stats => new CharacterStats(_maxHP, _moveSpeed, _attackPower);
+        public StatGroup Stats => new StatGroup(_stats);
     }
 }

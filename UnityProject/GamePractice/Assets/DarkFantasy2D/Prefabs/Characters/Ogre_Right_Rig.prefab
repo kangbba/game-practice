@@ -203,7 +203,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6814548357285959300}
   m_Layer: 0
-  m_Name: Arm
+  m_Name: RightArm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -236,7 +236,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1768040575381288949}
   m_Layer: 0
-  m_Name: RearLeg
+  m_Name: LeftLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -907,7 +907,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1729988170009284373}
   m_Layer: 0
-  m_Name: FrontLeg
+  m_Name: RightLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1336,7 +1336,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1253236151484102757}
   m_Layer: 0
-  m_Name: BackArm
+  m_Name: LeftArm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

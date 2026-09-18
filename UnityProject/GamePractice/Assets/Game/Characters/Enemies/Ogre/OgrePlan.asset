@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: OgrePlan
   m_EditorClassIdentifier:
   _enemyID: Ogre
-  _maxHP: 120
-  _moveSpeed: 1.2
-  _attackPower: 0
+  _stats:
+  - _type: 1
+    _value: 120
+  - _type: 2
+    _value: 1.2
   _prefabID: 
   _mainHand: BareHands
   _offHand: 

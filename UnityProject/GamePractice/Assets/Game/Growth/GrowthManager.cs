@@ -24,10 +24,10 @@ namespace Sayne
         private readonly Subject<int> _expGained = new Subject<int>();
 
         /// <summary>항목별 성장 레벨. 1 = 아직 아무것도 안 산 상태.</summary>
-        private readonly Dictionary<GrowthStatType, ReactiveProperty<int>> _statLevels =
-            new Dictionary<GrowthStatType, ReactiveProperty<int>>();
+        private readonly Dictionary<StatType, ReactiveProperty<int>> _statLevels =
+            new Dictionary<StatType, ReactiveProperty<int>>();
 
-        private readonly ReactiveProperty<CharacterStats> _bonus = new ReactiveProperty<CharacterStats>();
+        private readonly ReactiveProperty<StatGroup> _bonus = new ReactiveProperty<StatGroup>();
 
         public ReadOnlyReactiveProperty<int> Level => _level;
 
@@ -45,7 +45,7 @@ namespace Sayne
         public int RequiredExp => BaseRequiredExp + (_level.Value - 1) * RequiredExpPerLevel;
 
         /// <summary>산 성장 전부를 합친 몫. 히어로가 이걸 구독해 기본 스탯 위에 얹는다.</summary>
-        public ReadOnlyReactiveProperty<CharacterStats> Bonus => _bonus;
+        public ReadOnlyReactiveProperty<StatGroup> Bonus => _bonus;
 
         public GrowthManager(EnemyManager enemyManager, CurrencyManager currencyManager)
         {
@@ -78,19 +78,19 @@ namespace Sayne
             }
         }
 
-        public ReadOnlyReactiveProperty<int> StatLevel(GrowthStatType stat) => _statLevels[stat];
+        public ReadOnlyReactiveProperty<int> StatLevel(StatType stat) => _statLevels[stat];
 
         /// <summary>지금 이 항목을 한 칸 올리는 값. 레벨이 오를수록 비싸진다 — 수식은 GrowthPlan 이 가진다.</summary>
-        public long CostToUpgrade(GrowthStatType stat) => GrowthPlan.CostToUpgrade(stat, _statLevels[stat].Value);
+        public long CostToUpgrade(StatType stat) => GrowthPlan.CostToUpgrade(stat, _statLevels[stat].Value);
 
-        public bool IsMaxLevel(GrowthStatType stat) => _statLevels[stat].Value >= GrowthPlan.MaxLevel(stat);
+        public bool IsMaxLevel(StatType stat) => _statLevels[stat].Value >= GrowthPlan.MaxLevel(stat);
 
         /// <summary>버튼을 켤지 끌지 정할 때 쓴다. 실제로 사는 건 TryUpgrade 뿐이다.</summary>
-        public bool CanUpgrade(GrowthStatType stat) =>
+        public bool CanUpgrade(StatType stat) =>
             !IsMaxLevel(stat) && _currencyManager.Gold.CurrentValue >= CostToUpgrade(stat);
 
         /// <summary>골드가 모자라거나 만렙이면 아무 일도 없이 false. 성공하면 골드가 빠지고 레벨이 한 칸 오른다.</summary>
-        public bool TryUpgrade(GrowthStatType stat)
+        public bool TryUpgrade(StatType stat)
         {
             if (IsMaxLevel(stat) || !_currencyManager.TrySpendGold(CostToUpgrade(stat)))
             {
@@ -103,9 +103,9 @@ namespace Sayne
         }
 
         /// <summary>항목별 보너스를 전부 합친 값. 성장 몫의 진실은 늘 레벨에서 다시 계산된다.</summary>
-        private CharacterStats ComposeBonus()
+        private StatGroup ComposeBonus()
         {
-            var bonus = default(CharacterStats);
+            var bonus = default(StatGroup);
 
             foreach (var stat in GrowthPlan.All)
             {
