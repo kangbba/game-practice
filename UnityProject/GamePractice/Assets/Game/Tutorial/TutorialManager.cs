@@ -91,7 +91,10 @@ namespace Sayne
             _canvas = null;
             _widget = null;
             _isPlaying.Dispose();
-            _bubbleChanged.Dispose();
+
+            // 폐기하지 않고 끝낸다. 말하던 풍선은 취소가 다음 프레임에야 닿아서, 그 뒤에 "말 끝남"을 알려 온다 —
+            // 끝난 스트림은 그 값을 흘려보내고, 폐기한 스트림은 거기서 터진다.
+            _bubbleChanged.OnCompleted();
         }
 
         /// <summary>화면 아래에 초상화와 함께 대사를 튼다. 플레이어가 넘기면 끝난다.</summary>
