@@ -62,7 +62,6 @@ namespace Sayne.Editor
 
             count += Mark(settings, group, "Assets/SayneAssets/UI/Speech/SpeechBubbleWidget.prefab", null);
             count += Mark(settings, group, "Assets/SayneAssets/UI/Speech/OverlaySpeechBubble.prefab", null);
-            count += Mark(settings, group, "Assets/SayneAssets/UI/Speech/WorldSpeechBubble.prefab", null);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"AddressablesSetup: {count} 개 에셋 등록 완료");

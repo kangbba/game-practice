@@ -48,3 +48,7 @@ crashlytics-build.properties
 
 # 에디터 요청 파일 (장비 미리보기·굽기 트리거)
 UnityProject/GamePractice/tmp/
+
+# 에디터 도구가 찍어 내는 미리보기 이미지(확인용). 돌릴 때마다 바뀌는 생성물이라 올리지 않는다.
+UnityProject/GamePractice/HUDPreviews/
+UnityProject/GamePractice/Documentation/Equipment/Previews/

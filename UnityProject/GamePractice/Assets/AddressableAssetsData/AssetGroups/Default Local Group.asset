@@ -186,11 +186,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 4fcbcb000226a4f36af1e6828aa1a073
-    m_Address: WorldSpeechBubble
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 55de6e3ceffb1496782633a7dd0f5122
     m_Address: Kage
     m_ReadOnly: 0

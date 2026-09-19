@@ -30,7 +30,6 @@ namespace Sayne
         public const string DropOrb = "DropItem";
         public const string SpeechBubbleWidget = "SpeechBubbleWidget";
         public const string OverlaySpeechBubble = "OverlaySpeechBubble";
-        public const string WorldSpeechBubble = "WorldSpeechBubble";
 
         // 팝업. 종류와의 짝은 PopupTypes.GetAddress 가 든다.
         public const string GrowthWindow = "GrowthWindow";

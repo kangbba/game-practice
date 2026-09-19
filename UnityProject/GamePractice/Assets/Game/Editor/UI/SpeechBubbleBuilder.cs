@@ -10,8 +10,8 @@ using UnityEngine.UI;
 namespace Sayne.Editor
 {
     /// <summary>
-    /// 대사 프리팹 세 개를 만든다 — 화면 아래 초상화 대사(SpeechBubbleWidget), 캐릭터 머리 위 말풍선(OverlaySpeechBubble),
-    /// 게임을 멈추지 않는 머리 위 혼잣말(WorldSpeechBubble).
+    /// 대사 프리팹 두 개를 만든다 — 화면 아래 초상화 대사(SpeechBubbleWidget), 캐릭터 머리 위 말풍선(OverlaySpeechBubble).
+    /// 머리 위 말풍선은 눌러서 넘기는 대사와 알아서 사라지는 혼잣말을 같이 맡는다.
     /// 그림은 SayneAssets/UI/Speech/Sprites 의 PNG 를 그대로 쓰고, 여기서는 임포트 설정만 맞춘다.
     /// 끝에 어드레서블 등록과 미리보기 저장까지 한 번에 돌린다.
     /// </summary>
@@ -26,24 +26,6 @@ namespace Sayne.Editor
         private const string PreviewPortraitPath = "Assets/Game/Characters/Heroes/Kage/KagePortrait.png";
 
         private const float BubbleBorder = 44f;
-
-        /// <summary>
-        /// 월드 말풍선 그림 배율. 다른 말풍선과 같은 그림을 이 배로 키워 쓴다 — 풍선·꼬리·초상화·여백, 9슬라이스 테두리까지 같이 커진다.
-        /// 글자 크기는 따로 정한다(WorldFontSize).
-        /// </summary>
-        private const float WorldGraphicScale = 2f;
-
-        /// <summary>월드 말풍선 왼쪽의 초상화 한 변(1배 기준). 풍선 높이(84) 안에 들어간다.</summary>
-        private const float WorldPortraitSize = 64f;
-
-        private const float WorldFontSize = 30f;
-
-
-        // 꼬리 그림(56x64)은 끝이 왼쪽을 본다. 끝점은 왼쪽 가장자리에서 1px 안쪽, 세로 가운데다.
-        // 풍선 밑변에 10px 겹쳐 붙이므로, 풍선을 (56 - 1 - 10)px 띄우면 꼬리 끝이 뿌리 원점(0,0,0)에 딱 온다.
-        private static readonly Vector2 TailSize = new Vector2(56f, 64f);
-        private const float TailTipInset = 1f;
-        private const float TailOverlap = 10f;
 
         private static readonly Color Ink = new Color(0.086f, 0.125f, 0.227f);
         private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.45f);
@@ -62,22 +44,11 @@ namespace Sayne.Editor
 
             BuildSpeechBubbleWidget();
             BuildOverlaySpeechBubble();
-            BuildWorldSpeechBubble();
 
             AddressablesSetup.Setup();
             CapturePreviews();
 
-            Debug.Log("SpeechBubbleBuilder: SpeechBubbleWidget·OverlaySpeechBubble·WorldSpeechBubble 프리팹 빌드 완료");
-        }
-
-        /// <summary>월드 말풍선만 다시 굽는다. 나머지 두 말풍선은 건드리지 않는다.</summary>
-        private static void BuildWorld()
-        {
-            LoadArt();
-            BuildWorldSpeechBubble();
-            CaptureWorldPreview(Path.GetFullPath("HUDPreviews"));
-
-            Debug.Log("SpeechBubbleBuilder: WorldSpeechBubble 프리팹 빌드 완료");
+            Debug.Log("SpeechBubbleBuilder: SpeechBubbleWidget·OverlaySpeechBubble 프리팹 빌드 완료");
         }
 
         private static void LoadArt()
@@ -159,68 +130,6 @@ namespace Sayne.Editor
             Save(root.gameObject);
         }
 
-        /// <summary>
-        /// 머리 위 월드 말풍선. 제 캔버스 없이, 만든 쪽의 월드 캔버스에 올라가 머리 위를 따라다닌다 — WorldHPBar 와 같은 구조다.
-        /// 뿌리 원점이 꼬리 끝이다. 크기와 방향은 뿌리가 Init 에서 받는다.
-        /// 넘김 표시가 없다 — 누르지 않아도 알아서 사라지는 혼잣말이다.
-        /// </summary>
-        private static void BuildWorldSpeechBubble()
-        {
-            var go = new GameObject("WorldSpeechBubble", typeof(RectTransform));
-            go.layer = LayerMask.NameToLayer("UI");
-            var root = (RectTransform)go.transform;
-            root.sizeDelta = Vector2.zero;
-            var group = go.AddComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
-
-            const float s = WorldGraphicScale;
-
-            // 꼬리 끝이 뿌리 원점(0,0,0)에 딱 오도록 풍선을 띄운다.
-            var lift = (TailSize.x - TailTipInset - TailOverlap) * s;
-            var body = Rect(root, "Bubble", Vector2.one * 0.5f, new Vector2(0.5f, 0f), new Vector2(0f, lift), new Vector2(420f, 84f) * s);
-            var bubbleImage = Img(body, _bubble);
-            bubbleImage.type = Image.Type.Sliced;
-            // 9슬라이스 테두리도 같은 배율로 굵어져야 1배 풍선과 모양이 같다.
-            bubbleImage.pixelsPerUnitMultiplier = 1f / s;
-
-            var tail = Rect(body, "Tail", new Vector2(0.5f, 0f), new Vector2(1f, 0.5f), Vector2.zero, TailSize * s);
-            tail.localRotation = Quaternion.Euler(0f, 0f, 90f);
-            // 90도 돌렸으니 겹침은 곧장 위쪽이다. 회전을 곱해 구하면 부동소수 오차로 x 가 0 에서 살짝 비껴 저장된다.
-            tail.anchoredPosition = new Vector2(0f, TailOverlap * s);
-            Img(tail, _tail);
-
-            var portraitRoot = Rect(body, "Portrait", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(14f * s, 0f), Vector2.one * (WorldPortraitSize * s));
-            var portrait = portraitRoot.gameObject.AddComponent<Image>();
-            portrait.preserveAspect = true;
-            portrait.raycastTarget = false;
-
-            // 왼쪽에 말하는 이 얼굴이 들어가므로 글은 그만큼 오른쪽에서 시작한다.
-            var textRT = Stretch(body, "Text");
-            textRT.offsetMin = new Vector2(WorldPortraitSize + 26f, 20f) * s;
-            textRT.offsetMax = new Vector2(-28f, -20f) * s;
-            var text = textRT.gameObject.AddComponent<TextMeshProUGUI>();
-            text.font = _font;
-            text.fontSize = WorldFontSize;
-            text.color = Ink;
-            text.horizontalAlignment = HorizontalAlignmentOptions.Left;
-            text.verticalAlignment = VerticalAlignmentOptions.Middle;
-            text.textWrappingMode = TextWrappingModes.Normal;
-            text.overflowMode = TextOverflowModes.Overflow;
-            text.raycastTarget = false;
-            text.text = "적들이 몰려오고 있어!";
-
-            var bubble = go.AddComponent<WorldSpeechBubble>();
-            var so = new SerializedObject(bubble);
-            so.FindProperty("_group").objectReferenceValue = group;
-            so.FindProperty("_body").objectReferenceValue = body;
-            so.FindProperty("_text").objectReferenceValue = text;
-            so.FindProperty("_portrait").objectReferenceValue = portrait;
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            Save(go);
-        }
-
         /// <param name="tailAnchor">꼬리가 붙는 풍선 가장자리. 꼬리 그림은 끝이 왼쪽을 보므로 아래로 내리려면 90도 돌린다.</param>
         /// <param name="padMin">글 상자 여백(왼쪽, 아래).</param>
         /// <param name="padMax">글 상자 여백(오른쪽, 위). 오른쪽은 넘김 표시 자리만큼 더 준다.</param>
@@ -284,17 +193,6 @@ namespace Sayne.Editor
             {
                 instance.transform.Find("Follower/Bubble/Portrait").GetComponent<Image>().sprite = portrait;
                 instance.GetComponentInChildren<TextMeshProUGUI>().text = "저 고블린부터 잡자!";
-            });
-            CaptureWorldPreview(output);
-        }
-
-        private static void CaptureWorldPreview(string output)
-        {
-            var portrait = AssetDatabase.LoadAssetAtPath<Sprite>(PreviewPortraitPath);
-            Capture($"{Folder}/WorldSpeechBubble.prefab", Path.Combine(output, "world-speech-bubble.png"), instance =>
-            {
-                instance.transform.Find("Bubble/Portrait").GetComponent<Image>().sprite = portrait;
-                instance.GetComponentInChildren<TextMeshProUGUI>().text = "땅이 울린다... 큰 놈이 온다!";
             });
         }
 
