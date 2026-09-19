@@ -64,4 +64,4 @@
 
 ## 실행
 
-Unity 6000.3.2f1로 `UnityProject/GamePractice`를 엽니다. 패키지 설정은 [SETUP.md](SETUP.md)에 있습니다.
+Unity 6000.3.2f1로 `UnityProject/GamePractice`를 엽니다.
