@@ -32,7 +32,7 @@
 | 엔진 | Unity 6000.3.2f1, URP 17.3 |
 | 에셋 | Addressables 2.8 |
 | 입력 | Input System 1.18 |
-| 라이브러리 | UniTask, R3, DOTween, TextMeshPro |
+| 라이브러리 | UniTask, R3, DOTween |
 
 ## 구조
 
