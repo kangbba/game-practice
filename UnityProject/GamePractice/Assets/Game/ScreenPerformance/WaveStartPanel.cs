@@ -36,12 +36,12 @@ namespace Sayne
         public void Init(string waveLabel)
         {
             _waveText.text = waveLabel;
-            _titleText.text = "시작";
+            _titleText.text = "전투 개시";
 
             Play();
         }
 
-        /// <summary>바탕이 깔리고, 웨이브 이름이 자리를 잡고, "시작" 이 크게 내려앉는다.</summary>
+        /// <summary>바탕이 깔리고, 웨이브 이름이 자리를 잡고, "전투 개시" 가 크게 내려앉는다.</summary>
         private void Play()
         {
             _dimGroup.alpha = 0f;

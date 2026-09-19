@@ -7,6 +7,14 @@ using Object = UnityEngine.Object;
 
 namespace Sayne
 {
+    /// <summary>드랍이 쓰는 아이템 에셋. 껍데기 구슬 하나와, 구슬에 넣는 그림들.</summary>
+    public interface IDropAssets
+    {
+        DropItem DropOrbPrefab { get; }
+        Sprite CoinIcon { get; }
+        Sprite HealIcon { get; }
+    }
+
     /// <summary>
     /// 월드에 떨어진 구슬의 주인. 뿌리고, 가까이 온 히어로에게 끌어다 붙이고, 닿으면 약속된 일을 실행한 뒤 치운다.
     /// 끌어당기는 힘은 히어로 쪽의 것이다 — 구슬은 자기가 어디로 가는지 모르고, 여기가 옮긴다.
@@ -26,7 +34,7 @@ namespace Sayne
         private const float PullReachDistance = 0.35f;
 
         private readonly HeroManager _heroManager;
-        private readonly ItemAssetManager _itemAssets;
+        private readonly IDropAssets _itemAssets;
 
         /// <summary>월드에 남아 있는 구슬과 닿았을 때 할 일, 그리고 지금 그걸 끌고 있는 히어로와 그 속도.</summary>
         private readonly Dictionary<DropItem, (Action<Hero> OnCollected, Hero Puller, float Speed)> _drops =
@@ -40,7 +48,7 @@ namespace Sayne
         /// <summary>도는 동안 표를 고치므로 키를 따로 떠 둔다.</summary>
         private readonly List<DropItem> _cursor = new List<DropItem>();
 
-        public DropManager(HeroManager heroManager, ItemAssetManager itemAssets)
+        public DropManager(HeroManager heroManager, IDropAssets itemAssets)
         {
             _heroManager = heroManager;
             _itemAssets = itemAssets;

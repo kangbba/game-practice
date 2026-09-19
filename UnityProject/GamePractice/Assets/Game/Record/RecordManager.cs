@@ -5,18 +5,17 @@ using UnityEngine;
 namespace Sayne
 {
     /// <summary>
-    /// 게임의 기록을 모으는 곳. 남의 일에 끼어들지 않고 보기만 한다 — 아무도 이 매니저를 향해 무언가를 하지 않는다.
-    /// 그래서 무엇을 더 세고 싶어도 여기만 늘어나고 다른 매니저는 그대로다.
+    /// 게임의 기록을 모으는 곳. 남의 일에 끼어들지 않는다. 게임 내내 사는 성장·재화는 스스로 구독해 보고,
+    /// 전투 동안만 사는 적·웨이브 기록은 전투 쪽(BattleReportDirector)이 AddEnemyKill·AddWaveReach 로 넣어 준다 —
+    /// 오래 사는 기록이 먼저 사라질 전투 매니저를 붙들지 않게 한다.
     ///
     /// 기록은 종류와 열쇠(적 ID 같은 것) 한 쌍으로 찾는다. 아직 한 번도 안 쌓인 기록도 0 으로 흐른다 —
     /// 퀘스트가 시작하자마자 구독할 수 있어야 하기 때문이다.
     /// </summary>
     public class RecordManager : ManagerBase
     {
-        private readonly EnemyManager _enemyManager;
         private readonly GrowthManager _growthManager;
         private readonly CurrencyManager _currencyManager;
-        private readonly StageManager _stageManager;
 
         private readonly Dictionary<(RecordType type, string key), ReactiveProperty<long>> _records =
             new Dictionary<(RecordType, string), ReactiveProperty<long>>();
@@ -24,26 +23,14 @@ namespace Sayne
         /// <summary>초 아래를 버리면 시간이 영영 안 흐른다. 실제 누적은 여기에 두고 초가 넘어갈 때만 기록에 적는다.</summary>
         private float _playTime;
 
-        public RecordManager(EnemyManager enemyManager, GrowthManager growthManager,
-            CurrencyManager currencyManager, StageManager stageManager)
+        public RecordManager(GrowthManager growthManager, CurrencyManager currencyManager)
         {
-            _enemyManager = enemyManager;
             _growthManager = growthManager;
             _currencyManager = currencyManager;
-            _stageManager = stageManager;
         }
 
         protected override void OnInit()
         {
-            // 적 하나에 두 줄이 올라간다 — 그 적의 기록과, 열쇠 없는 통산 기록.
-            _enemyManager.Died
-                .Subscribe(this, (enemy, self) =>
-                {
-                    self.Add(RecordType.EnemyKill, 1, enemy.ID);
-                    self.Add(RecordType.EnemyKill, 1);
-                })
-                .RegisterTo(LifeToken);
-
             _growthManager.Level
                 .Subscribe(this, (level, self) => self.Raise(RecordType.LevelReach, level))
                 .RegisterTo(LifeToken);
@@ -54,10 +41,6 @@ namespace Sayne
 
             _currencyManager.GoldGained
                 .Subscribe(this, (gold, self) => self.Add(RecordType.GoldEarned, gold))
-                .RegisterTo(LifeToken);
-
-            _stageManager.WaveStarted
-                .Subscribe(this, (_, self) => self.Add(RecordType.WaveReach, 1))
                 .RegisterTo(LifeToken);
 
             // 스케일 시간이라 중단 중에는 저절로 멈춘다.
@@ -80,6 +63,19 @@ namespace Sayne
         public ReadOnlyReactiveProperty<long> Get(RecordType type, string key = null)
         {
             return GetRecord(type, key);
+        }
+
+        /// <summary>적 하나를 잡았다. 두 줄이 올라간다 — 그 적의 기록과, 열쇠 없는 통산 기록.</summary>
+        public void AddEnemyKill(string enemyID)
+        {
+            Add(RecordType.EnemyKill, 1, enemyID);
+            Add(RecordType.EnemyKill, 1);
+        }
+
+        /// <summary>웨이브 하나가 시작됐다.</summary>
+        public void AddWaveReach()
+        {
+            Add(RecordType.WaveReach, 1);
         }
 
         /// <summary>쌓이는 기록. 처치 수·번 골드처럼 더해지기만 하는 것들이다.</summary>

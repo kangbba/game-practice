@@ -29,6 +29,12 @@ namespace Sayne
         private const float MinMoveMagnitude = 0.1f;
 
         private Vector3 _moveDirection;
+
+        // 돌진: 걷기와 따로 돈다. 도는 동안은 걷기 방향을 비워 두고, 닿으면 알린다.
+        private readonly ReactiveProperty<bool> _isDashing = new ReactiveProperty<bool>();
+        private Vector3 _dashDestination;
+        private float _dashSpeed;
+        private Action _dashArrived;
         private IDisposable _stagger;
 
         /// <summary>발밑에서 머리 끝까지의 높이. 몸은 태어난 뒤 키가 변하지 않으니 Init 때 한 번 잰다.</summary>
@@ -129,6 +135,9 @@ namespace Sayne
         /// <summary>걷는 중인가. 걸으면서는 공격하지 못한다.</summary>
         public bool IsMoving => _moveDirection.sqrMagnitude > 0f;
 
+        /// <summary>가젯으로 달려가는 중. 모션(빨리 걷기)·트레일이 이걸 본다 — 몸은 그 연출들을 모른다.</summary>
+        public ReadOnlyReactiveProperty<bool> IsDashing => _isDashing;
+
         /// <summary>방금 바라본 방향. 좌우 반전은 이걸 보고 그림 쪽에서 정한다.</summary>
         public Observable<Vector3> Looked => _looked;
 
@@ -165,13 +174,13 @@ namespace Sayne
         /// 몸을 만든다. 프리팹은 맨몸이고, 여기서 받은 장비 세트를 그때 장착한다. 맨손도 무기 한 종류다.
         /// 밖에서는 Hero·Enemy 의 Init(설계값, 장비 세트) 로 부른다 — 설계값 종류가 둘이 달라서 그쪽이 풀어 넘긴다.
         /// </summary>
-        protected void Init(StatGroup baseStats, SkillData skill, EquipmentSet equipment)
+        protected void Init(StatGroup baseStats, SkillData skill, CharacterGadget gadget, EquipmentSet equipment)
         {
             _baseStats = baseStats;
             _growthBonus = default;
 
             Equipment.Wear(equipment);
-            Combat = new CharacterCombat(this, Equipment, skill);
+            Combat = new CharacterCombat(this, Equipment, skill, gadget);
 
             // 방금 장착한 장비 세트는 여기서 직접 반영한다. 구독은 그 다음에 바뀌는 것만 받는다.
             _equipmentBonus = Equipment.TotalStats();
@@ -303,15 +312,74 @@ namespace Sayne
             }
         }
 
-        /// <summary>움직이는 동안 자리를 옮기기만 한다. 상태는 Move·StopMove 가 이미 정했다.</summary>
+        /// <summary>
+        /// 그 자리까지 빠르게 달려간다. 닿으면 서고 arrived 를 부른다. 걷기와 같은 모션(Walk)으로 달린다.
+        /// 기술(가젯)로만 부른다 — 잠금과 쿨은 CharacterCombat 이 쥐고, 여기는 몸을 옮기기만 한다.
+        /// </summary>
+        public void Dash(Vector3 destination, float speed, Action arrived)
+        {
+            _moveDirection = Vector3.zero;
+
+            _dashDestination = new Vector3(destination.x, transform.position.y, destination.z);
+            _dashSpeed = speed;
+            _dashArrived = arrived;
+            _isDashing.Value = true;
+
+            _state.Value = CharacterStateType.Walk;
+            Look(_dashDestination - transform.position);
+        }
+
+        /// <summary>달리던 걸 그 자리에서 멈춘다. 닿지 못했으므로 arrived 는 부르지 않는다.</summary>
+        public void StopDash()
+        {
+            _isDashing.Value = false;
+            _dashArrived = null;
+
+            if (IsAlive)
+            {
+                _state.Value = CharacterStateType.Idle;
+            }
+        }
+
+        /// <summary>움직이는 동안 자리를 옮기기만 한다. 상태는 Move·StopMove·Dash 가 이미 정했다.</summary>
         private void Update()
         {
-            if (!IsAlive || _moveDirection.sqrMagnitude <= 0f)
+            if (!IsAlive)
+            {
+                return;
+            }
+
+            if (_isDashing.Value)
+            {
+                UpdateDash();
+                return;
+            }
+
+            if (_moveDirection.sqrMagnitude <= 0f)
             {
                 return;
             }
 
             transform.Translate(_moveDirection * (_currentStats.Value.Get(StatType.MoveSpeed) * Time.deltaTime));
+        }
+
+        /// <summary>이번 프레임만큼 다가간다. 남은 거리가 한 걸음보다 짧으면 그 자리에 딱 서고 닿았다고 알린다.</summary>
+        private void UpdateDash()
+        {
+            var toDestination = _dashDestination - transform.position;
+            var step = _dashSpeed * Time.deltaTime;
+
+            if (toDestination.magnitude > step)
+            {
+                transform.Translate(toDestination.normalized * step);
+                return;
+            }
+
+            transform.position = _dashDestination;
+
+            var arrived = _dashArrived;
+            StopDash();
+            arrived();
         }
 
         /// <summary>
@@ -378,6 +446,7 @@ namespace Sayne
             _currentHP.Dispose();
             _state.Dispose();
             _looked.Dispose();
+            _isDashing.Dispose();
             _damaged.Dispose();
             _startedDying.Dispose();
             _died.Dispose();

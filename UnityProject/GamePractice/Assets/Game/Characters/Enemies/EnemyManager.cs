@@ -165,6 +165,31 @@ namespace Sayne
             return found;
         }
 
+        /// <summary>
+        /// 바닥 거리(높이 무시)로 잰 가장 가까운 살아 있는 적. radius 안에 없으면 null.
+        /// 때릴 거리와 달리 위아래로 떨어진 적도 똑같이 가깝다 — 달려가서 붙는 가젯이 쓴다.
+        /// </summary>
+        public Enemy FindNearestAliveEnemyInRadius(Vector3 center, float radius)
+        {
+            Enemy nearest = null;
+            var nearestDistance = radius;
+
+            foreach (var enemy in _currentEnemies)
+            {
+                var offset = enemy.transform.position - center;
+                offset.y = 0f;
+
+                var distance = offset.magnitude;
+                if (enemy.IsAlive && distance <= nearestDistance)
+                {
+                    nearestDistance = distance;
+                    nearest = enemy;
+                }
+            }
+
+            return nearest;
+        }
+
         /// <summary>이 적들 중 죽음처리된 적의 가장 긴 죽는 모션 길이. 다 눕기까지 기다릴 시간이다. 아무도 안 죽었으면 0.</summary>
         public float GetLongestDeathSeconds(IReadOnlyList<Enemy> enemies)
         {

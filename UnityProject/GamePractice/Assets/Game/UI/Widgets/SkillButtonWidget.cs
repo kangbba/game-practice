@@ -21,13 +21,13 @@ namespace Sayne
 
         /// <summary>
         /// 이 자리의 기술을 맡는다. 히어로가 바뀌면 새 히어로의 같은 자리를 다시 문다.
-        /// canUse 는 그 히어로가 지금 이 기술을 쓸 수 있는가 — 스킬은 CanUseSkill, 궁극기는 UltimateDirector.CanPlay 다.
+        /// canUse 는 그 히어로가 지금 이 기술을 쓸 수 있는가 — 가젯은 CanUseGadget, 스킬은 CanUseSkill, 궁극기는 UltimateDirector.CanPlay 다.
         /// </summary>
-        public void Init(HeroManager heroManager, SkillSlotType slot, Func<Character, bool> canUse)
+        public void Init(Observable<Hero> hero, SkillSlotType slot, Func<Character, bool> canUse)
         {
-            heroManager.CurrentHero
-                .Where(hero => hero != null)
-                .Subscribe((self: this, slot, canUse), (hero, state) => state.self.SetHero(hero, state.slot, state.canUse))
+            hero
+                .Where(current => current != null)
+                .Subscribe((self: this, slot, canUse), (current, state) => state.self.SetHero(current, state.slot, state.canUse))
                 .AddTo(this);
         }
 
@@ -37,18 +37,21 @@ namespace Sayne
         /// </summary>
         private void SetHero(Character hero, SkillSlotType slot, Func<Character, bool> canUse)
         {
-            var cooldown = slot == SkillSlotType.Skill ? hero.Combat.SkillCooldown : hero.Combat.UltimateCooldown;
+            var cooldown = slot switch
+            {
+                SkillSlotType.Gadget => hero.Combat.GadgetCooldown,
+                SkillSlotType.Skill => hero.Combat.SkillCooldown,
+                _ => hero.Combat.UltimateCooldown,
+            };
 
-            var skillChanged = slot == SkillSlotType.Skill
-                ? Observable.Return(Unit.Default)
-                : hero.Equipment.Observe(EquipmentSlot.MainHand).Select(_ => Unit.Default);
+            // 가젯·스킬은 캐릭터의 것이라 한 번만 그린다. 궁극기만 무기를 바꿔 들 때마다 다시 그린다.
+            var skillChanged = slot == SkillSlotType.Ultimate
+                ? hero.Equipment.Observe(EquipmentSlot.MainHand).Select(_ => Unit.Default)
+                : Observable.Return(Unit.Default);
 
             skillChanged
                 .Subscribe((self: this, hero, slot), (_, state) =>
-                {
-                    var skill = SkillOf(state.hero, state.slot);
-                    state.self._label.text = skill != null ? skill.Name : EmptyName(state.slot);
-                })
+                    state.self._label.text = NameOf(state.hero, state.slot) ?? EmptyName(state.slot))
                 .AddTo(hero);
 
             cooldown.RemainRatio
@@ -67,9 +70,15 @@ namespace Sayne
                 .AddTo(hero);
         }
 
-        private static CharacterSkill SkillOf(Character hero, SkillSlotType slot)
+        /// <summary>그 자리 기술의 이름. 그 기술이 없으면 null.</summary>
+        private static string NameOf(Character hero, SkillSlotType slot)
         {
-            return slot == SkillSlotType.Skill ? hero.Combat.Skill : hero.Combat.Ultimate;
+            return slot switch
+            {
+                SkillSlotType.Gadget => hero.Combat.Gadget?.Name,
+                SkillSlotType.Skill => hero.Combat.Skill?.Name,
+                _ => hero.Combat.Ultimate?.Name,
+            };
         }
 
         /// <summary>구독 없이 최종 모습만 그린다. 프리팹을 굽거나 미리보기를 찍을 때 쓰는 문이다.</summary>
@@ -83,7 +92,12 @@ namespace Sayne
         /// <summary>기술을 아직 안 가진 히어로도 버튼은 뜬다. 그때 쓰는 자리 이름이다.</summary>
         private static string EmptyName(SkillSlotType slot)
         {
-            return slot == SkillSlotType.Skill ? "스킬" : "궁극기";
+            return slot switch
+            {
+                SkillSlotType.Gadget => "가젯",
+                SkillSlotType.Skill => "스킬",
+                _ => "궁극기",
+            };
         }
     }
 }

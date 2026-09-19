@@ -7,6 +7,10 @@ using Object = UnityEngine.Object;
 
 namespace Sayne
 {
+    /// <summary>
+    /// 전투에 선 영웅 몸의 주인. 스폰·부활·교체·치우기를 맡고 전투 동안만 산다.
+    /// 누가 앞에 서는지·무엇을 입는지·가방은 파티(PartyManager)의 것이다 — 여기는 그걸 보고 몸을 세운다.
+    /// </summary>
     public class HeroManager : ManagerBase
     {
         private const float ReviveDuration = 5f;
@@ -21,27 +25,22 @@ namespace Sayne
         private readonly IAssets<HeroData> _heroData;
         private readonly EquipmentManager _equipmentManager;
         private readonly GrowthManager _growthManager;
+        private readonly PartyManager _partyManager;
 
         private readonly List<Hero> _currentHeroes = new List<Hero>();
         private readonly Subject<Character> _spawned = new Subject<Character>();
-        private readonly Subject<Character> _despawned = new Subject<Character>();
+        private readonly Subject<Character> _destroyed = new Subject<Character>();
         private readonly ReactiveProperty<Hero> _currentHero = new ReactiveProperty<Hero>();
         private readonly ReactiveProperty<float> _reviveRemainTime = new ReactiveProperty<float>(0f);
-
-        /// <summary>물러난 영웅이 마지막에 입고 있던 장비 ID. 다시 나올 때(부활·교체) 이걸 그대로 입고 나온다.</summary>
-        private readonly Dictionary<string, List<string>> _wornEquipment = new Dictionary<string, List<string>>();
-
-        /// <summary>영웅들이 함께 쓰는 가방. 주운 장비는 누가 주웠든 여기 쌓인다.</summary>
-        public PartyInventory Inventory { get; } = new PartyInventory();
 
         public IReadOnlyList<Hero> CurrentHeroes => _currentHeroes;
         public Observable<Character> Spawned => _spawned;
 
         /// <summary>
-        /// 몸이 판에서 치워지기 직전. 파괴는 프레임 끝으로 미뤄지므로, 몸에 딸린 것(HP 바 등)은 이걸 듣고 같은 자리에서 같이 치워야
+        /// 몸이 파괴되기 직전(죽음이 아니다). 파괴는 프레임 끝으로 미뤄지므로, 몸에 딸린 것(HP 바 등)은 이걸 듣고 같은 자리에서 같이 치워야
         /// 몸 없이 한 프레임 더 도는 일이 없다. 교체처럼 죽지 않고 물러날 때는 Died 가 울리지 않는다.
         /// </summary>
-        public Observable<Character> Despawned => _despawned;
+        public Observable<Character> Destroyed => _destroyed;
 
         /// <summary>
         /// 지금 싸우는 영웅(편성 첫 칸). 부활·교체로 새로 서면 그 영웅으로 바뀐다. 쓰러져 부활을 기다리는 동안은 쓰러진 몸 그대로다.
@@ -53,25 +52,22 @@ namespace Sayne
         public ReadOnlyReactiveProperty<float> ReviveRemainTime => _reviveRemainTime;
 
         public HeroManager(IAssets<Hero> heroAssets, IAssets<HeroData> heroData,
-            EquipmentManager equipmentManager, GrowthManager growthManager)
+            EquipmentManager equipmentManager, GrowthManager growthManager, PartyManager partyManager)
         {
             _heroAssets = heroAssets;
             _heroData = heroData;
             _equipmentManager = equipmentManager;
             _growthManager = growthManager;
+            _partyManager = partyManager;
         }
 
         protected override void OnInit()
         {
-            // 지금은 있는 장비를 전부 들고 시작한다 — 세 영웅의 장비도, 활도 장비창에서 바로 바꿔 장착해 볼 수 있다.
-            // 맨손만 뺀다. 맨손은 아이템이 아니라 "무기 없음" 이다.
-            foreach (var equipmentID in _equipmentManager.IDs)
-            {
-                if (equipmentID != EquipmentID.Weapon.BareHands)
-                {
-                    Inventory.Add(equipmentID);
-                }
-            }
+            // 편성에서 리더가 바뀌면 그 자리에서 갈아 세운다. 지금 값은 SpawnLeader 가 쓰므로 바뀔 때만 듣는다.
+            _partyManager.Leader
+                .Skip(1)
+                .Subscribe(this, (heroID, self) => self.ChangeLeader(heroID))
+                .RegisterTo(LifeToken);
 
             // 스폰 이후에 성장을 사면 살아있는 히어로에게 그 자리에서 다시 얹는다.
             // 새로 스폰(부활 포함)되는 히어로는 SpawnHero 가 처음부터 성장분을 넣어 만든다.
@@ -94,22 +90,27 @@ namespace Sayne
 
         protected override void OnRelease()
         {
-            DespawnAll();
-            Inventory.Dispose();
+            DestroyAllHeroes();
             _spawned.Dispose();
-            _despawned.Dispose();
+            _destroyed.Dispose();
             _currentHero.Dispose();
             _reviveRemainTime.Dispose();
         }
 
-        public Hero SpawnHero(string heroID, Vector3 position)
+        /// <summary>파티의 리더를 세운다. 전투를 시작할 때 부른다.</summary>
+        public Hero SpawnLeader(Vector3 position)
+        {
+            return SpawnHero(_partyManager.Leader.CurrentValue, position);
+        }
+
+        private Hero SpawnHero(string heroID, Vector3 position)
         {
             var data = _heroData.Get(heroID);
             var hero = Object.Instantiate(_heroAssets.Get(heroID));
             hero.transform.position = position;
 
             // 처음 나오는 영웅은 설계값의 시작 장비 세트를, 한 번 나왔던 영웅은 물러날 때 입던 장비 세트를 입고 나온다.
-            var equipment = _wornEquipment.TryGetValue(heroID, out var worn)
+            var equipment = _partyManager.TryGetWorn(heroID, out var worn)
                 ? _equipmentManager.CreateSet(worn)
                 : _equipmentManager.CreateSet(data.EquipmentSet);
 
@@ -160,16 +161,16 @@ namespace Sayne
                 _reviveRemainTime.Value = Mathf.Max(_reviveRemainTime.Value - Time.deltaTime, 0f);
             }
 
-            Despawn(hero);
+            DestroyHero(hero);
             SpawnHero(heroID, Vector3.zero);
         }
 
         /// <summary>
-        /// 편성 첫 칸의 영웅을 바꾼다. 싸우던 영웅은 그 자리에서 물러나고 새 영웅이 같은 자리에 선다 —
+        /// 파티의 리더가 바뀌었다. 싸우던 영웅은 그 자리에서 물러나고 새 영웅이 같은 자리에 선다 —
         /// 웨이브·적·성장·가방은 그대로 이어지고, HUD·카메라·창은 Spawned 를 듣고 스스로 새 영웅으로 갈아 문다.
-        /// 새 영웅은 부활처럼 풀피로 선다. 쓰러져 부활을 기다리는 동안은 부르지 않는다 — 편성창이 그동안 막는다.
+        /// 새 영웅은 부활처럼 풀피로 선다. 쓰러져 부활을 기다리는 동안은 바뀌지 않는다 — 편성창이 그동안 막는다.
         /// </summary>
-        public void ChangeLeader(string heroID)
+        private void ChangeLeader(string heroID)
         {
             var leader = FindFirstAliveHero();
 
@@ -180,7 +181,7 @@ namespace Sayne
 
             var position = leader.transform.position;
 
-            Despawn(leader);
+            DestroyHero(leader);
             SpawnHero(heroID, position);
         }
 
@@ -236,25 +237,28 @@ namespace Sayne
             return nearest;
         }
 
-        public void Despawn(Hero hero)
+        /// <summary>몸 하나를 판에서 치운다(부활·교체). 죽이는 게 아니라 Died 는 울리지 않고, 치우기 직전에 Destroyed 가 울린다.</summary>
+        public void DestroyHero(Hero hero)
         {
             if (hero == null || !_currentHeroes.Remove(hero))
             {
                 return;
             }
 
-            _wornEquipment[hero.ID] = hero.Equipment.WornIDs();
+            _partyManager.SetWorn(hero.ID, hero.Equipment.WornIDs());
 
-            _despawned.OnNext(hero);
+            _destroyed.OnNext(hero);
             Object.Destroy(hero.gameObject);
         }
 
-        public void DespawnAll()
+        /// <summary>판을 통째로 비운다. 매니저가 내려갈 때(전투가 끝날 때)만 부른다. 입던 장비는 파티에 남긴다.</summary>
+        private void DestroyAllHeroes()
         {
             foreach (var hero in _currentHeroes)
             {
                 if (hero != null)
                 {
+                    _partyManager.SetWorn(hero.ID, hero.Equipment.WornIDs());
                     Object.Destroy(hero.gameObject);
                 }
             }

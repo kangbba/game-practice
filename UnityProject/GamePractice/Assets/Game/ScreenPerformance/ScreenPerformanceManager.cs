@@ -8,6 +8,14 @@ using Object = UnityEngine.Object;
 
 namespace Sayne
 {
+    /// <summary>화면 연출 매니저가 찍어내는 패널 프리팹.</summary>
+    public interface IScreenPerformanceAssets
+    {
+        UltimateCutscenePanel UltimateCutscenePanelPrefab { get; }
+        WaveStartPanel WaveStartPanelPrefab { get; }
+        LowHealthPanel LowHealthPanelPrefab { get; }
+    }
+
     /// <summary>
     /// 화면을 덮고 잠깐 흐르다 사라지는 화면 연출의 주인. 연출 프리팹을 들고 있다가, 그 순간을 구독해서 스스로 띄우고 치운다.
     /// 게임 쪽은 이 매니저를 모른다 — 궁극기가 나갔다, 웨이브가 시작됐다는 신호를 듣고 끼어들 뿐이다.
@@ -26,13 +34,10 @@ namespace Sayne
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-        private readonly PauseManager _pauseManager;
         private readonly HeroManager _heroManager;
         private readonly StageManager _stageManager;
         private readonly IAssets<CharacterProfile> _profiles;
-        private readonly UltimateCutscenePanel _ultimatePanelPrefab;
-        private readonly WaveStartPanel _waveStartPanelPrefab;
-        private readonly LowHealthPanel _lowHealthPanelPrefab;
+        private readonly IScreenPerformanceAssets _assets;
 
         /// <summary>이 비율 아래로 떨어지면 위급하다고 본다.</summary>
         private const float LowHealthRatio = 0.3f;
@@ -44,24 +49,20 @@ namespace Sayne
 
         public ReadOnlyReactiveProperty<bool> IsPerforming => _isPerforming;
 
-        public ScreenPerformanceManager(PauseManager pauseManager, HeroManager heroManager, StageManager stageManager,
-            IAssets<CharacterProfile> profiles, UltimateCutscenePanel ultimatePanelPrefab,
-            WaveStartPanel waveStartPanelPrefab, LowHealthPanel lowHealthPanelPrefab)
+        public ScreenPerformanceManager(HeroManager heroManager, StageManager stageManager,
+            IAssets<CharacterProfile> profiles, IScreenPerformanceAssets assets)
         {
-            _pauseManager = pauseManager;
             _heroManager = heroManager;
             _stageManager = stageManager;
             _profiles = profiles;
-            _ultimatePanelPrefab = ultimatePanelPrefab;
-            _waveStartPanelPrefab = waveStartPanelPrefab;
-            _lowHealthPanelPrefab = lowHealthPanelPrefab;
+            _assets = assets;
         }
 
         protected override void OnInit()
         {
             CreateCanvas();
 
-            _pauseManager.PauseWhile(_isPerforming);
+            Pause.While(_isPerforming).RegisterTo(LifeToken);
 
             _stageManager.WaveStarted
                 .Subscribe(this, (number, self) => self.PlayWaveStartAsync(number.stage, number.wave).Forget())
@@ -101,7 +102,7 @@ namespace Sayne
 
             _isPerforming.Value = true;
 
-            var panel = Object.Instantiate(_ultimatePanelPrefab, _canvas.transform);
+            var panel = Object.Instantiate(_assets.UltimateCutscenePanelPrefab, _canvas.transform);
             await panel.PlayAsync(profile.Portrait, profile.DisplayName, hero.Combat.Ultimate.Name,
                 profile.ThemeColor, token);
             Object.Destroy(panel.gameObject);
@@ -115,7 +116,7 @@ namespace Sayne
         /// </summary>
         private void CreateLowHealthPanel()
         {
-            _lowHealthPanel = Object.Instantiate(_lowHealthPanelPrefab, _canvas.transform);
+            _lowHealthPanel = Object.Instantiate(_assets.LowHealthPanelPrefab, _canvas.transform);
             _lowHealthPanel.SetVisible(false);
 
             _heroManager.Spawned
@@ -135,7 +136,7 @@ namespace Sayne
         /// <summary>웨이브 시작 알림. 1.5초 떠 있다가 사라진다. 게임은 멈추지 않는다.</summary>
         private async UniTaskVoid PlayWaveStartAsync(int stage, int wave)
         {
-            var panel = Object.Instantiate(_waveStartPanelPrefab, _canvas.transform);
+            var panel = Object.Instantiate(_assets.WaveStartPanelPrefab, _canvas.transform);
             panel.Init(_stageManager.GetLabel(stage, wave));
 
             // 창이 열려 게임이 멈춰 있어도 알림은 제 시간에 사라진다. 패널 연출도 unscaled 로 돈다.

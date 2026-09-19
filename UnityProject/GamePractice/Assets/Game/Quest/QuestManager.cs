@@ -1,3 +1,4 @@
+using System.Linq;
 using R3;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace Sayne
         private readonly RecordManager _recordManager;
         private readonly CurrencyManager _currencyManager;
 
-        /// <summary>지금 퀘스트가 보는 기록 한 줄. 다음 장으로 넘어가면 보던 줄을 놓고 새 줄을 잡는다.</summary>
+        /// <summary>지금 퀘스트가 보는 기록(여럿이면 그 묶음). 다음 장으로 넘어가면 보던 줄을 놓고 새 줄을 잡는다.</summary>
         private readonly SerialDisposable _watchedRecord = new SerialDisposable();
 
         private readonly ReactiveProperty<int> _currentIndex = new ReactiveProperty<int>(0);
@@ -80,7 +81,7 @@ namespace Sayne
             _currentIndex.Value++;
         }
 
-        /// <summary>진행도는 들고 있는 게 아니라 지금 퀘스트가 보는 기록을 그대로 흘려보낸 값이다.</summary>
+        /// <summary>진행도는 들고 있는 게 아니라 지금 퀘스트가 보는 기록을 그대로 흘려보낸 값이다. 열쇠가 여럿이면 그 기록들의 합이다.</summary>
         private void Watch(QuestPlan quest)
         {
             if (quest == null)
@@ -90,8 +91,8 @@ namespace Sayne
                 return;
             }
 
-            _watchedRecord.Disposable = _recordManager.Get(quest.Type, quest.Key)
-                .Subscribe(this, (value, self) => self._progress.Value = (int)value);
+            _watchedRecord.Disposable = Observable.CombineLatest(quest.Keys.Select(key => _recordManager.Get(quest.Type, key)))
+                .Subscribe(this, (values, self) => self._progress.Value = (int)values.Sum());
         }
     }
 }

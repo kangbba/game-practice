@@ -52,15 +52,22 @@ namespace Sayne
         private readonly Subject<EquipmentSlot> _unequipRequested = new Subject<EquipmentSlot>();
 
         private EquipmentManager _equipmentManager;
+        private PartyManager _partyManager;
         private HeroManager _heroManager;
         private IAssets<Hero> _heroAssets;
 
         /// <summary>창 안에서 장비를 입혀 보는 인형 무대.</summary>
         private CharacterPreviewStage _previewStage;
 
-        public void Init(EquipmentManager equipmentManager, HeroManager heroManager, IAssets<Hero> heroAssets)
+        public void Init(GameContext game, BattleContext battle)
         {
+            var equipmentManager = game.EquipmentManager;
+            var partyManager = game.PartyManager;
+            var heroManager = battle.HeroManager;
+            var heroAssets = game.Assets.Heroes;
+
             _equipmentManager = equipmentManager;
+            _partyManager = partyManager;
             _heroManager = heroManager;
             _heroAssets = heroAssets;
 
@@ -82,7 +89,7 @@ namespace Sayne
                 .AddTo(this);
 
             // 가방은 영웅들이 함께 쓰는 하나다. 바뀔 때마다 후보를 다시 담는다. 시작 장비는 이미 들어 있으므로 한 번 담아 두고 시작한다.
-            heroManager.Inventory.Changed
+            partyManager.Inventory.Changed
                 .Subscribe(this, (_, self) => self.CollectCandidates())
                 .AddTo(this);
 
@@ -92,6 +99,10 @@ namespace Sayne
                 .Where(hero => hero != null)
                 .Subscribe(this, (hero, self) => self.SetHero(hero))
                 .AddTo(this);
+
+            // 처음 모습: 전체 탭, 주무기 칸을 고른 채로 뜬다.
+            _selection.Tab.Value = EquipmentSelection.AllTab;
+            _selection.SelectWorn(EquipmentSlot.MainHand);
         }
 
         /// <summary>
@@ -114,12 +125,6 @@ namespace Sayne
 
             _selection.SetCandidates(entries);
             _selection.Selected.Value = selectedID;
-        }
-
-        protected override void OnShow()
-        {
-            _selection.Tab.Value = EquipmentSelection.AllTab;
-            _selection.SelectWorn(EquipmentSlot.MainHand);
         }
 
         protected override void OnDestroy()
@@ -330,19 +335,21 @@ namespace Sayne
             // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 장착한 장비 세트가 그대로 장착된다.
             _previewStage.SetDoll(_heroAssets.Get(hero.ID));
 
+            // 구독은 창 수명에 건다. 창은 열린 동안만 살고 히어로는 그보다 오래 산다 — 히어로에 걸면 닫힌 창의 구독이 남는다.
+
             // 장비 상태가 후보보다 먼저다. 부활하면 창에는 죽은 히어로가 입던 게 남아 있다.
             foreach (var slot in EquipmentSlots.All)
             {
                 hero.Equipment.Observe(slot)
                     .Subscribe((self: this, slot), (part, state) => state.self.WearPart(state.slot, part))
-                    .AddTo(hero);
+                    .AddTo(this);
             }
 
             // 창엔 몸 스탯(기본 + 성장 합)만 준다. 장비 몫은 창이 입은 것·고른 것을 보고 직접 얹어 비교한다.
             hero.CurrentStats
                 .Subscribe((self: this, hero), (_, state) =>
                     state.self._selection.BodyStats.Value = state.hero.BaseStats.Add(state.hero.GrowthBonus))
-                .AddTo(hero);
+                .AddTo(this);
         }
 
         private void WearPart(EquipmentSlot slot, EquipmentPart part)
@@ -365,7 +372,7 @@ namespace Sayne
 
             foreach (var equipmentID in _equipmentManager.IDs)
             {
-                if (!_heroManager.Inventory.Contains(equipmentID))
+                if (!_partyManager.Inventory.Contains(equipmentID))
                 {
                     continue;
                 }

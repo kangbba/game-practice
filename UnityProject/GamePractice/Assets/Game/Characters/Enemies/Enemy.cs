@@ -20,7 +20,7 @@ namespace Sayne
         public void Init(EnemyData data, EquipmentSet equipment)
         {
             Data = data;
-            base.Init(data.BaseStats, data.Skill, equipment);
+            base.Init(data.BaseStats, data.Skill, null, equipment);
         }
     }
 }

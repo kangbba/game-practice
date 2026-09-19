@@ -7,7 +7,6 @@ namespace Sayne
     /// <summary>스폰된 히어로마다 HeroController 를 붙여 매 프레임 굴리고, 전투 HUD 버튼 입력을 연결한다.</summary>
     public class HeroControlManager : ManagerBase
     {
-        private readonly PauseManager _pauseManager;
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
         private readonly UltimateDirector _ultimateDirector;
@@ -15,10 +14,9 @@ namespace Sayne
         private readonly IMoveInputSource _moveSource;
         private readonly List<HeroController> _controllers = new List<HeroController>();
 
-        public HeroControlManager(PauseManager pauseManager, HeroManager heroManager, EnemyManager enemyManager,
+        public HeroControlManager(HeroManager heroManager, EnemyManager enemyManager,
             UltimateDirector ultimateDirector, BattlePanel battlePanel)
         {
-            _pauseManager = pauseManager;
             _heroManager = heroManager;
             _enemyManager = enemyManager;
             _ultimateDirector = ultimateDirector;
@@ -44,6 +42,11 @@ namespace Sayne
 
             // 중단 중에도 Update 와 버튼 클릭은 들어온다 — 멈춘 게임에 조작이 먹으면 안 된다.
             // 궁극기 연출(컷씬부터 복귀까지) 동안도 마찬가지다. 이동·평타·스킬 어느 커맨드도 받지 않는다.
+            _battlePanel.GadgetClicked
+                .Where(this, (_, self) => self.CanControl())
+                .Subscribe(this, (_, self) => self.Dispatch(controller => controller.UseGadget()))
+                .RegisterTo(LifeToken);
+
             _battlePanel.SkillClicked
                 .Where(this, (_, self) => self.CanControl())
                 .Subscribe(this, (_, self) => self.Dispatch(controller => controller.UseSkill()))
@@ -62,7 +65,7 @@ namespace Sayne
 
         private bool CanControl()
         {
-            return !_pauseManager.IsPaused.CurrentValue && !_ultimateDirector.IsPlaying.CurrentValue;
+            return !Pause.IsPaused.CurrentValue && !_ultimateDirector.IsPlaying.CurrentValue;
         }
 
         protected override void OnRelease()

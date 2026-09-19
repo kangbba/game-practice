@@ -279,15 +279,15 @@ namespace Sayne.Editor
             }
         }
 
-        /// <summary>HUD 에서 입력을 받는 건 조이스틱과 버튼 넷뿐이다. 장식이 입력을 가로채면 여기서 걸린다.</summary>
+        /// <summary>HUD 에서 입력을 받는 건 조이스틱과 버튼 여섯뿐이다. 장식이 입력을 가로채면 여기서 걸린다.</summary>
         private static void ValidateRaycasts(GameObject root)
         {
             var raycastTargets = 0;
             foreach (var graphic in root.GetComponentsInChildren<Graphic>())
                 if (graphic.raycastTarget) raycastTargets++;
-            // 조이스틱 + 스킬·궁극기·장비·성장·편성 버튼.
-            if (raycastTargets != 6)
-                throw new InvalidOperationException($"Expected joystick and five interactive HUD buttons, found {raycastTargets} raycast targets.");
+            // 조이스틱 + 가젯·스킬·궁극기·장비·성장·편성 버튼.
+            if (raycastTargets != 7)
+                throw new InvalidOperationException($"Expected joystick and six interactive HUD buttons, found {raycastTargets} raycast targets.");
         }
 
         private static void ValidateLayout(RectTransform safeArea)

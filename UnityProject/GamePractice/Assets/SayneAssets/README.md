@@ -36,15 +36,16 @@
 |---|---|
 | `SpeechBubble` | 말풍선 한 개. `PlayAsync(text, token)` — 튀어나오고, 한 글자씩 찍고, `Advance()` 를 받으면 닫힌다. 글이 길면 풍선이 늘어난다. |
 | `TutorialWidget` (+프리팹) | 화면 아래 초상화 + 말풍선. `PlayAsync(portrait, text, token)`. 화면 아무 데나 누르면 넘어간다. |
-| `OverlaySpeechBubble` (+프리팹) | 캐릭터 머리 위를 따라다니는 말풍선. `OverlayHPBar` 처럼 `Attach(camera, target, worldOffset, screenOffset)` 로 붙인 뒤 `PlayAsync(text, token)`. |
+| `OverlaySpeechBubble` (+프리팹) | 캐릭터 머리 위를 따라다니는 말풍선. `OverlayHPBar` 처럼 만들자마자 `Init(camera, target, worldOffset, screenOffset, portrait)` 로 붙인 뒤 `PlayAsync(text, token)`. 끝나면 만든 쪽이 치운다. |
 
 ```csharp
 var widget = Object.Instantiate(tutorialWidgetPrefab, canvas.transform);   // 스크린 오버레이 캔버스 + GraphicRaycaster
 await widget.PlayAsync(portraitSprite, "조이스틱을 끌어서 움직여 보세요.", token);
 
 var bubble = Object.Instantiate(overlayBubblePrefab, canvas.transform);
-bubble.Attach(camera, hero.transform, new Vector3(0f, 2.2f, 0f), new Vector2(0f, 36f));
+bubble.Init(camera, hero.transform, new Vector3(0f, 2.2f, 0f), new Vector2(0f, 36f), portraitSprite);
 await bubble.PlayAsync("저 고블린부터 잡자!", token);
+Object.Destroy(bubble.gameObject);
 ```
 
 프리팹은 폰트(`Assets/Fonts/TMP/SB_Aggro_Bold SDF`)를 참조한다. 다른 프로젝트로 옮기면 폰트만 다시 지정한다.

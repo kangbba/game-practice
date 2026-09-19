@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Sayne
 {
     /// <summary>
@@ -9,8 +11,11 @@ namespace Sayne
         /// <summary>어떤 기록을 보는가.</summary>
         public readonly RecordType Type;
 
-        /// <summary>기록을 찾는 열쇠. 처치 퀘스트의 적 ID 같은 것 — 비어 있으면 그 종류의 통산값을 본다.</summary>
-        public readonly string Key;
+        /// <summary>
+        /// 기록을 찾는 열쇠들. 처치 퀘스트의 적 ID 같은 것 — 비어 있는 열쇠 하나면 그 종류의 통산값을 본다.
+        /// 여럿이면 그 기록들을 합친 값이 진행도다(오우거·몽둥이 오우거·오우거 족장을 한 퀘스트로 세는 식).
+        /// </summary>
+        public readonly IReadOnlyList<string> Keys;
 
         public readonly string Title;
 
@@ -22,10 +27,11 @@ namespace Sayne
 
         public readonly long GoldReward;
 
-        private QuestPlan(RecordType type, string key, string title, int goal, string targetName, long goldReward)
+        private QuestPlan(RecordType type, IReadOnlyList<string> keys, string title, int goal, string targetName,
+            long goldReward)
         {
             Type = type;
-            Key = key;
+            Keys = keys;
             Title = title;
             Goal = goal;
             TargetName = targetName;
@@ -34,18 +40,23 @@ namespace Sayne
 
         public static QuestPlan LevelReach(string title, int level, long goldReward)
         {
-            return new QuestPlan(RecordType.LevelReach, string.Empty, title, level, string.Empty, goldReward);
+            return new QuestPlan(RecordType.LevelReach, new[] { string.Empty }, title, level, string.Empty, goldReward);
         }
 
         /// <summary>적을 가리지 않는 처치 퀘스트. 아무거나 잡으면 센다.</summary>
         public static QuestPlan AnyKill(string title, int count, long goldReward)
         {
-            return new QuestPlan(RecordType.EnemyKill, string.Empty, title, count, "적", goldReward);
+            return new QuestPlan(RecordType.EnemyKill, new[] { string.Empty }, title, count, "적", goldReward);
         }
 
-        public static QuestPlan EnemyKill(string title, string enemyID, string enemyName, int count, long goldReward)
+        /// <summary>
+        /// 이 적들을 잡으면 세는 처치 퀘스트. 같은 종족의 변종(몽둥이 오우거, 오우거 족장 등)도 세려면 ID 를 전부 적는다 —
+        /// 변종이 새로 생기면 여기에도 적어 줘야 센다.
+        /// </summary>
+        public static QuestPlan EnemyKill(string title, string enemyName, int count, long goldReward,
+            params string[] enemyIDs)
         {
-            return new QuestPlan(RecordType.EnemyKill, enemyID, title, count, enemyName, goldReward);
+            return new QuestPlan(RecordType.EnemyKill, enemyIDs, title, count, enemyName, goldReward);
         }
 
         /// <summary>화면에 쓰는 할 일 한 줄. 선언에 적지 않고 보는 기록에서 만든다.</summary>

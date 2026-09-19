@@ -44,7 +44,6 @@ namespace Sayne
         private const float HitShakeSeconds = 0.12f;
 
         private readonly EnemyManager _enemyManager;
-        private readonly CameraManager _cameraManager;
         private readonly ScreenPerformanceManager _screenPerformanceManager;
 
         private readonly ReactiveProperty<bool> _isPlaying = new ReactiveProperty<bool>();
@@ -54,17 +53,15 @@ namespace Sayne
         /// <summary>궁극기 연출 중. 누른 순간부터 일상으로 완전히 돌아올 때까지 참. 영웅 조작·적 AI·웨이브·UI 가 이걸 본다.</summary>
         public ReadOnlyReactiveProperty<bool> IsPlaying => _isPlaying;
 
-        public UltimateDirector(EnemyManager enemyManager, CameraManager cameraManager,
-            ScreenPerformanceManager screenPerformanceManager)
+        public UltimateDirector(EnemyManager enemyManager, ScreenPerformanceManager screenPerformanceManager)
         {
             _enemyManager = enemyManager;
-            _cameraManager = cameraManager;
             _screenPerformanceManager = screenPerformanceManager;
         }
 
         protected override void OnInit()
         {
-            _background = UltimateBackground.Create(_cameraManager.Camera);
+            _background = UltimateBackground.Create(GameCamera.Camera);
         }
 
         protected override void OnRelease()
@@ -100,14 +97,14 @@ namespace Sayne
             _enemyManager.SetOnUltimateStage(targets, true);
             var stage = new UltimateStage(_enemyManager, hero, targets);
             stage.FaceNearest();
-            _cameraManager.Frame(CameraView.Ultimate, new List<Character>(targets) { hero });
+            GameCamera.Frame(CameraView.Ultimate, new List<Character>(targets) { hero });
             await _background.ShowAsync(BackgroundFadeSeconds, token);
             await DelayAsync(StageSettleSeconds, token);
 
             // ③ 본편 — 어떻게 때릴지는 든 무기가 정한다. 무대 위 적이 맞을 때마다 화면이 흔들린다.
             var deathHold = _enemyManager.HoldDeaths();
             using (targets.Select(target => target.Damaged).Merge()
-                       .Subscribe(_cameraManager, (_, camera) => camera.Shake(HitShakeStrength, HitShakeSeconds)))
+                       .Subscribe(_ => GameCamera.Shake(HitShakeStrength, HitShakeSeconds)))
             {
                 await hero.PlayUltimateAsync(stage, token);
             }
@@ -124,7 +121,7 @@ namespace Sayne
             }
 
             // ⑥ 복귀
-            _cameraManager.SetView(CameraView.Battle);
+            GameCamera.SetView(CameraView.Battle);
             await _background.HideAsync(BackgroundFadeSeconds, token);
             hero.SetOnUltimateStage(false);
             _enemyManager.SetOnUltimateStage(targets, false);

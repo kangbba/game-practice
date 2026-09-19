@@ -26,6 +26,9 @@ namespace Sayne
         /// <summary>기술 타격이 아직 안 나갔다. 모션보다 늦게 오는 타격이 있어도 잠금이 먼저 풀리지 않는다.</summary>
         private bool _castHitPending;
 
+        /// <summary>가젯(돌진)으로 달려가는 중이다. 닿아야 풀린다.</summary>
+        private bool _gadgetRunning;
+
         /// <summary>타격을 클립 이벤트로 받는 기술이 도는 중이면 그 기술. 이벤트가 올 때 이걸로 판정한다.</summary>
         private CharacterSkill _clipAttack;
         private readonly Character _owner;
@@ -64,6 +67,12 @@ namespace Sayne
         /// </summary>
         public CharacterSkill Ultimate => _equipment.Weapon.Ultimate;
 
+        /// <summary>
+        /// 가젯. 스킬보다 가벼운 잡기술 — 무게는 가젯 &lt; 스킬 &lt; 궁극기. 캐릭터의 것이라 무기를 바꿔 들어도 그대로다.
+        /// 없는 캐릭터면 null — 적이 그렇다.
+        /// </summary>
+        public CharacterGadget Gadget { get; }
+
         /// <summary>궁극기 전용 연출. 든 무기에 없으면 null.</summary>
         public string UltimateParticleID => Weapon.UltimateParticleID;
 
@@ -75,6 +84,9 @@ namespace Sayne
 
         /// <summary>궁극기 쿨타임.</summary>
         public CooldownTimer UltimateCooldown { get; } = new CooldownTimer();
+
+        /// <summary>가젯 쿨타임.</summary>
+        public CooldownTimer GadgetCooldown { get; } = new CooldownTimer();
 
         /// <summary>
         /// 깊이(Z)를 몇 배로 쳐서 볼지. 클수록 위아래로 떨어진 적이 빨리 사거리 밖이 된다.
@@ -110,8 +122,26 @@ namespace Sayne
         /// <summary>상대 옆에 설 자리. 지금 내가 있는 쪽 옆, 상대와 같은 줄(Z)이다.</summary>
         public static Vector3 StandPoint(Vector3 self, Vector3 target)
         {
+            return StandPoint(self, target, StandGap);
+        }
+
+        /// <summary>상대와 같은 줄(Z)에서, 지금 내가 있는 쪽으로 gap 만큼 떨어진 자리.</summary>
+        private static Vector3 StandPoint(Vector3 self, Vector3 target, float gap)
+        {
             var side = self.x >= target.x ? 1f : -1f;
-            return new Vector3(target.x + side * StandGap, self.y, target.z);
+            return new Vector3(target.x + side * gap, self.y, target.z);
+        }
+
+        /// <summary>사거리에서 이만큼 안쪽까지 들어가 선다. 딱 사거리 끝에 서면 조금만 밀려도 벗어난다.</summary>
+        private const float EngageRangeFactor = 0.8f;
+
+        /// <summary>
+        /// 이 상대를 칠 수 있게 붙어 설 자리. 근접은 옆자리, 원거리는 사거리 안쪽 끝이다 — 원거리가 옆에 딱 붙을 까닭은 없다.
+        /// 가젯(돌진)이 달려갈 곳으로 쓴다.
+        /// </summary>
+        public Vector3 EngagePoint(Vector3 self, Vector3 target)
+        {
+            return StandPoint(self, target, Mathf.Max(StandGap, AttackRange * EngageRangeFactor));
         }
 
         /// <summary>여기서 멈춰 때려도 되는가. 닿는 거리 안이고, 좌우로 겹치지 않았다.</summary>
@@ -121,7 +151,7 @@ namespace Sayne
         }
 
         /// <summary>
-        /// 기술을 쓰는 중인가. 모션이 안 끝났거나 타격이 아직 안 나갔으면 참이다.
+        /// 기술을 쓰는 중인가. 모션이 안 끝났거나 타격이 아직 안 나갔거나 가젯으로 달려가는 중이면 참이다.
         /// 이 동안은 평타·다른 기술·이동 어느 커맨드도 받지 않는다 — 시간 비교가 아니라 상태로 잠근다.
         /// </summary>
         public bool IsCasting => _isCasting.Value;
@@ -132,6 +162,7 @@ namespace Sayne
         public bool CanAttack => !IsCasting && _owner.CanAct && !_owner.IsMoving && AttackCooldown.IsReady;
         public bool CanUseSkill => CanCast(Skill, SkillCooldown);
         public bool CanUseUltimate => CanCast(Ultimate, UltimateCooldown);
+        public bool CanUseGadget => !IsCasting && _owner.CanAct && Gadget != null && GadgetCooldown.IsReady;
 
         /// <summary>① 휘두르기 시작했다. 모션·연출이 이걸 본다.</summary>
         public Observable<BasicAttack> Attacked => _attacked;
@@ -139,16 +170,22 @@ namespace Sayne
         /// <summary>② 맞는 순간이 됐다. 이때 대상을 다시 찾아 판정한다 — 아무도 없으면 헛친다.</summary>
         public Observable<BasicAttack> HitMoment => _hitMoment;
 
-        public CharacterCombat(Character owner, CharacterEquipment equipment, SkillData skill)
+        public CharacterCombat(Character owner, CharacterEquipment equipment, SkillData skill, CharacterGadget gadget)
         {
             _owner = owner;
             _equipment = equipment;
             Cycle = new AttackCycle();
             _skillData = skill;
+            Gadget = gadget;
 
             // 태어나자마자 기술부터 쏘지 않게, 방금 쓴 것과 같은 상태로 시작한다.
             StartOnCooldown(Skill, SkillCooldown);
             StartOnCooldown(Ultimate, UltimateCooldown);
+
+            if (Gadget != null)
+            {
+                GadgetCooldown.Begin(Gadget.Cooldown);
+            }
         }
 
         /// <summary>쿨이 다 찬 상태가 아니라, 한 번 쓰고 난 직후와 똑같이 쿨타임 전체가 남은 상태로 둔다.</summary>
@@ -226,10 +263,41 @@ namespace Sayne
             return UniTask.WaitUntil(() => !_castMotionRunning && !_castHitPending, cancellationToken: token);
         }
 
-        /// <summary>스킬 모션과 아직 안 나간 타격을 끊는다.</summary>
+        /// <summary>
+        /// 가젯을 쓴다 — 그 자리까지 달려가고, 닿을 때까지 다른 커맨드를 받지 않는다(스킬과 같은 잠금).
+        /// 어디로 달려갈지는 부르는 쪽이 정한다. 쿨이 안 돌았거나 가젯이 없으면 아무 일도 없다.
+        /// </summary>
+        public void UseGadget(Vector3 destination)
+        {
+            if (!CanUseGadget)
+            {
+                return;
+            }
+
+            GadgetCooldown.Begin(Gadget.Cooldown);
+
+            _gadgetRunning = true;
+            SyncCasting();
+
+            _owner.Dash(destination, Gadget.DashSpeed, EndGadget);
+        }
+
+        private void EndGadget()
+        {
+            _gadgetRunning = false;
+            SyncCasting();
+        }
+
+        /// <summary>스킬 모션과 아직 안 나간 타격, 달려가던 가젯을 끊는다.</summary>
         public void CancelCast()
         {
             if (!IsCasting) return;
+
+            if (_gadgetRunning)
+            {
+                _gadgetRunning = false;
+                _owner.StopDash();
+            }
 
             _castMotionRunning = false;
             _castHitPending = false;
@@ -301,10 +369,10 @@ namespace Sayne
             SyncCasting();
         }
 
-        /// <summary>잠금은 모션·타격 대기의 합집합이다. 이 한 줄 밖에서 _isCasting 을 건드리는 곳은 없다.</summary>
+        /// <summary>잠금은 모션·타격 대기·가젯 돌진의 합집합이다. 이 한 줄 밖에서 _isCasting 을 건드리는 곳은 없다.</summary>
         private void SyncCasting()
         {
-            _isCasting.Value = _castMotionRunning || _castHitPending;
+            _isCasting.Value = _castMotionRunning || _castHitPending || _gadgetRunning;
         }
 
         /// <summary>휘두르기 시작 — 모션을 알리고, 타격 시점에 판정 신호를 낸다. 이전 타격 판정은 여기서 끊긴다.</summary>
@@ -378,6 +446,7 @@ namespace Sayne
             AttackCooldown.Dispose();
             SkillCooldown.Dispose();
             UltimateCooldown.Dispose();
+            GadgetCooldown.Dispose();
         }
     }
 }

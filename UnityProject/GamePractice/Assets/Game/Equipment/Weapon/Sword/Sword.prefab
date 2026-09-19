@@ -284,7 +284,7 @@ MonoBehaviour:
   _sizeScale: 1
   _ultimateName: "\uC218\uD655"
   _ultimatePowerMultiplier: 7
-  _ultimateCooldown: 30
+  _ultimateCooldown: 90
   _ultimateParticleID: 
 --- !u!1 &5685799726800093065
 GameObject:

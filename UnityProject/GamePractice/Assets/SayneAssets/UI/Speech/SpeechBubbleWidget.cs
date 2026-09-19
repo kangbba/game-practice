@@ -18,6 +18,8 @@ namespace Sayne
 
         [SerializeField] private CanvasGroup _group;
         [SerializeField] private Button _tapBtn;
+
+        /// <summary>초상화 칸. 초상화 없는 프리팹이면 둘 다 비워 둔다 — 같은 스크립트를 두 모양이 같이 쓴다.</summary>
         [SerializeField] private RectTransform _portraitRoot;
         [SerializeField] private Image _portrait;
         [SerializeField] private TextPlayer _player;
@@ -33,14 +35,20 @@ namespace Sayne
                 .AddTo(this);
         }
 
+        /// <param name="portrait">초상화 칸에 넣을 얼굴. null 이면 칸을 끈다. 칸 없는 프리팹이면 쓰지 않는다.</param>
         public async UniTask PlayAsync(Sprite portrait, string text, CancellationToken token)
         {
-            _portrait.sprite = portrait;
+            var hasPortraitSlot = _portrait != null;
+            if (hasPortraitSlot)
+            {
+                _portrait.sprite = portrait;
+                _portraitRoot.gameObject.SetActive(portrait != null);
+            }
 
             var fadeIn = UnscaledTween.RunAsync(FadeSeconds, t =>
             {
                 _group.alpha = t;
-                _portraitRoot.localScale = Vector3.one * Mathf.Lerp(PortraitStartScale, 1f, t);
+                if (hasPortraitSlot) _portraitRoot.localScale = Vector3.one * Mathf.Lerp(PortraitStartScale, 1f, t);
             }, token);
 
             await UniTask.WhenAll(fadeIn, _player.PlayAsync(text, token));

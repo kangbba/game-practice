@@ -61,7 +61,7 @@ namespace Sayne
         [Header("궁극기 — 이름이 비어 있으면 이 무기로는 궁극기를 못 쓴다")]
         [SerializeField] private string _ultimateName;
         [SerializeField] private float _ultimatePowerMultiplier = 7f;
-        [SerializeField] private float _ultimateCooldown = 30f;
+        [SerializeField] private float _ultimateCooldown = 90f;
 
         /// <summary>궁극기 전용 연출. 비우면 평타와 같은 베기 연출을 쓴다.</summary>
         [ParticleIDPicker(allowEmpty: true)] [SerializeField] private string _ultimateParticleID;

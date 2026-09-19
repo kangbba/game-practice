@@ -7,7 +7,7 @@ namespace Sayne
 {
     /// <summary>
     /// 좌상단 히어로 명패: 초상화·이름·레벨·HP바·EXP바. 지금 싸우는 히어로가 누구인지와 그 상태를 보여준다.
-    /// 히어로가 바뀌는 것도 스스로 듣는다 — 부르는 쪽은 "이 매니저들을 봐라" 만 알려준다.
+    /// 히어로가 바뀌는 것도 스스로 듣는다 — 부르는 쪽은 볼 스트림만 넘긴다. 그게 어느 매니저의 것인지는 모른다.
     /// </summary>
     public class HeroProfileWidget : MonoBehaviour
     {
@@ -18,20 +18,20 @@ namespace Sayne
         [SerializeField] private TextMeshProUGUI _hpLabel;
         [SerializeField] private SlicedFillBar _expFill;
 
-        public void Init(HeroManager heroManager, GrowthManager growthManager, IAssets<CharacterProfile> profiles)
+        public void Init(Observable<Hero> hero, Observable<int> level, Observable<float> expRatio, IAssets<CharacterProfile> profiles)
         {
             // 레벨과 경험치는 히어로가 죽고 바뀌어도 이어진다 — 한 번만 건다.
-            growthManager.Level
-                .Subscribe(this, (level, self) => self._levelText.text = $"Lv.{level}")
+            level
+                .Subscribe(this, (value, self) => self._levelText.text = $"Lv.{value}")
                 .AddTo(this);
 
-            growthManager.ExpRatio
+            expRatio
                 .Subscribe(this, (ratio, self) => self._expFill.FillAmount = ratio)
                 .AddTo(this);
 
-            heroManager.CurrentHero
-                .Where(hero => hero != null)
-                .Subscribe((self: this, profiles), (hero, state) => state.self.SetHero(hero, state.profiles.Get(hero.ID)))
+            hero
+                .Where(current => current != null)
+                .Subscribe((self: this, profiles), (current, state) => state.self.SetHero(current, state.profiles.Get(current.ID)))
                 .AddTo(this);
         }
 

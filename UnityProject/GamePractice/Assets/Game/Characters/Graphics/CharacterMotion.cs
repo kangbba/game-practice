@@ -10,6 +10,9 @@ namespace Sayne
     [RequireComponent(typeof(Animator))]
     public class CharacterMotion : MonoBehaviour
     {
+        /// <summary>돌진하는 동안 걷기 모션을 이 배속으로 튼다.</summary>
+        private const float DashMotionSpeed = 2.5f;
+
         /// <summary>이만큼 좌우로 움직여야 방향을 바꾼다. 위아래로만 걸을 때 안 뒤집히게 하는 값이다.</summary>
         private const float FacingThreshold = 0.35f;
 
@@ -80,6 +83,11 @@ namespace Sayne
 
             character.Damaged
                 .Subscribe(this, (_, self) => self.PlayHit())
+                .AddTo(this);
+
+            // 돌진은 전용 모션 없이 걷기 모션을 빨리 틀어 달리는 것처럼 보인다.
+            character.IsDashing
+                .Subscribe(this, (dashing, self) => self._animator.speed = dashing ? DashMotionSpeed : 1f)
                 .AddTo(this);
 
             character.Combat.Attacked

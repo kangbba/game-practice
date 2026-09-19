@@ -1,20 +1,21 @@
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using R3;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Sayne
 {
     /// <summary>
-    /// 캐릭터 머리 위 월드에 뜨는 혼잣말 풍선. 게임을 멈추지 않고, 누르지 않아도 알아서 찍히고 사라진다.
-    /// 밖에서는 만들고(Create) · 틀고(Play) · 부술(Destroy) 뿐이다 — 머리 위 자리, 카메라 쪽으로 서기,
-    /// 한 글자씩 찍기, 머물렀다 사라지기는 전부 이 안에서 한다.
-    /// 말하는 캐릭터의 자식으로 붙어 함께 움직이고, 그 캐릭터가 사라지면 같이 사라진다.
+    /// 월드에 떠서 캐릭터 머리 위를 따라다니는 혼잣말 풍선. 게임을 멈추지 않고, 누르지 않아도 알아서 찍히고 사라진다.
+    /// WorldHPBar 와 같은 원리다 — 월드 캔버스 하나에 모여 있고, 무엇을 따라다닐지만 받아 늘 카메라를 정면으로 본다.
+    /// 캐릭터도 죽음도 모르고, 만들고 치우는 건 만든 쪽 일이다. 한 번 말하고 치워지는 일회용이다.
+    /// 크기는 건드리지 않는다. 모양은 프리팹이 정하고, 월드에 얼마나 크게 띄울지(배율)는 만드는 쪽이 생성할 때 건다.
     /// </summary>
     public class WorldSpeechBubble : MonoBehaviour
     {
-        /// <summary>머리 꼭대기에서 꼬리 끝까지의 월드 간격.</summary>
-        private const float HeadGap = 0.25f;
-
         private const float CharsPerSecond = 14f;
         private const float PopInSeconds = 0.2f;
         private const float PopOutSeconds = 0.25f;
@@ -23,41 +24,50 @@ namespace Sayne
         private const float HoldSeconds = 1.2f;
         private const float HoldSecondsPerChar = 0.05f;
 
-        /// <summary>폭을 글에 맞출 때의 하한. 이보다 좁으면 꼬리가 풍선 밖으로 나간다.</summary>
-        private const float MinWidth = 160f;
+        /// <summary>폭을 글에 맞출 때의 하한. 이보다 좁으면 꼬리가 풍선 밖으로 나간다 — 프리팹 그림이 두 배라 하한도 두 배다.</summary>
+        private const float MinWidth = 320f;
 
         [SerializeField] private CanvasGroup _group;
-        [SerializeField] private RectTransform _anchor;
         [SerializeField] private RectTransform _body;
         [SerializeField] private TextMeshProUGUI _text;
+
+        /// <summary>말하는 이 얼굴 칸. 안 꽂은 프리팹은 얼굴 없이 글만 쓴다. 꽂았으면 얼굴을 받았을 때만 켠다.</summary>
+        [SerializeField] private Image _portrait;
+
+        private Transform _camera;
+        private Transform _target;
+
+        /// <summary>몸의 발에서 꼬리 끝까지의 월드 벡터.</summary>
+        private Vector3 _worldOffset;
 
         /// <summary>프리팹에 잡아 둔 풍선 크기. 폭은 상한, 높이는 하한이다.</summary>
         private Vector2 _baseSize;
 
-        private Sequence _playing;
-
-        /// <summary>
-        /// 말하는 이의 머리 위에 풍선을 하나 붙인다. 틀기 전까지는 보이지 않는다.
-        /// 키를 밖에서 받는 이유는 이 부품이 말하는 이가 무엇인지 알지 않기 위해서다 — 붙일 자리와 높이만 안다.
-        /// </summary>
-        public static WorldSpeechBubble Create(WorldSpeechBubble prefab, Transform speaker, float height)
-        {
-            var bubble = Instantiate(prefab, speaker, false);
-            bubble.PlaceAbove(height);
-            return bubble;
-        }
-
-        private void Awake()
+        /// <param name="worldOffset">몸의 발에서 꼬리 끝까지. 머리 위 어디에 설지는 만든 쪽이 정한다.</param>
+        /// <param name="portrait">말하는 이 얼굴. null 이면 칸을 끈다. 칸 없는 프리팹이면 쓰지 않는다.</param>
+        public void Init(Camera camera, Transform target, Vector3 worldOffset, Sprite portrait)
         {
             _baseSize = _body.sizeDelta;
             _group.alpha = 0f;
+            ShowPortrait(portrait);
+
+            _camera = camera.transform;
+            _target = target;
+            _worldOffset = worldOffset;
+
+            // 첫 프레임부터 제자리에 서 있어야 한다. 루프를 기다리면 한 프레임 동안 원점에 찍힌다.
+            Place();
+
+            // 카메라와 같은 단계(PostLateUpdate)에서, 카메라보다 늦게 구독해 그 뒤에 돈다 —
+            // 카메라 회전을 그대로 베끼기 때문에 순서가 뒤바뀌면 지난 프레임 각도로 선다.
+            Observable.EveryUpdate(UnityFrameProvider.PostLateUpdate)
+                .Subscribe(this, (_, self) => self.Place())
+                .AddTo(this);
         }
 
-        /// <summary>대사를 튼다. 이미 틀고 있던 게 있으면 끊고 새로 시작한다.</summary>
-        public void Play(string text)
+        /// <summary>대사를 한 글자씩 찍고, 머물렀다가 사라질 때까지 기다린다. 끝나도 스스로 부서지지 않는다.</summary>
+        public async UniTask PlayAsync(string text, CancellationToken token)
         {
-            _playing?.Kill();
-
             _text.text = text;
             Fit(text);
             _text.ForceMeshUpdate();
@@ -68,28 +78,38 @@ namespace Sayne
             _group.alpha = 1f;
             _body.localScale = Vector3.one * 0.6f;
 
-            _playing = DOTween.Sequence()
+            var finished = new UniTaskCompletionSource();
+
+            DOTween.Sequence()
                 .Append(_body.DOScale(1f, PopInSeconds).SetEase(Ease.OutBack))
                 .Append(DOTween.To(() => _text.maxVisibleCharacters, count => _text.maxVisibleCharacters = count,
                     total, total / CharsPerSecond).SetEase(Ease.Linear))
                 .AppendInterval(HoldSeconds + total * HoldSecondsPerChar)
                 .Append(_group.DOFade(0f, PopOutSeconds))
+                .OnComplete(() => finished.TrySetResult())
                 .SetLink(gameObject);
+
+            await finished.Task.AttachExternalCancellation(token);
         }
 
-        public void Destroy()
+        private void Place()
         {
-            Destroy(gameObject);
+            transform.SetPositionAndRotation(_target.position + _worldOffset, _camera.rotation);
         }
 
-        /// <summary>
-        /// 뿌리는 발에 두고, 풍선 자리만 머리 위로 올린다. 뿌리가 카메라 쪽으로 서므로 "위" 는 곧 화면 위다.
-        /// 월드 간격을 캔버스 단위로 옮기려고 뿌리의 배율로 나눈다.
-        /// </summary>
-        private void PlaceAbove(float height)
+        /// <summary>칸이 있는 프리팹이면 얼굴을 넣고 켠다. 얼굴이 없으면 칸을 끄고 글을 그 자리까지 넓힌다 — 왼쪽 여백을 오른쪽과 같게.</summary>
+        private void ShowPortrait(Sprite portrait)
         {
-            transform.localPosition = Vector3.zero;
-            _anchor.anchoredPosition = new Vector2(0f, (height + HeadGap) / transform.lossyScale.y);
+            if (_portrait == null) return;
+
+            _portrait.sprite = portrait;
+            _portrait.gameObject.SetActive(portrait != null);
+
+            if (portrait == null)
+            {
+                var textRect = _text.rectTransform;
+                textRect.offsetMin = new Vector2(-textRect.offsetMax.x, textRect.offsetMin.y);
+            }
         }
 
         /// <summary>짧은 글이면 폭이 줄고, 긴 글이면 줄이 바뀌며 위로 자란다.</summary>

@@ -17,8 +17,10 @@ namespace Sayne
         /// <summary>로딩 화면. 다른 에셋보다 먼저 혼자 불린다.</summary>
         public const string LoadingPanel = "LoadingPanel";
 
-        public const string OverlayHPBar = "OverlayHPBar";
-        public const string WorldHPBar = "WorldHPBar";
+        // HP 바는 쓰임새마다 프리팹이 따로다. 스크립트는 같아도 모양(초상화 유무 등)은 프리팹이 정한다.
+        public const string HeroOverlayHPBar = "HeroOverlayHPBar";
+        public const string BossOverlayHPBar = "BossOverlayHPBar";
+        public const string EnemyWorldHPBar = "EnemyWorldHPBar";
         public const string UltimateCutscenePanel = "UltimateCutscenePanel";
         public const string DamageText = "DamageText";
         public const string BattlePanel = "BattlePanel";
@@ -39,7 +41,7 @@ namespace Sayne
         /// <summary>코인 그림. 에셋 파일명이 Gold 라 주소도 그대로다.</summary>
         public const string CoinIcon = "Gold";
 
-        /// <summary>회복 구슬 그림. 에셋 파일명이 Heal 이라 주소도 그대로다.</summary>
-        public const string HealIcon = "Heal";
+        /// <summary>회복 구슬 그림. 파티클 Heal 과 주소가 겹치지 않게 파일명을 HealIcon 으로 뒀다.</summary>
+        public const string HealIcon = "HealIcon";
     }
 }

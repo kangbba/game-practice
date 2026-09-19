@@ -44,12 +44,13 @@ namespace Sayne.Editor
             count += MarkFolder(settings, group, EquipmentRoot, AssetAddresses.EquipmentPlansLabel, "t:EquipmentPlan");
 
             count += Mark(settings, group, "Assets/Game/Drops/Art/Portraits/Gold.png", null);
-            count += Mark(settings, group, "Assets/Game/Drops/Art/Portraits/Heal.png", null);
+            count += Mark(settings, group, "Assets/Game/Drops/Art/Portraits/HealIcon.png", null);
             count += Mark(settings, group, "Assets/Game/Drops/DropItem.prefab", null);
 
             count += Mark(settings, group, "Assets/Game/Loading/LoadingPanel.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UI/OverlayHPBar.prefab", null);
-            count += Mark(settings, group, "Assets/Game/UI/WorldHPBar.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/HeroOverlayHPBar.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/BossOverlayHPBar.prefab", null);
+            count += Mark(settings, group, "Assets/Game/UI/EnemyWorldHPBar.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/DamageText.prefab", null);
             count += Mark(settings, group, "Assets/Game/ScreenPerformance/UltimateCutscenePanel.prefab", null);
             count += Mark(settings, group, "Assets/Game/UI/BattlePanel.prefab", null);

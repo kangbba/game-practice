@@ -42,6 +42,9 @@ namespace Sayne.Editor
 
         private const string FontPath = "Assets/Fonts/TMP/SB_Aggro_Bold SDF.asset";
 
+        /// <summary>장비창과 그 안의 위젯(슬롯·후보·스탯 줄)은 이 폰트를 쓴다.</summary>
+        private const string EquipmentFontPath = "Assets/Game/Loading/Fonts/NanumGothicBold SDF.asset";
+
         private static readonly Color PanelDark = new Color(0.08f, 0.12f, 0.20f, 0.94f);
         private static readonly Color PanelDarker = new Color(0.035f, 0.055f, 0.10f, 0.96f);
         private static readonly Color TextWhite = new Color(0.95f, 0.95f, 0.97f);
@@ -58,6 +61,12 @@ namespace Sayne.Editor
 
         /// <summary>스킬 버튼 테두리 — 차가운 하늘색.</summary>
         private static readonly Color SkillRim = new Color(0.45f, 0.78f, 1f);
+
+        /// <summary>가젯 버튼 아이콘을 테두리에서 들이는 거리. 스킬 버튼(25)보다 좁다.</summary>
+        private const float GadgetIconInset = 12f;
+
+        /// <summary>가젯 버튼 테두리 — 옅은 청록. 셋 중 제일 가벼운 기술이라 제일 작고 제일 차분하다.</summary>
+        private static readonly Color GadgetRim = new Color(0.5f, 0.92f, 0.76f);
         /// <summary>흐린 화면 위의 암막. 흐림이 이미 뒤를 눌러 주니 옅게만 깐다.</summary>
         private static readonly Color PopupDim = new Color(0f, 0f, 0.05f, 0.35f);
 
@@ -76,14 +85,7 @@ namespace Sayne.Editor
         public static void Build()
         {
             BattleHUDArtBuilder.Build();
-            _panel = Art("Frames/Panel");
-            _medallion = Art("Frames/Medallion");
-            _ring = Art("Frames/Ring");
-            _gauge = Art("Frames/Gauge");
-            _glow = Art("Frames/Glow");
-            _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
-            _rounded = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
-            _circle = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            LoadArt();
 
             if (!AssetDatabase.IsValidFolder(WidgetFolder))
             {
@@ -102,12 +104,9 @@ namespace Sayne.Editor
             var iconMenuPrefab = BuildIconMenuWidget();
             var circleButtonPrefab = BuildCircleButtonWidget();
             var skillButtonPrefab = BuildSkillButtonWidget();
-            var equipSlotPrefab = BuildEquipmentSlotWidget();
-            var equipCandidatePrefab = BuildEquipmentCandidateWidget();
-            var equipStatRowPrefab = BuildEquipmentStatRowWidget();
 
             // 팝업은 HUD 에 들지 않는 독립 프리팹이다. PopupManager 가 종류(PopupType)에 짝지어 만든다.
-            BuildEquipmentWindow(equipSlotPrefab, equipCandidatePrefab, equipStatRowPrefab);
+            BuildEquipment();
             BuildGrowthWindow(BuildGrowthStatWidget());
             BuildFormationWindow(BuildFormationHeroWidget());
 
@@ -118,6 +117,37 @@ namespace Sayne.Editor
             ComposeLowHealthPanel();
 
             Debug.Log("BattlePhaseUIBuilder: 위젯 프리팹 13종 + 전투 HUD·웨이브 시작·저체력 패널 재구성 완료");
+        }
+
+        /// <summary>장비창 묶음(위젯 셋 + 창)만 다시 만든다. 장비창만 손볼 때 HUD 전체를 다시 굽지 않으려고 따로 연다.</summary>
+        public static void BuildEquipmentOnly()
+        {
+            LoadArt();
+            BuildEquipment();
+            Debug.Log("BattlePhaseUIBuilder: 장비창·장비 위젯 3종 재구성 완료");
+        }
+
+        private static void LoadArt()
+        {
+            _panel = Art("Frames/Panel");
+            _medallion = Art("Frames/Medallion");
+            _ring = Art("Frames/Ring");
+            _gauge = Art("Frames/Gauge");
+            _glow = Art("Frames/Glow");
+            _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
+            _rounded = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            _circle = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+        }
+
+        /// <summary>장비창 묶음만 폰트가 다르다. 그동안만 바꿔 끼우고 끝나면 되돌린다.</summary>
+        private static void BuildEquipment()
+        {
+            _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(EquipmentFontPath);
+            var slotPrefab = BuildEquipmentSlotWidget();
+            var candidatePrefab = BuildEquipmentCandidateWidget();
+            var statRowPrefab = BuildEquipmentStatRowWidget();
+            BuildEquipmentWindow(slotPrefab, candidatePrefab, statRowPrefab);
+            _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
         }
 
         // ---- 위젯 프리팹 ----
@@ -390,6 +420,23 @@ namespace Sayne.Editor
             return SaveWidget(root.gameObject);
         }
 
+        /// <summary>
+        /// 가젯 버튼. 무게가 가젯 &lt; 스킬 &lt; 궁극기라 크기도 그 순서다 — 스킬 버튼 왼쪽에 제일 작게, 스킬과 같은 높이 가운데에 선다.
+        /// </summary>
+        private static SkillButtonWidget PlaceGadgetButton(GameObject skillButtonPrefab, RectTransform root)
+        {
+            var gadgetButton = Place<SkillButtonWidget>(skillButtonPrefab, root, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-354f, 58f));
+            ((RectTransform)gadgetButton.transform).sizeDelta = new Vector2(88f, 88f);
+            gadgetButton.Preview("돌진", cooldownRatio: 0f, cooldownRemain: 0f);
+            // 버튼이 작아서 스킬 버튼과 같은 여백(25)이면 아이콘이 콩알만 해진다. 여백을 줄여 버튼 안을 채운다.
+            var icon = (RectTransform)gadgetButton.transform.Find("Icon");
+            icon.offsetMin = Vector2.one * GadgetIconInset;
+            icon.offsetMax = -Vector2.one * GadgetIconInset;
+            icon.GetComponent<Image>().sprite = Art("Icons/Dash");
+            SetSkillBorder(gadgetButton, GadgetRim);
+            return gadgetButton;
+        }
+
         /// <summary>스킬 버튼의 테두리(Rim) 색.</summary>
         private static void SetSkillBorder(SkillButtonWidget button, Color color)
         {
@@ -515,19 +562,26 @@ namespace Sayne.Editor
             const float top = -72f;
 
             var popup = PopupRoot("EquipmentWindow");
-            var root = Rect(popup, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(1200f, 720f));
-            Img(root, Color.white, _panel).raycastTarget = true;
+            var modal = Rect(popup, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(1200f, 720f));
+            Img(modal, Color.white, _panel).raycastTarget = true;
 
-            Text(Rect(root, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -16f), new Vector2(200f, 36f)),
+            // 비슷한 일을 하는 것끼리 묶음 하나에 모은다. 묶음은 모달을 꽉 덮으므로 안의 자리 계산은 모달 기준 그대로다.
+            var header = Stretch(modal, "Header", 0f);
+            var statGroup = Stretch(modal, "StatRows", 0f);
+            var slotGroup = Stretch(modal, "Slots", 0f);
+            var detail = Stretch(modal, "Detail", 0f);
+            var tabGroup = Stretch(modal, "Tabs", 0f);
+
+            Text(Rect(header, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -16f), new Vector2(200f, 36f)),
                 "장비", 26f, TextWhite, HorizontalAlignmentOptions.Left);
-            var closeBtn = MakeButton(root, "CloseBtn", new Vector2(1f, 1f), new Vector2(1f, 1f),
+            var closeBtn = MakeButton(header, "CloseBtn", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-12f, -12f), new Vector2(48f, 48f), "X");
 
-            Img(Rect(root, "Divider", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, top), new Vector2(2f, 622f)),
+            Img(Rect(modal, "Divider", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, top), new Vector2(2f, 622f)),
                 new Color(1f, 1f, 1f, 0.12f));
 
             // ---- 좌상단: 캐릭터 프리뷰. 그림은 런타임에 프리뷰 무대의 텍스처가 꽂힌다 ----
-            var previewFrame = Rect(root, "PreviewFrame", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            var previewFrame = Rect(modal, "PreviewFrame", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(left, top), new Vector2(270f, 300f));
             Img(previewFrame, PanelDarker, _rounded);
             var preview = Stretch(previewFrame, "Preview", 6f).gameObject.AddComponent<RawImage>();
@@ -536,14 +590,14 @@ namespace Sayne.Editor
 
             // ---- 프리뷰 오른쪽: 스탯 한 줄씩. 고른 장비를 끼면 달라지는 값이 초록·빨강으로 붙는다 ----
             const float statX = left + 270f + 12f;
-            Text(Rect(root, "StatHeader", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(statX, top), new Vector2(282f, 26f)),
+            Text(Rect(statGroup, "StatHeader", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(statX, top), new Vector2(282f, 26f)),
                 "능력치", 16f, TextGray, HorizontalAlignmentOptions.Left);
 
             // 스탯 줄은 StatTypes.All 을 그대로 따른다 — 스탯이 늘면 줄도 따라 늘고, 여기 고칠 것은 없다.
             var statRows = new EquipmentStatRowWidget[StatTypes.All.Length];
             for (var i = 0; i < statRows.Length; i++)
             {
-                statRows[i] = Place<EquipmentStatRowWidget>(statRowPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                statRows[i] = Place<EquipmentStatRowWidget>(statRowPrefab, statGroup, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(statX, top - 32f - 60f * i));
                 statRows[i].Setup(StatTypes.All[i]);
             }
@@ -551,13 +605,13 @@ namespace Sayne.Editor
             // 안내문은 마지막 줄 아래에 붙는다 — 스탯이 늘어 줄이 내려가도 겹치지 않게.
             var statHintY = top - 100f - 60f * (statRows.Length - 1);
             var statHint = Text(
-                Rect(root, "StatHint", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(statX, statHintY), new Vector2(282f, 60f)),
+                Rect(statGroup, "StatHint", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(statX, statHintY), new Vector2(282f, 60f)),
                 "장비를 고르면 끼었을 때 오르는 값은 초록, 내리는 값은 빨강으로 보인다", 13f, TextGray, HorizontalAlignmentOptions.Left);
             statHint.verticalAlignment = VerticalAlignmentOptions.Top;
             statHint.textWrappingMode = TextWrappingModes.Normal;
 
             // ---- 좌하단: 장착 슬롯. 몸을 마주 본 배치 — 주장비는 오른팔, 보조장비는 왼팔 자리다 ----
-            Text(Rect(root, "SlotHeader", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(left, top - 312f), new Vector2(halfWidth, 26f)),
+            Text(Rect(slotGroup, "SlotHeader", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(left, top - 312f), new Vector2(halfWidth, 26f)),
                 "장착 슬롯  <size=80%>목록에서 끌어다 놓으면 바로 장착</size>", 16f, TextGray, HorizontalAlignmentOptions.Left);
 
             var slotLayout = new[]
@@ -570,11 +624,11 @@ namespace Sayne.Editor
             for (var i = 0; i < slotLayout.Length; i++)
             {
                 var pos = new Vector2(left + 90f + 192f * (i % 3), top - 342f - 148f * (i / 3));
-                slotWidgets[i] = PlaceSlot(slotPrefab, root, slotLayout[i], pos, new Vector2(180f, 136f));
+                slotWidgets[i] = PlaceSlot(slotPrefab, slotGroup, slotLayout[i], pos, new Vector2(180f, 136f));
             }
 
             // ---- 우상단: 설명 칸 + 장착 버튼. 후보나 슬롯을 고르면 여기가 채워진다 ----
-            var description = Rect(root, "Description", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            var description = Rect(detail, "Description", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(right, top), new Vector2(halfWidth, 150f));
             Img(description, Color.white, _panel);
 
@@ -599,7 +653,7 @@ namespace Sayne.Editor
             descText.verticalAlignment = VerticalAlignmentOptions.Top;
             descText.textWrappingMode = TextWrappingModes.Normal;
 
-            var actionBtn = MakeButton(root, "ActionBtn", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            var actionBtn = MakeButton(detail, "ActionBtn", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(right, top - 158f), new Vector2(halfWidth, 52f), "장착");
             var actionBtnLabel = actionBtn.GetComponentInChildren<TextMeshProUGUI>();
 
@@ -609,13 +663,13 @@ namespace Sayne.Editor
             for (var i = 0; i < tabBtns.Length; i++)
             {
                 var displayName = i == 0 ? "전체" : EquipmentSlots.DisplayName(EquipmentSlots.All[i - 1]);
-                tabBtns[i] = MakeButton(root, $"Tab_{displayName}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                tabBtns[i] = MakeButton(tabGroup, $"Tab_{displayName}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(right + (tabWidth + 5f) * i, top - 222f), new Vector2(tabWidth, 40f), displayName);
                 tabBtns[i].GetComponentInChildren<TextMeshProUGUI>().fontSize = 14f;
             }
 
             // 가방은 칸 수가 정해진 고정 격자다. 빈 칸 바탕을 먼저 깔고, 후보는 같은 격자로 그 위에 앞에서부터 채워진다.
-            var bag = Rect(root, "Bag", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            var bag = Rect(modal, "Bag", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(right, top - 270f), new Vector2(halfWidth, 352f));
             Img(bag, PanelDarker, _rounded);
 
@@ -1009,7 +1063,7 @@ namespace Sayne.Editor
 
         /// <summary>
         /// 웨이브 시작 화면. 화면 전체를 덮는다. ScreenPerformanceManager 가 웨이브마다 만들어 띄우고 치운다.
-        /// 어두운 바탕 위에 판 하나, 그 위에 웨이브 이름과 "시작" 만 있다.
+        /// 어두운 바탕 위에 판 하나, 그 위에 웨이브 이름과 "전투 개시" 만 있다.
         /// </summary>
         private static void ComposeWaveStartPanel()
         {
@@ -1035,7 +1089,7 @@ namespace Sayne.Editor
 
             var titleText = Text(
                 Rect(board, "TitleText", new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -132f), new Vector2(680f, 72f)),
-                "시작", 54f, Gold);
+                "전투 개시", 54f, Gold);
 
             var divider = Rect(board, "Divider", new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -190f), new Vector2(760f, 3f));
             Img(divider, new Color(1f, 1f, 1f, 0.14f));
@@ -1128,7 +1182,7 @@ namespace Sayne.Editor
             gem.transform.Find("Icon").GetComponent<Image>().sprite = Art("Icons/Gem");
 
             var quest = Place<QuestWidget>(questPrefab, root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -218f));
-            quest.Preview(QuestPlan.EnemyKill("고블린 사냥꾼", EnemyID.Goblin, "고블린", count: 10, goldReward: 300),
+            quest.Preview(QuestPlan.EnemyKill("고블린 사냥꾼", "고블린", count: 10, goldReward: 300, EnemyID.Goblin),
                 index: 2, progress: 4, isComplete: false);
 
             // 중앙 상단
@@ -1186,6 +1240,7 @@ namespace Sayne.Editor
             ((RectTransform)skillButton.transform).sizeDelta = new Vector2(116f, 116f);
             skillButton.Preview("스킬", cooldownRatio: 0f, cooldownRemain: 0f);
             SetSkillBorder(skillButton, SkillRim);
+            var gadgetButton = PlaceGadgetButton(skillButtonPrefab, root);
             BuildBottomLeftDecorations(root);
 
             // 부활 텍스트
@@ -1202,6 +1257,7 @@ namespace Sayne.Editor
             so.FindProperty("_gemWidget").objectReferenceValue = gem;
             so.FindProperty("_stageWidget").objectReferenceValue = stage;
             so.FindProperty("_questWidget").objectReferenceValue = quest;
+            so.FindProperty("_gadgetButton").objectReferenceValue = gadgetButton;
             so.FindProperty("_skillButton").objectReferenceValue = skillButton;
             so.FindProperty("_ultimateButton").objectReferenceValue = ultimateButton;
             so.FindProperty("_equipMenuButton").objectReferenceValue = equipMenuButton;

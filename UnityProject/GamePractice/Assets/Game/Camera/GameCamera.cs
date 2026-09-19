@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using R3;
 using UnityEngine;
@@ -8,42 +9,45 @@ namespace Sayne
     /// 카메라를 움직이는 유일한 곳. 대상을 지금 보는 방식(CameraView)대로 쫓는다.
     /// 자리·각도·시야각 모두 같은 원리로 다가간다 — 매 프레임 남은 거리의 일정 비율만큼. 대상이 움직여도,
     /// 보는 방식을 갈아 끼워도 같은 식으로 부드럽게 따라붙는다.
+    ///
+    /// static 이다. 씬에 카메라는 하나이고, 흔들기·줌은 무기·스킬·연출 어디서나 부른다 — 프리팹 깊숙이까지 넘겨 주지 않으려고.
+    /// 수명은 GameManager 가 쥔다: Attach 로 씬 카메라를 잡아 따라가기를 시작하고, 돌려받은 걸 놓으면 씬에 놓인 자세로 되돌린다.
     /// </summary>
-    public class CameraManager : ManagerBase
+    public static class GameCamera
     {
         private const float FollowSpeed = 8f;
 
         /// <summary>인물들을 담을 때 화면 가장자리에 남기는 여유. 1.2 면 화면의 1/1.2 안에 들어온다.</summary>
         private const float FramePadding = 1.2f;
 
-        private readonly ReactiveProperty<Quaternion> _billboardRotation = new ReactiveProperty<Quaternion>();
+        private static ReactiveProperty<Quaternion> _billboardRotation;
 
-        private Vector3 _initialPosition;
-        private Quaternion _initialRotation;
-        private float _initialFieldOfView;
-        private CameraView _view;
-        private Transform _followTarget;
+        private static Vector3 _initialPosition;
+        private static Quaternion _initialRotation;
+        private static float _initialFieldOfView;
+        private static CameraView _view;
+        private static Transform _followTarget;
 
         /// <summary>흔들림을 뺀 카메라 자리. 쫓아가기는 이 자리로 하고, 화면에는 여기에 흔들림을 얹어 놓는다 — 흔들림이 쫓아가기에 섞여 번지지 않게.</summary>
-        private Vector3 _steadyPosition;
+        private static Vector3 _steadyPosition;
 
-        private float _shakeStrength;
-        private float _shakeSeconds;
-        private float _shakeRemain;
+        private static float _shakeStrength;
+        private static float _shakeSeconds;
+        private static float _shakeRemain;
 
         /// <summary>한꺼번에 화면에 담을 인물들. 있으면 따라갈 대상 대신 이들을 담는 자리로 간다.</summary>
-        private IReadOnlyList<Character> _framedSubjects;
+        private static IReadOnlyList<Character> _framedSubjects;
 
-        public Camera Camera { get; private set; }
-        public ReadOnlyReactiveProperty<Quaternion> BillboardRotation => _billboardRotation;
+        public static Camera Camera { get; private set; }
+        public static ReadOnlyReactiveProperty<Quaternion> BillboardRotation => _billboardRotation;
 
-        public void SetFollowTarget(Transform target)
+        public static void SetFollowTarget(Transform target)
         {
             _followTarget = target;
         }
 
         /// <summary>보는 방식을 갈아 끼운다. 카메라는 그 자리로 끊지 않고 쫓아가는 원리 그대로 옮겨 간다.</summary>
-        public void SetView(CameraView view)
+        public static void SetView(CameraView view)
         {
             _view = view;
             _framedSubjects = null;
@@ -53,7 +57,7 @@ namespace Sayne
         /// 화면을 흔든다. 세기(월드 단위)에서 시작해 seconds 동안 0 으로 잦아든다.
         /// 흔드는 중에 또 부르면 남은 흔들림과 새 흔들림 중 센 쪽을 잇는다 — 연타가 쌓여 폭주하지 않는다.
         /// </summary>
-        public void Shake(float strength, float seconds)
+        public static void Shake(float strength, float seconds)
         {
             var remaining = _shakeRemain > 0f ? _shakeStrength * _shakeRemain / _shakeSeconds : 0f;
             if (strength < remaining)
@@ -70,25 +74,36 @@ namespace Sayne
         /// 보는 방식을 갈아 끼우되, 한 사람을 쫓는 대신 이 인물들이 전부 화면에 들어오는 자리로 간다.
         /// 각도·시야각은 view 그대로 쓰고 중심과 거리만 매 프레임 계산한다. 거리는 view 의 거리보다 가까워지지 않는다.
         /// </summary>
-        public void Frame(CameraView view, IReadOnlyList<Character> subjects)
+        public static void Frame(CameraView view, IReadOnlyList<Character> subjects)
         {
             _view = view;
             _framedSubjects = subjects;
         }
 
-        protected override void OnInit()
+        /// <summary>
+        /// 씬 카메라를 잡고 따라가기를 시작한다. 돌려받은 걸 놓으면 멈추고 카메라를 씬에 놓인 자세로 되돌린다.
+        /// 도메인 리로드를 끈 채 다시 플레이해도 앞 판의 상태가 남지 않게, 잡을 때마다 전부 새로 세운다.
+        /// </summary>
+        public static IDisposable Attach()
         {
             Camera = Camera.main;
             _initialPosition = Camera.transform.position;
             _initialRotation = Camera.transform.rotation;
             _initialFieldOfView = Camera.fieldOfView;
 
+            _followTarget = null;
+            _framedSubjects = null;
+            _shakeRemain = 0f;
+
             // 시작은 평소 전투 시점에 원점(히어로가 서는 자리)을 보는 자세로 바로 세운다.
             _view = CameraView.Battle;
             Camera.transform.SetPositionAndRotation(_view.Offset, _view.Rotation);
             _steadyPosition = _view.Offset;
             Camera.fieldOfView = _view.FieldOfView;
-            _billboardRotation.Value = CalculateBillboardRotation();
+
+            _billboardRotation = new ReactiveProperty<Quaternion>(CalculateBillboardRotation());
+
+            var life = new CompositeDisposable();
 
             _billboardRotation
                 .Subscribe(rotation =>
@@ -98,24 +113,27 @@ namespace Sayne
                         billboard.Apply(rotation);
                     }
                 })
-                .RegisterTo(LifeToken);
+                .AddTo(life);
 
             Billboard.Registered
-                .Subscribe(this, (billboard, self) => billboard.Apply(self._billboardRotation.CurrentValue))
-                .RegisterTo(LifeToken);
+                .Subscribe(billboard => billboard.Apply(_billboardRotation.CurrentValue))
+                .AddTo(life);
 
             Observable.EveryUpdate(UnityFrameProvider.PostLateUpdate)
-                .Subscribe(this, (_, self) =>
+                .Subscribe(_ =>
                 {
-                    self.UpdateFollow();
-                    self.UpdateBillboardRotation();
+                    UpdateFollow();
+                    UpdateBillboardRotation();
                 })
-                .RegisterTo(LifeToken);
+                .AddTo(life);
+
+            Disposable.Create(Detach).AddTo(life);
+            return life;
         }
 
-        protected override void OnRelease()
+        private static void Detach()
         {
-            // 카메라는 씬 소유라 파괴하지 않는다. 대신 씬에 놓인 자세로 되돌려 둔다.
+            // 카메라는 씬 소유라 파괴하지 않는다. 대신 씬에 놓인 자세로 되돌려 둔다. 씬이 먼저 내려갔으면 이미 없다.
             if (Camera != null)
             {
                 Camera.transform.SetPositionAndRotation(_initialPosition, _initialRotation);
@@ -123,10 +141,13 @@ namespace Sayne
             }
 
             _billboardRotation.Dispose();
+            _billboardRotation = null;
+            _followTarget = null;
+            _framedSubjects = null;
             Camera = null;
         }
 
-        private void UpdateFollow()
+        private static void UpdateFollow()
         {
             if (_followTarget == null && _framedSubjects == null)
             {
@@ -146,7 +167,7 @@ namespace Sayne
         }
 
         /// <summary>이번 프레임의 흔들림. 남은 시간에 비례해 약해지고, 다 잦아들면 0 이다.</summary>
-        private Vector3 GetShakeOffset()
+        private static Vector3 GetShakeOffset()
         {
             if (_shakeRemain <= 0f)
             {
@@ -157,7 +178,7 @@ namespace Sayne
             var strength = _shakeStrength * Mathf.Max(_shakeRemain, 0f) / _shakeSeconds;
 
             // 화면 안에서만 흔든다 — 앞뒤로 흔들면 줌처럼 보인다.
-            var shake = Random.insideUnitCircle * strength;
+            var shake = UnityEngine.Random.insideUnitCircle * strength;
             return Camera.transform.right * shake.x + Camera.transform.up * shake.y;
         }
 
@@ -165,7 +186,7 @@ namespace Sayne
         /// 인물 전부의 발밑과 머리 꼭대기가 화면 안에 드는 카메라 자리. 카메라 방향으로 돌려 본 좌표에서
         /// 상하좌우 끝의 한가운데를 중심으로 삼고, 모든 점이 시야각 안에 들 만큼 뒤로 물러난다.
         /// </summary>
-        private Vector3 GetFramePosition()
+        private static Vector3 GetFramePosition()
         {
             var rotation = _view.Rotation;
             var toCamera = Quaternion.Inverse(rotation);
@@ -203,12 +224,12 @@ namespace Sayne
             return center - rotation * Vector3.forward * distance;
         }
 
-        private void UpdateBillboardRotation()
+        private static void UpdateBillboardRotation()
         {
             _billboardRotation.Value = CalculateBillboardRotation();
         }
 
-        private Quaternion CalculateBillboardRotation()
+        private static Quaternion CalculateBillboardRotation()
         {
             return Camera.transform.rotation;
         }

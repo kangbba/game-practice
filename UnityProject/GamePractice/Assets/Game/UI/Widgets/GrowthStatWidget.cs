@@ -1,3 +1,4 @@
+using System;
 using R3;
 using TMPro;
 using UnityEngine;
@@ -6,7 +7,7 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
-    /// 성장 모달의 항목 한 줄. "공격력 Lv.3 / 5 +4 / [강화 120 G]" 를 그리고 강화 버튼을 흘린다.
+    /// 성장 모달의 항목 한 줄. "공격력 Lv.3 / 5 +4 / [강화 120 G]" 를 그리고 강화 버튼이 눌리면 받은 할 일을 부른다.
     /// 계산하지 않는다 — 살 수 있는지조차 창이 받아서 넣어 준다.
     /// </summary>
     public class GrowthStatWidget : MonoBehaviour
@@ -16,8 +17,13 @@ namespace Sayne
         [SerializeField] private Button _upgradeBtn;
         [SerializeField] private TextMeshProUGUI _costText;
 
-        /// <summary>강화 버튼을 눌렀다. 살 수 있을 때만 눌린다.</summary>
-        public Observable<Unit> Clicked => _upgradeBtn.onClick.AsObservable();
+        /// <summary>강화 버튼을 누르면 onUpgrade 를 부른다. 살 수 있을 때만 눌린다.</summary>
+        public void Init(Action onUpgrade)
+        {
+            _upgradeBtn.onClick.AsObservable()
+                .Subscribe(onUpgrade, (_, action) => action())
+                .AddTo(this);
+        }
 
         public void SetLevel(string displayName, int level)
         {

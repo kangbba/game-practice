@@ -11,6 +11,9 @@ namespace Sayne
         public const string SkillCharge = "SkillCharge";
         public const string Portal = "Portal";
 
+        /// <summary>가젯(돌진)으로 달려가는 동안 몸에 붙는 꼬리. 파티클이 아니라 TrailRenderer 다.</summary>
+        public const string DashTrail = "DashTrail";
+
         public static class Hero
         {
             public const string AldricUltimate = "AldricUltimate";

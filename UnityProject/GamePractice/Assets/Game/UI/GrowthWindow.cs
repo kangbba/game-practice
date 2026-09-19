@@ -20,8 +20,6 @@ namespace Sayne
         [SerializeField] private GrowthStatWidget[] _statWidgets;
         [SerializeField] private RawImage _preview;
 
-        private readonly Subject<StatType> _upgradeRequested = new Subject<StatType>();
-
         private GrowthManager _growthManager;
         private CurrencyManager _currencyManager;
         private IAssets<Hero> _heroAssets;
@@ -35,27 +33,15 @@ namespace Sayne
             _closeBtn.onClick.AsObservable()
                 .Subscribe(this, (_, self) => self.Close())
                 .AddTo(this);
-
-            for (var i = 0; i < _statWidgets.Length && i < GrowthPlan.All.Length; i++)
-            {
-                var stat = GrowthPlan.All[i];
-
-                _statWidgets[i].Clicked
-                    .Subscribe((self: this, stat), (_, state) => state.self._upgradeRequested.OnNext(state.stat))
-                    .AddTo(this);
-            }
         }
 
-        protected override void OnDestroy()
+        public void Init(GameContext game, BattleContext battle)
         {
-            base.OnDestroy();
+            var growthManager = game.GrowthManager;
+            var currencyManager = game.CurrencyManager;
+            var heroManager = battle.HeroManager;
+            var heroAssets = game.Assets.Heroes;
 
-            _upgradeRequested.Dispose();
-        }
-
-        public void Init(GrowthManager growthManager, CurrencyManager currencyManager, HeroManager heroManager,
-            IAssets<Hero> heroAssets)
-        {
             _growthManager = growthManager;
             _currencyManager = currencyManager;
             _heroAssets = heroAssets;
@@ -68,9 +54,12 @@ namespace Sayne
                 .AddTo(this);
 
             // 살 수 있는지는 성장 매니저가 마지막으로 판단한다 — 여기는 눌렸다는 사실만 넘긴다.
-            _upgradeRequested
-                .Subscribe(growthManager, (stat, manager) => manager.TryUpgrade(stat))
-                .AddTo(this);
+            for (var i = 0; i < _statWidgets.Length && i < GrowthPlan.All.Length; i++)
+            {
+                var stat = GrowthPlan.All[i];
+
+                _statWidgets[i].Init(() => growthManager.TryUpgrade(stat));
+            }
 
             // 한 줄을 사면 골드가 줄어 다른 줄의 버튼도 같이 흔들린다 — 그래서 늘 창 전체를 다시 그린다.
             currencyManager.Gold
@@ -95,16 +84,18 @@ namespace Sayne
             // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 장착한 장비 세트가 그대로 장착된다.
             _previewStage.SetDoll(_heroAssets.Get(hero.ID));
 
+            // 구독은 창 수명에 건다. 창은 열린 동안만 살고 히어로는 그보다 오래 산다 — 히어로에 걸면 닫힌 창의 구독이 남는다.
+
             foreach (var slot in EquipmentSlots.All)
             {
                 hero.Equipment.Observe(slot)
                     .Subscribe((self: this, slot), (part, state) => state.self._previewStage.Wear(state.slot, part?.Visual))
-                    .AddTo(hero);
+                    .AddTo(this);
             }
 
             hero.CurrentStats
                 .Subscribe(this, (_, self) => self.Redraw())
-                .AddTo(hero);
+                .AddTo(this);
         }
 
         private void Redraw()

@@ -15,7 +15,6 @@ namespace Sayne
         /// <summary>설 자리까지 이 거리 안으로 들면 흩은 조준을 점점 거둔다. 코앞에서 흩으면 도로 몸에 파고든다.</summary>
         private const float ScatterFadeDistance = 6f;
 
-        private readonly PauseManager _pauseManager;
         private readonly HeroManager _heroManager;
         private readonly EnemyManager _enemyManager;
         private readonly UltimateDirector _ultimateDirector;
@@ -24,10 +23,9 @@ namespace Sayne
         /// <summary>설 자리에서 조준을 얼마나 흩을지. 생각할 때마다 새로 뽑는다 — 적들이 한 줄로 몰려오지 않게.</summary>
         private readonly Dictionary<Enemy, Vector3> _aimScatter = new Dictionary<Enemy, Vector3>();
 
-        public EnemyAIManager(PauseManager pauseManager, HeroManager heroManager, EnemyManager enemyManager,
+        public EnemyAIManager(HeroManager heroManager, EnemyManager enemyManager,
             UltimateDirector ultimateDirector)
         {
-            _pauseManager = pauseManager;
             _heroManager = heroManager;
             _enemyManager = enemyManager;
             _ultimateDirector = ultimateDirector;
@@ -50,7 +48,7 @@ namespace Sayne
 
             // 중단 중에도 Update 는 돈다 — 멈춘 게임에서 적이 판단을 내리면 안 된다.
             Observable.EveryUpdate(UnityFrameProvider.Update)
-                .Where(this, (_, self) => !self._pauseManager.IsPaused.CurrentValue
+                .Where(this, (_, self) => !Pause.IsPaused.CurrentValue
                     && !self._ultimateDirector.IsPlaying.CurrentValue)
                 .Subscribe(this, (_, self) => self.UpdateAI())
                 .RegisterTo(LifeToken);

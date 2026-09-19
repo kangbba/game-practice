@@ -87,7 +87,7 @@ MonoBehaviour:
   _sizeScale: 0.8
   _ultimateName: "\uD654\uC0B4\uBE44"
   _ultimatePowerMultiplier: 7
-  _ultimateCooldown: 30
+  _ultimateCooldown: 90
   _ultimateParticleID: 
   _projectile: {fileID: 7700000000000000004, guid: 9787db3211e4446d9c1d4d7b2126ca72, type: 3}
 --- !u!1 &8060998445367894512

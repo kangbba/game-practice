@@ -14,7 +14,8 @@ namespace Sayne
     /// </summary>
     public class TextPlayer : MonoBehaviour
     {
-        private const float CharsPerSecond = 40f;
+        /// <summary>한 글자씩 찍는 빠르기. 40 으로 두니 한 줄이 0.4초 만에 다 찍혀 한 번에 뜬 것처럼 보였다.</summary>
+        private const float CharsPerSecond = 16f;
         private const float PopInSeconds = 0.2f;
         private const float PopOutSeconds = 0.12f;
         private const float BackOvershoot = 1.70158f;
@@ -57,7 +58,8 @@ namespace Sayne
             _advanced.OnNext(Unit.Default);
         }
 
-        public async UniTask PlayAsync(string text, CancellationToken token)
+        /// <param name="showsNextMark">다 찍힌 뒤 넘김 표시를 띄울지. 누르지 않아도 밖에서 알아서 넘기는 대사면 끈다.</param>
+        public async UniTask PlayAsync(string text, CancellationToken token, bool showsNextMark = true)
         {
             _text.text = text;
             _text.maxVisibleCharacters = 0;
@@ -74,7 +76,7 @@ namespace Sayne
             await TypeAsync(total, token);
 
             _state.Value = TextPlayState.Waiting;
-            await WaitAdvanceAsync(token);
+            await WaitAdvanceAsync(showsNextMark, token);
 
             _state.Value = TextPlayState.Closing;
             await UnscaledTween.RunAsync(PopOutSeconds, t => _body.localScale = Vector3.one * (1f - t * t), token);
@@ -99,10 +101,10 @@ namespace Sayne
             _text.maxVisibleCharacters = total;
         }
 
-        /// <summary>넘김 표시를 위아래로 흔들며 신호를 기다린다.</summary>
-        private async UniTask WaitAdvanceAsync(CancellationToken token)
+        /// <summary>넘김 표시를 위아래로 흔들며 신호를 기다린다. 표시를 끄면 조용히 기다리기만 한다.</summary>
+        private async UniTask WaitAdvanceAsync(bool showsNextMark, CancellationToken token)
         {
-            _nextMark.gameObject.SetActive(true);
+            _nextMark.gameObject.SetActive(showsNextMark);
 
             var rest = _nextMark.anchoredPosition;
             var isAdvanced = false;

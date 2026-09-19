@@ -8,7 +8,7 @@ namespace Sayne
 {
     /// <summary>
     /// 좌상단 퀘스트 박스: 몇 번째 퀘스트인지, 할 일, 보상, 진행도.
-    /// 다 채우면 박스가 금빛으로 달아오르고 진행바 자리에 받기 버튼이 뜬다. 누르면 받아 간다 — 받는 판단은 퀘스트 매니저가 한다.
+    /// 다 채우면 박스가 금빛으로 달아오르고 진행바 자리에 받기 버튼이 뜬다. 누르면 onClaim 을 부른다 — 받는 판단은 부르는 쪽 몫이다.
     /// 연출은 unscaled 시간으로 돈다.
     /// </summary>
     public class QuestWidget : MonoBehaviour
@@ -42,24 +42,24 @@ namespace Sayne
         private Sequence _claimableLoop;
         private Sequence _claimSequence;
 
-        public void Init(QuestManager questManager)
+        public void Init(Observable<QuestPlan> quest, Observable<int> index, Observable<int> progress,
+            Observable<bool> isClaimable, Observable<QuestPlan> claimed, System.Action onClaim)
         {
-            questManager.CurrentQuest
-                .CombineLatest(questManager.CurrentIndex, (quest, index) => (quest, index))
-                .CombineLatest(questManager.Progress, (pair, progress) => (pair.quest, pair.index, progress))
-                .Subscribe(this, (state, self) => self.Draw(state.quest, state.index, state.progress))
+            quest
+                .CombineLatest(index, progress, (current, number, count) => (current, number, count))
+                .Subscribe(this, (state, self) => self.Draw(state.current, state.number, state.count))
                 .AddTo(this);
 
-            questManager.IsClaimable
-                .Subscribe(this, (isClaimable, self) => self.SetClaimable(isClaimable))
+            isClaimable
+                .Subscribe(this, (value, self) => self.SetClaimable(value))
                 .AddTo(this);
 
-            questManager.Claimed
-                .Subscribe(this, (quest, self) => self.PlayClaim(quest))
+            claimed
+                .Subscribe(this, (current, self) => self.PlayClaim(current))
                 .AddTo(this);
 
             _claimBtn.onClick.AsObservable()
-                .Subscribe(questManager, (_, manager) => manager.Claim())
+                .Subscribe(onClaim, (_, action) => action())
                 .AddTo(this);
         }
 

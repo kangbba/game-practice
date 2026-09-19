@@ -9,7 +9,8 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
-    /// 로딩 화면의 주인. 다른 에셋보다 먼저, 혼자 자기 프리팹만 불러 띄운다 — 나머지 로드가 도는 동안 보여야 하기 때문이다.
+    /// 메인 로딩 화면의 주인. 게임을 켤 때 한 번 뜬다 — 공용 에셋 게이지를 채우고, 탭을 받고, 걷힌다.
+    /// 다른 에셋보다 먼저, 혼자 자기 프리팹만 불러 띄운다 — 나머지 로드가 도는 동안 보여야 하기 때문이다.
     /// 그래서 에셋 창고(UIAssetManager)를 거치지 않고 제 손으로 불러 제 손으로 놓는다.
     /// </summary>
     public class LoadingScreenManager : ManagerBase
@@ -56,7 +57,7 @@ namespace Sayne
             _panel = Object.Instantiate(prefab, _canvas.transform, false).GetComponent<LoadingPanel>();
         }
 
-        /// <summary>로드가 얼마나 끝났는지. 0~1.</summary>
+        /// <summary>메인 로딩(게임 공용 에셋)이 얼마나 끝났는지. 0~1. 다 차면 시작 안내가 뜬다.</summary>
         public void SetProgress(float ratio)
         {
             _panel.SetProgress(ratio);

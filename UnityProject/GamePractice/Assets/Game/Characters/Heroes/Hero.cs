@@ -18,7 +18,7 @@ namespace Sayne
         public void Init(HeroData data, EquipmentSet equipment)
         {
             Data = data;
-            base.Init(data.BaseStats, data.Skill, equipment);
+            base.Init(data.BaseStats, data.Skill, data.Gadget.ToGadget(), equipment);
         }
     }
 }

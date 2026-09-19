@@ -8,6 +8,7 @@ namespace Sayne
     /// 히어로 반자동 컨트롤러. 입력원이 활성이면 수동 이동, 아니면 자동사냥 이동.
     /// 평타는 항상 사거리 내 자동 4콤보. 순수 자동 = 입력원이 조용한 상태일 뿐이라 모드 전환 개념이 없다.
     /// 자동일 때 스킬·궁극기는 쿨이 돌아오면 그 자리에서 나간다 — 평타 콤보 도중이어도 끊고 즉발. 버튼을 누른 것과 같다.
+    /// 가젯(돌진)은 수동 이동을 놓는 순간 나간다 — 입력원이 켜져 있다가 꺼진 걸 여기서 알아챈다. 입력원은 가젯을 모른다.
     /// </summary>
     public class HeroController
     {
@@ -38,6 +39,9 @@ namespace Sayne
         private readonly EnemyManager _enemyManager;
         private readonly UltimateDirector _ultimateDirector;
         private readonly IMoveInputSource _moveSource;
+
+        /// <summary>지난 프레임에 수동 이동 중이었나. 켜져 있다가 꺼진 프레임이 곧 "놓은 순간"이다.</summary>
+        private bool _wasMovingManually;
 
         public Hero Hero { get; }
 
@@ -175,10 +179,18 @@ namespace Sayne
             // 손을 떼면 타겟 찾기부터 다시 시작한다.
             if (_moveSource.IsActive)
             {
+                _wasMovingManually = true;
+
                 Hero.Combat.CancelCast();
                 Hero.SetTarget(null);
                 Hero.Move(_moveSource.Direction);
                 return;
+            }
+
+            if (_wasMovingManually)
+            {
+                _wasMovingManually = false;
+                UseGadget();
             }
 
             // 스킬 모션이 도는 동안 자동 전투는 끼어들지 않는다 — 타겟 변경·자동 이동·평타 전부 모션이 끝난 뒤다.
@@ -263,6 +275,28 @@ namespace Sayne
             }
 
             _ultimateDirector.PlayUltimateSequenceAsync(Hero).Forget();
+        }
+
+        /// <summary>
+        /// 가젯 버튼과, 수동 이동을 놓은 순간이 부르는 곳. 찾는 거리 안의 가장 가까운 적에게 달려가 칠 수 있는 자리에 선다.
+        /// 이미 칠 수 있는 거리면 쓰지 않는다 — 쿨만 날리는 헛돌진이 된다. 찾는 거리 안에 적이 없어도 쓰지 않는다.
+        /// 수동 이동 중에는 쓰지 않는다 — 사용자가 몸을 몰고 있는 동안 멋대로 달려가면 안 된다. 놓는 순간은 이미 이동이 끝난 뒤다.
+        /// </summary>
+        public void UseGadget()
+        {
+            if (Hero == null || _moveSource.IsActive || !Hero.Combat.CanUseGadget)
+            {
+                return;
+            }
+
+            var target = _enemyManager.FindNearestAliveEnemyInRadius(Hero.transform.position, Hero.Combat.Gadget.Reach);
+            if (target == null || Hero.Combat.IsInRange(ToTarget(target)))
+            {
+                return;
+            }
+
+            Hero.SetTarget(target);
+            Hero.Combat.UseGadget(Hero.Combat.EngagePoint(Hero.transform.position, target.transform.position));
         }
 
         /// <summary>자동전투의 스킬·궁극기. 사거리에 타겟이 있고 쿨이 돌아왔으면 그 자리에서 쓴다. 궁극기가 먼저다.</summary>

@@ -215,6 +215,11 @@ MonoBehaviour:
     m_SerializedLabels:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 629495d0b9434264a7cf5c4caf7a89c5
+    m_Address: BossOverlayHPBar
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6aa254ca57124c9aa26f7001f5d7283e
     m_Address: DeathSmoke
     m_ReadOnly: 0
@@ -274,7 +279,7 @@ MonoBehaviour:
     - Equipment
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 80617ebc7ab941928d9c54a78e6b6966
-    m_Address: OverlayHPBar
+    m_Address: HeroOverlayHPBar
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -335,9 +340,15 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a61a3c8dd9824c1399d9eaf4ac8788af
-    m_Address: WorldHPBar
+    m_Address: EnemyWorldHPBar
     m_ReadOnly: 0
     m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a66d9a7898d6448df8a4f292fb4e45c5
+    m_Address: DashTrail
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Particles
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a6ceef4b40764f6eab47fd45a8cf61df
     m_Address: Heal
@@ -467,6 +478,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels:
     - Particles
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f39e5f37a83f44e196b715a7c60f12d3
+    m_Address: HealIcon
+    m_ReadOnly: 0
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f643e86e7c9ce47efb70703f7c11f3b8
     m_Address: NyxBoots

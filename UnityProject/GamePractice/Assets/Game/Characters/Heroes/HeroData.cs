@@ -21,6 +21,9 @@ namespace Sayne
         [Header("스킬")]
         [SerializeField] private SkillData _skill = new SkillData();
 
+        [Header("가젯")]
+        [SerializeField] private GadgetData _gadget = new GadgetData();
+
         /// <summary>이 설계값의 주인.</summary>
         public string HeroID => _heroID;
 
@@ -30,5 +33,8 @@ namespace Sayne
 
         /// <summary>쿨타임 스킬. 히어로는 전부 가진다. 모션은 든 무기 계열이 정한다. 평타·궁극기는 든 무기가 가진다.</summary>
         public SkillData Skill => _skill;
+
+        /// <summary>쿨타임 잡기술(돌진). 히어로는 전부 가진다. 적에게는 없다.</summary>
+        public GadgetData Gadget => _gadget;
     }
 }

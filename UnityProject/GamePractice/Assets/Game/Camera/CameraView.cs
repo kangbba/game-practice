@@ -4,7 +4,7 @@ namespace Sayne
 {
     /// <summary>
     /// 카메라가 따라가는 대상을 어디서 어떤 각도로 보나. 대상에서 떨어진 거리, 내려다보는 각(x 회전), 시야각(투시)이다.
-    /// 보는 방식은 여기 적힌 것뿐이고, 상황에 맞춰 CameraManager.SetView 로 갈아 끼운다.
+    /// 보는 방식은 여기 적힌 것뿐이고, 상황에 맞춰 GameCamera.SetView 로 갈아 끼운다.
     /// </summary>
     public readonly struct CameraView
     {

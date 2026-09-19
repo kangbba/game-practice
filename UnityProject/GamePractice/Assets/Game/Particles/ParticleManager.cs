@@ -1,5 +1,7 @@
+using System;
 using R3;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Sayne
 {
@@ -95,6 +97,38 @@ namespace Sayne
                     state.self.Play(ParticleID.DeathSmoke, died.transform.position, DeathEffectScale,
                         state.graphic.IsFacingRight, died.IsOnUltimateStage.CurrentValue))
                 .RegisterTo(LifeToken);
+
+            // 돌진하는 동안만 꼬리를 단다. 돌진이 끝나면(또는 끊기면) 떼어 두고, 남은 꼬리가 다 사라진 뒤 치운다.
+            var dashTrail = new SerialDisposable();
+            dashTrail.RegisterTo(character.destroyCancellationToken);
+
+            character.IsDashing
+                .Subscribe((self: this, character, dashTrail), (dashing, state) =>
+                    state.dashTrail.Disposable = dashing ? state.self.AttachDashTrail(state.character) : null)
+                .RegisterTo(LifeToken);
+        }
+
+        /// <summary>몸 가슴께에 꼬리를 붙인다. 돌려준 걸 치우면 꼬리를 떼어 제자리에 두고, 남은 꼬리가 사라질 만큼 기다렸다 치운다.</summary>
+        private IDisposable AttachDashTrail(Character character)
+        {
+            var trail = Object.Instantiate(_particleAssets.Get(ParticleID.DashTrail), character.transform)
+                .GetComponent<TrailRenderer>();
+            trail.transform.localPosition = new Vector3(0f, ChestHeight, 0f);
+
+            return Disposable.Create(trail, DetachDashTrail);
+        }
+
+        private static void DetachDashTrail(TrailRenderer trail)
+        {
+            // 몸이 먼저 치워졌으면 자식인 꼬리도 이미 없다.
+            if (trail == null)
+            {
+                return;
+            }
+
+            trail.emitting = false;
+            trail.transform.SetParent(null, true);
+            Object.Destroy(trail.gameObject, trail.time);
         }
 
         /// <summary>휘두르기 연출은 무기 트레일이 맡는다. 여기선 전용 연출이 있는 궁극기만 튼다.</summary>

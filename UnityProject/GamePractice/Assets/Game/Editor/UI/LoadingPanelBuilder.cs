@@ -36,6 +36,7 @@ namespace Sayne.Editor
 
         private static readonly Color Ivory = new Color(0.97f, 0.91f, 0.84f);
         private static readonly Color Rose = new Color(0.93f, 0.62f, 0.56f);
+        private static readonly Color Blush = new Color(0.96f, 0.80f, 0.78f);
         private static readonly Color Ember = new Color(1f, 0.52f, 0.26f);
         private static readonly Color Hairline = new Color(1f, 0.62f, 0.48f, 0.55f);
         private static readonly Color GaugeBack = new Color(1f, 1f, 1f, 0.12f);
@@ -130,9 +131,9 @@ namespace Sayne.Editor
             var divider = Rect(title, "Divider", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(6f, -38f), new Vector2(420f, 1.5f));
             Img(divider, Hairline, null);
 
-            var subTitle = Text(Rect(title, "SubTitle", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(6f, -72f), new Vector2(900f, 36f)),
-                "THE HUNT BEGINS AT NIGHTFALL", 22f, Rose, _display, HorizontalAlignmentOptions.Left);
-            subTitle.characterSpacing = 36f;
+            var subTitle = Text(Rect(title, "SubTitle", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(6f, -78f), new Vector2(900f, 48f)),
+                "붉은 달이 뜨면 사냥이 시작된다", 34f, Blush, _body, HorizontalAlignmentOptions.Left);
+            subTitle.characterSpacing = 2f;
 
             // ---- 게이지 ----
             // 머리카락처럼 가는 줄 하나. 위에 "~하는 중..." 과 퍼센트만 둔다.

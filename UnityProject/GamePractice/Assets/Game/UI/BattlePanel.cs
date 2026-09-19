@@ -18,6 +18,7 @@ namespace Sayne
         [SerializeField] private CurrencyWidget _gemWidget;
         [SerializeField] private StageWidget _stageWidget;
         [SerializeField] private QuestWidget _questWidget;
+        [SerializeField] private SkillButtonWidget _gadgetButton;
         [SerializeField] private SkillButtonWidget _skillButton;
         [SerializeField] private SkillButtonWidget _ultimateButton;
         [SerializeField] private Button _equipMenuButton;
@@ -25,22 +26,42 @@ namespace Sayne
         [SerializeField] private Button _formationMenuButton;
 
         public FloatingJoystick Joystick => _joystick;
+        public Observable<Unit> GadgetClicked => _gadgetButton.Clicked;
         public Observable<Unit> SkillClicked => _skillButton.Clicked;
         public Observable<Unit> UltimateClicked => _ultimateButton.Clicked;
 
-        public void Init(HeroManager heroManager, StageManager stageManager, QuestManager questManager,
-            CurrencyManager currencyManager, GrowthManager growthManager,
-            IAssets<CharacterProfile> profiles, PopupManager popupManager, UltimateDirector ultimateDirector)
+        /// <summary>HUD 는 게임·전투 양쪽을 두루 보여 준다. 컨텍스트를 받아 위젯마다 필요한 것만 골라 넘긴다.</summary>
+        public void Init(GameContext game, BattleContext battle)
         {
-            _heroProfile.Init(heroManager, growthManager, profiles);
-            _stageWidget.Init(stageManager);
-            _questWidget.Init(questManager);
+            var heroManager = battle.HeroManager;
+            var stageManager = battle.StageManager;
+            var ultimateDirector = battle.UltimateDirector;
+            var questManager = game.QuestManager;
+            var currencyManager = game.CurrencyManager;
+            var growthManager = game.GrowthManager;
+            var profiles = game.Assets.Profiles;
+            var popupManager = game.PopupManager;
+
+            _heroProfile.Init(heroManager.CurrentHero, growthManager.Level, growthManager.ExpRatio, profiles);
+
+            // 번호는 구독거리가 아니라 웨이브가 시작될 때 표기와 목표 수를 뽑는다. 첫 웨이브 전에도 지금 번호로 한 번 그린다.
+            var wave = stageManager.WaveStarted
+                .Select(stageManager, (number, manager) => (manager.GetLabel(number.stage, number.wave), manager.WaveGoal))
+                .Prepend((stageManager.Label, stageManager.WaveGoal));
+
+            _stageWidget.Init(wave, stageManager.WaveKills);
+
+            _questWidget.Init(questManager.CurrentQuest, questManager.CurrentIndex, questManager.Progress,
+                questManager.IsClaimable, questManager.Claimed, questManager.Claim);
 
             _goldWidget.Init(currencyManager.Gold);
             _gemWidget.Init(currencyManager.Gem);
 
-            _skillButton.Init(heroManager, SkillSlotType.Skill, hero => hero.Combat.CanUseSkill);
-            _ultimateButton.Init(heroManager, SkillSlotType.Ultimate, ultimateDirector.CanPlay);
+            // 조이스틱을 잡고 있는 동안은 사용자가 몸을 모는 중이라 돌진이 안 나간다 — 버튼도 꺼 둔다.
+            _gadgetButton.Init(heroManager.CurrentHero, SkillSlotType.Gadget,
+                hero => hero.Combat.CanUseGadget && !_joystick.IsActive);
+            _skillButton.Init(heroManager.CurrentHero, SkillSlotType.Skill, hero => hero.Combat.CanUseSkill);
+            _ultimateButton.Init(heroManager.CurrentHero, SkillSlotType.Ultimate, ultimateDirector.CanPlay);
 
             BindRevive(heroManager);
             BindMenuButtons(popupManager);

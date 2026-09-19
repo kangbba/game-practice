@@ -7,7 +7,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace Sayne
 {
-    /// <summary>로드가 필요한 매니저. GameManager 가 모아서 한꺼번에 LoadAsync 를 돌린다.</summary>
+    /// <summary>로드가 필요한 매니저. AssetGroup 이 수명이 같은 것끼리 모아 한꺼번에 LoadAsync 를 돌린다.</summary>
     public interface ILoadable
     {
         UniTask LoadAsync();

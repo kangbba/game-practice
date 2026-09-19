@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using R3;
 using UnityEngine;
@@ -6,10 +8,19 @@ using UnityEngine.UI;
 
 namespace Sayne
 {
+    /// <summary>튜토리얼 매니저가 찍어내는 말풍선 프리팹. 화면 아래 위젯과 머리 위 말풍선.</summary>
+    public interface ITutorialAssets
+    {
+        SpeechBubbleWidget SpeechBubbleWidgetPrefab { get; }
+        OverlaySpeechBubble OverlaySpeechBubblePrefab { get; }
+    }
+
     /// <summary>
-    /// 안내 대사를 트는 창구. 화면 아래 초상화 대사와 캐릭터 머리 위 말풍선 두 가지를 틀 수 있다.
-    /// 무엇을 언제 말할지는 부르는 쪽이 정한다 — 여기는 틀고, 트는 동안 게임을 멈출 뿐이다.
-    /// 한 번에 하나만 튼다. 이어서 틀려면 앞의 것을 await 한 뒤에 부른다.
+    /// 안내 대사를 트는 창구. 게임을 멈추고 읽히는 대사 두 가지(화면 아래 초상화 대사, 머리 위 말풍선)와
+    /// 게임을 멈추지 않는 머리 위 혼잣말을 틀 수 있다. 머리 위 말풍선은 둘 다 같은 프리팹(OverlaySpeechBubble)이다.
+    /// 머리 위 말풍선은 HP 바와 같은 자리(HeadAnchor)에 뜬다 — 떠 있는 동안 그 캐릭터가 말하는 중(IsSpeaking)이라고 알리고, HP 바가 이걸 보고 비켜 준다.
+    /// 무엇을 언제 말할지는 부르는 쪽이 정한다 — 여기는 틀고, 멈추는 대사를 트는 동안 게임을 멈출 뿐이다.
+    /// 멈추는 대사는 한 번에 하나만 튼다. 이어서 틀려면 앞의 것을 await 한 뒤에 부른다.
     /// </summary>
     public class TutorialManager : ManagerBase
     {
@@ -20,32 +31,40 @@ namespace Sayne
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-        /// <summary>머리 꼭대기에서 말풍선 꼬리 끝까지의 월드 간격. 머리 위 HP 바와 같은 원리로 잰다 — 키는 캐릭터마다 다르다.</summary>
-        private const float BubbleHeadGap = 0.25f;
-
-        /// <summary>머리 위 HP 바(화면상 22 위)를 가리지 않도록 그보다 더 띄우는 값. 기준 해상도 단위.</summary>
-        private static readonly Vector2 BubbleScreenOffset = new Vector2(0f, 64f);
-
-        private readonly PauseManager _pauseManager;
-        private readonly CameraManager _cameraManager;
-        private readonly SpeechBubbleWidget _widgetPrefab;
-        private readonly OverlaySpeechBubble _overlayBubblePrefab;
+        private readonly ITutorialAssets _assets;
 
         private readonly ReactiveProperty<bool> _isPlaying = new ReactiveProperty<bool>(false);
 
         private Canvas _canvas;
         private SpeechBubbleWidget _widget;
-        private OverlaySpeechBubble _overlayBubble;
+
+        /// <summary>지금 말하고 있는 혼잣말. 한 캐릭터가 새로 말하면 앞의 풍선은 끊고 치운다.</summary>
+        private readonly Dictionary<Character, CancellationTokenSource> _speaking = new Dictionary<Character, CancellationTokenSource>();
+
+        /// <summary>캐릭터 머리 위에 떠 있는 말풍선 수. 0 이 되면 빠진다 — 멈추는 대사와 혼잣말이 한 몸 위에 겹칠 수 있어서 센다.</summary>
+        private readonly Dictionary<Character, int> _bubbleCounts = new Dictionary<Character, int>();
+
+        /// <summary>어느 캐릭터의 말풍선이 뜨거나 졌다.</summary>
+        private readonly Subject<Character> _bubbleChanged = new Subject<Character>();
 
         public ReadOnlyReactiveProperty<bool> IsPlaying => _isPlaying;
 
-        public TutorialManager(PauseManager pauseManager, CameraManager cameraManager,
-            SpeechBubbleWidget widgetPrefab, OverlaySpeechBubble overlayBubblePrefab)
+        /// <summary>
+        /// 이 캐릭터 머리 위에 말풍선이 떠 있는가. 구독하는 순간 지금 상태부터 흘린다.
+        /// 머리 위 HP 바가 이걸 보고 말풍선이 떠 있는 동안 비켜 준다 — 둘은 같은 자리(HeadAnchor)를 쓴다.
+        /// </summary>
+        public Observable<bool> IsSpeaking(Character speaker)
         {
-            _pauseManager = pauseManager;
-            _cameraManager = cameraManager;
-            _widgetPrefab = widgetPrefab;
-            _overlayBubblePrefab = overlayBubblePrefab;
+            return _bubbleChanged
+                .Where(speaker, (changed, target) => changed == target)
+                .Prepend(speaker)
+                .Select(this, (target, self) => self._bubbleCounts.ContainsKey(target))
+                .DistinctUntilChanged();
+        }
+
+        public TutorialManager(ITutorialAssets assets)
+        {
+            _assets = assets;
         }
 
         protected override void OnInit()
@@ -60,10 +79,9 @@ namespace Sayne
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = ReferenceResolution;
 
-            _overlayBubble = UnityEngine.Object.Instantiate(_overlayBubblePrefab, _canvas.transform);
-            _widget = UnityEngine.Object.Instantiate(_widgetPrefab, _canvas.transform);
+            _widget = UnityEngine.Object.Instantiate(_assets.SpeechBubbleWidgetPrefab, _canvas.transform);
 
-            _pauseManager.PauseWhile(_isPlaying);
+            Pause.While(_isPlaying).RegisterTo(LifeToken);
         }
 
         protected override void OnRelease()
@@ -72,8 +90,8 @@ namespace Sayne
 
             _canvas = null;
             _widget = null;
-            _overlayBubble = null;
             _isPlaying.Dispose();
+            _bubbleChanged.Dispose();
         }
 
         /// <summary>화면 아래에 초상화와 함께 대사를 튼다. 플레이어가 넘기면 끝난다.</summary>
@@ -86,16 +104,91 @@ namespace Sayne
 
         /// <summary>
         /// 말하는 이의 머리 위에 초상화 붙은 말풍선을 튼다. 플레이어가 넘기면 끝난다.
-        /// 붙는 자리는 머리 위 HP 바와 같은 원리다 — 키에 카메라 위쪽 방향을 곱한 월드 지점을 화면으로 옮기고, 픽셀만큼 더 띄운다.
+        /// 붙는 자리는 머리 위 HP 바와 같다(HeadAnchor). 떠 있는 동안 HP 바는 비켜 준다.
         /// </summary>
         public async UniTask PlayAsync(Character speaker, Sprite portrait, string text)
         {
             Begin();
-            var camera = _cameraManager.Camera;
-            var headOffset = camera.transform.up * (speaker.GetHeight() + BubbleHeadGap);
-            _overlayBubble.Attach(camera, speaker.transform, headOffset, BubbleScreenOffset);
-            await _overlayBubble.PlayAsync(portrait, text, LifeToken);
+            var bubble = SpawnBubble(speaker, portrait);
+
+            using (MarkSpeaking(speaker))
+            {
+                await bubble.PlayAsync(text, LifeToken);
+            }
+
+            UnityEngine.Object.Destroy(bubble.gameObject);
             _isPlaying.Value = false;
+        }
+
+        /// <summary>
+        /// 말하는 이의 머리 위에 혼잣말을 띄운다. 게임을 멈추지 않고, 누르지 않아도 알아서 사라진다.
+        /// 풍선은 말할 때 만들어 끝나면 치운다. 도중에 말하는 이가 죽거나 치워지면 그 자리에서 같이 치운다.
+        /// </summary>
+        public async UniTask SayAsync(Character speaker, Sprite portrait, string text)
+        {
+            if (_speaking.Remove(speaker, out var previous))
+            {
+                previous.Cancel();
+            }
+
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(LifeToken, speaker.destroyCancellationToken);
+            _speaking.Add(speaker, cts);
+            using var died = speaker.Died.Subscribe(cts, (_, source) => source.Cancel());
+
+            var bubble = SpawnBubble(speaker, portrait);
+            using var speaking = MarkSpeaking(speaker);
+
+            try
+            {
+                await bubble.SayAsync(text, cts.Token);
+            }
+            finally
+            {
+                if (_speaking.TryGetValue(speaker, out var current) && current == cts)
+                {
+                    _speaking.Remove(speaker);
+                }
+
+                // 매니저가 내려가며 캔버스째 부서졌으면 풍선은 이미 없다.
+                if (bubble != null)
+                {
+                    UnityEngine.Object.Destroy(bubble.gameObject);
+                }
+            }
+        }
+
+        /// <summary>머리 위 말풍선을 HP 바와 같은 자리(HeadAnchor)에 세운다.</summary>
+        private OverlaySpeechBubble SpawnBubble(Character speaker, Sprite portrait)
+        {
+            var camera = GameCamera.Camera;
+            var bubble = UnityEngine.Object.Instantiate(_assets.OverlaySpeechBubblePrefab, _canvas.transform);
+            bubble.Init(camera, speaker.transform, HeadAnchor.WorldOffset(camera, speaker.GetHeight()),
+                HeadAnchor.ScreenOffset, portrait);
+            return bubble;
+        }
+
+        /// <summary>이 캐릭터 머리 위에 말풍선이 떴다고 알린다. 돌려받은 걸 치우면 졌다고 알린다.</summary>
+        private IDisposable MarkSpeaking(Character speaker)
+        {
+            _bubbleCounts[speaker] = _bubbleCounts.GetValueOrDefault(speaker) + 1;
+            _bubbleChanged.OnNext(speaker);
+
+            return Disposable.Create((self: this, speaker), state => state.self.UnmarkSpeaking(state.speaker));
+        }
+
+        private void UnmarkSpeaking(Character speaker)
+        {
+            var left = _bubbleCounts[speaker] - 1;
+            if (left > 0)
+            {
+                _bubbleCounts[speaker] = left;
+            }
+            else
+            {
+                _bubbleCounts.Remove(speaker);
+            }
+
+            _bubbleChanged.OnNext(speaker);
         }
 
         private void Begin()

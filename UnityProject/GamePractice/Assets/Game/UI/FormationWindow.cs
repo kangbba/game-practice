@@ -8,7 +8,8 @@ namespace Sayne
     /// <summary>
     /// 편성 모달. 위에는 파티 칸 넷, 아래에는 영웅 명단과 적용 버튼.
     /// 파티 칸은 첫 칸만 진짜다 — 지금 싸우는 영웅을 입은 그대로 비춘다. 나머지 셋은 잠긴 장식이다(나중의 파티 사냥 자리).
-    /// 명단에서 영웅을 고르고 적용을 누르면 히어로 매니저가 첫 칸의 영웅을 바꾼다. 창은 지금 영웅(CurrentHero)을 구독해 따라 그릴 뿐이다.
+    /// 명단에서 영웅을 고르고 적용을 누르면 파티의 리더가 바뀌고, 히어로 매니저가 그걸 보고 첫 칸의 영웅을 갈아 세운다.
+    /// 창은 지금 영웅(CurrentHero)을 구독해 따라 그릴 뿐이다.
     /// 쓰러져 부활을 기다리는 동안은 적용이 막힌다.
     /// </summary>
     public class FormationWindow : PopupWindow
@@ -23,7 +24,7 @@ namespace Sayne
         /// <summary>명단에서 고른 영웅. 적용 전까지는 고르기만 한 것이다.</summary>
         private readonly ReactiveProperty<string> _selected = new ReactiveProperty<string>(string.Empty);
 
-        private HeroManager _heroManager;
+        private PartyManager _partyManager;
         private IAssets<Hero> _heroAssets;
         private IAssets<CharacterProfile> _profiles;
         private CharacterPreviewStage _previewStage;
@@ -42,9 +43,14 @@ namespace Sayne
             _selected.Dispose();
         }
 
-        public void Init(HeroManager heroManager, IAssets<Hero> heroAssets, IAssets<CharacterProfile> profiles)
+        public void Init(GameContext game, BattleContext battle)
         {
-            _heroManager = heroManager;
+            var partyManager = game.PartyManager;
+            var heroManager = battle.HeroManager;
+            var heroAssets = game.Assets.Heroes;
+            var profiles = game.Assets.Profiles;
+
+            _partyManager = partyManager;
             _heroAssets = heroAssets;
             _profiles = profiles;
 
@@ -57,9 +63,7 @@ namespace Sayne
 
             foreach (var widget in _heroWidgets)
             {
-                widget.Clicked
-                    .Subscribe(this, (heroID, self) => self._selected.Value = heroID)
-                    .AddTo(this);
+                widget.Init(heroID => _selected.Value = heroID);
 
                 _selected
                     .Subscribe(widget, (heroID, card) => card.SetSelected(card.HeroID == heroID))
@@ -67,7 +71,7 @@ namespace Sayne
             }
 
             _applyBtn.onClick.AsObservable()
-                .Subscribe(this, (_, self) => self._heroManager.ChangeLeader(self._selected.Value))
+                .Subscribe(this, (_, self) => self._partyManager.SetLeader(self._selected.Value))
                 .AddTo(this);
 
             // 부활까지 남은 시간이 있으면 쓰러져 있는 것이다. 그동안은 바꿀 영웅이 서 있지 않다.
@@ -92,12 +96,6 @@ namespace Sayne
                 .AddTo(this);
         }
 
-        /// <summary>열 때마다 고름을 지금 출전 중인 영웅으로 되돌린다.</summary>
-        protected override void OnShow()
-        {
-            _selected.Value = _heroManager.CurrentHero.CurrentValue.ID;
-        }
-
         private void SetHero(Hero hero)
         {
             _leaderName.text = _profiles.Get(hero.ID).DisplayName;
@@ -111,11 +109,13 @@ namespace Sayne
             // 인형은 같은 프리팹의 빈 몸이다. 아래 구독이 즉시 한 번 돌면서 지금 장착한 장비 세트가 그대로 장착된다.
             _previewStage.SetDoll(_heroAssets.Get(hero.ID));
 
+            // 구독은 창 수명에 건다. 창은 열린 동안만 살고 히어로는 그보다 오래 산다 — 히어로에 걸면 닫힌 창의 구독이 남는다.
+
             foreach (var slot in EquipmentSlots.All)
             {
                 hero.Equipment.Observe(slot)
                     .Subscribe((self: this, slot), (part, state) => state.self._previewStage.Wear(state.slot, part?.Visual))
-                    .AddTo(hero);
+                    .AddTo(this);
             }
         }
     }

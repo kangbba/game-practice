@@ -13,17 +13,17 @@ namespace Sayne
         private readonly EnemyManager _enemyManager;
         private readonly DropManager _dropManager;
         private readonly CurrencyManager _currencyManager;
-        private readonly HeroManager _heroManager;
+        private readonly PartyManager _partyManager;
         private readonly EquipmentManager _equipmentManager;
-        private readonly ItemAssetManager _itemAssets;
+        private readonly IDropAssets _itemAssets;
 
         public DropDirector(EnemyManager enemyManager, DropManager dropManager, CurrencyManager currencyManager,
-            HeroManager heroManager, EquipmentManager equipmentManager, ItemAssetManager itemAssets)
+            PartyManager partyManager, EquipmentManager equipmentManager, IDropAssets itemAssets)
         {
             _enemyManager = enemyManager;
             _dropManager = dropManager;
             _currencyManager = currencyManager;
-            _heroManager = heroManager;
+            _partyManager = partyManager;
             _equipmentManager = equipmentManager;
             _itemAssets = itemAssets;
         }
@@ -74,7 +74,7 @@ namespace Sayne
         private void DropEquipment(string equipmentID, Vector3 position)
         {
             _dropManager.Spawn(position, _equipmentManager.GetIcon(equipmentID), equipmentID,
-                _ => _heroManager.Inventory.Add(equipmentID));
+                _ => _partyManager.Inventory.Add(equipmentID));
         }
     }
 }

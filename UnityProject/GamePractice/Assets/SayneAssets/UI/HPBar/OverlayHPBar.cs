@@ -1,6 +1,7 @@
 using R3;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Sayne
 {
@@ -16,6 +17,12 @@ namespace Sayne
 
         /// <summary>"현재/최대" 절대수치 라벨. 안 꽂으면 바만 그린다.</summary>
         [SerializeField] private TMP_Text _label;
+
+        /// <summary>초상화 칸. 초상화 없는 프리팹이면 비워 둔다 — 같은 스크립트를 두 모양이 같이 쓴다.</summary>
+        [SerializeField] private Image _portrait;
+
+        /// <summary>그림이 없을 때 통째로 끌 초상화 묶음(얼굴과 테두리 등). 초상화 칸이 있는 프리팹만 꽂는다.</summary>
+        [SerializeField] private GameObject _portraitRoot;
 
         /// <summary>카메라 뒤로 넘어간 동안 꺼둘 그림 루트. 본체를 끄면 따라다니기가 멈춰 다시 켤 수 없다.</summary>
         [SerializeField] private GameObject _graphic;
@@ -45,9 +52,12 @@ namespace Sayne
 
         private Vector3 Destination => _target.position + _worldOffset;
 
-        public void Attach(Camera camera, Transform target, Vector3 worldOffset, Vector2 screenOffset,
-            ReadOnlyReactiveProperty<float> currentHP, ReadOnlyReactiveProperty<float> maxHP)
+        /// <param name="portrait">초상화 칸에 넣을 얼굴. null 이면 칸을 끈다. 칸 없는 프리팹이면 쓰지 않는다.</param>
+        public void Init(Camera camera, Transform target, Vector3 worldOffset, Vector2 screenOffset,
+            Sprite portrait, ReadOnlyReactiveProperty<float> currentHP, ReadOnlyReactiveProperty<float> maxHP)
         {
+            ShowPortrait(portrait);
+
             _camera = camera;
             _target = target;
             _worldOffset = worldOffset;
@@ -91,6 +101,15 @@ namespace Sayne
             var parent = (RectTransform)transform.parent;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPoint, null, out var localPoint);
             RectTransform.anchoredPosition = localPoint + _screenOffset;
+        }
+
+        /// <summary>초상화 칸이 있는 프리팹이면 그림을 넣고, 그림이 없으면 칸을 끈다.</summary>
+        private void ShowPortrait(Sprite portrait)
+        {
+            if (_portrait == null) return;
+
+            _portrait.sprite = portrait;
+            _portraitRoot.SetActive(portrait != null);
         }
 
         private void OnDestroy()

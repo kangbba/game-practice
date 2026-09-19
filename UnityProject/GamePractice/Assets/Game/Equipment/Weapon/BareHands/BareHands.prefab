@@ -55,5 +55,5 @@ MonoBehaviour:
   _sizeScale: 1
   _ultimateName: 
   _ultimatePowerMultiplier: 7
-  _ultimateCooldown: 30
+  _ultimateCooldown: 90
   _ultimateParticleID: 

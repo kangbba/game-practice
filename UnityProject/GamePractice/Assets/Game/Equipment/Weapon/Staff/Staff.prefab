@@ -346,7 +346,7 @@ MonoBehaviour:
   _sizeScale: 1.2
   _ultimateName: "\uC6D4\uC2DD"
   _ultimatePowerMultiplier: 7
-  _ultimateCooldown: 30
+  _ultimateCooldown: 90
   _ultimateParticleID: NyxUltimate
 --- !u!1 &5652753578162049998
 GameObject:

@@ -5,5 +5,6 @@ namespace Sayne
     {
         Skill,
         Ultimate,
+        Gadget,
     }
 }

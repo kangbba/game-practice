@@ -9,14 +9,14 @@ namespace Sayne
     /// 그래서 나중에 저장을 붙일 때도 항목별 레벨만 남기면 된다. (지금은 저장 없음)
     ///
     /// 경험치·전투 레벨은 성장과 별개 트랙이다. 적을 잡으면 오르지만 스탯은 주지 않는다 —
-    /// HUD 레벨 표시와 가이드가 그걸 본다.
+    /// HUD 레벨 표시와 가이드가 그걸 본다. 경험치는 전투 쪽(BattleReportDirector)이 GainExp 로 넣어 준다 —
+    /// 성장은 게임 내내 살고 적은 전투 동안만 살아서, 성장이 적을 구독하지 않는다.
     /// </summary>
     public class GrowthManager : ManagerBase
     {
         private const int BaseRequiredExp = 40;
         private const int RequiredExpPerLevel = 20;
 
-        private readonly EnemyManager _enemyManager;
         private readonly CurrencyManager _currencyManager;
 
         private readonly ReactiveProperty<int> _level = new ReactiveProperty<int>(1);
@@ -47,9 +47,8 @@ namespace Sayne
         /// <summary>산 성장 전부를 합친 몫. 히어로가 이걸 구독해 기본 스탯 위에 얹는다.</summary>
         public ReadOnlyReactiveProperty<StatGroup> Bonus => _bonus;
 
-        public GrowthManager(EnemyManager enemyManager, CurrencyManager currencyManager)
+        public GrowthManager(CurrencyManager currencyManager)
         {
-            _enemyManager = enemyManager;
             _currencyManager = currencyManager;
 
             foreach (var stat in GrowthPlan.All)
@@ -60,9 +59,6 @@ namespace Sayne
 
         protected override void OnInit()
         {
-            _enemyManager.Died
-                .Subscribe(this, (enemy, self) => self.GainExp(enemy.Data.ExpReward))
-                .RegisterTo(LifeToken);
         }
 
         protected override void OnRelease()
@@ -115,7 +111,8 @@ namespace Sayne
             return bonus;
         }
 
-        private void GainExp(int amount)
+        /// <summary>경험치를 쌓는다. 필요치를 넘기면 그만큼 레벨이 오른다.</summary>
+        public void GainExp(int amount)
         {
             _expGained.OnNext(amount);
 

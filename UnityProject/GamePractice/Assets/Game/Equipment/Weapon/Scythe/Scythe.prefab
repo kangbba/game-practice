@@ -253,7 +253,7 @@ MonoBehaviour:
   _sizeScale: 1.2
   _ultimateName: "\uADF9\uC57C"
   _ultimatePowerMultiplier: 7
-  _ultimateCooldown: 30
+  _ultimateCooldown: 90
   _ultimateParticleID: AldricUltimate
 --- !u!1 &5908806455600715405
 GameObject:

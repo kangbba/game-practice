@@ -1,14 +1,19 @@
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Sayne
 {
-    /// <summary>매니저를 만들고 Init/Release 만 책임진다. 각 매니저의 동작은 각자 스스로 돌린다.</summary>
+    /// <summary>
+    /// 게임 내내 사는 에셋·매니저를 만들고, 꺼질 때 연 역순으로 놓는다. 각 매니저의 동작은 각자 스스로 돌린다.
+    /// 전투에서만 사는 매니저는 여기서 만들지 않는다 — 페이즈가 전투에 들어갈 때 BattleScope 로 열고 나올 때 접는다.
+    /// 의존은 전투에서 이쪽으로만 흐른다. 여기 매니저들은 전투 쪽을 아무도 모른다.
+    /// </summary>
     public class GameManager : MonoBehaviour
     {
-        private readonly List<ManagerBase> _managers = new List<ManagerBase>();
-        private readonly List<ILoadable> _loadables = new List<ILoadable>();
+        /// <summary>연 순서대로 쌓인다. 꺼질 때 거꾸로 놓는다.</summary>
+        private readonly List<Action> _releases = new List<Action>();
 
         private void Start()
         {
@@ -17,140 +22,63 @@ namespace Sayne
 
         private async UniTaskVoid StartAsync()
         {
-            // 0단계: 로딩 화면부터 띄운다. 나머지 로드가 도는 동안 보여야 하니 혼자 먼저 불린다.
+            // 0단계: UI 입력(EventSystem)이 맨 앞이다 — 로딩 화면의 시작 탭부터 이걸 거친다.
+            // 그다음 로딩 화면을 띄운다. 공용 에셋을 로드하는 동안 보여야 하니 혼자 먼저 선다.
+            AddManager(new UIInputManager());
             var loadingScreenManager = AddManager(new LoadingScreenManager());
             await loadingScreenManager.ShowAsync();
 
-            // 1단계: 에셋 매니저를 만들고 전부 한꺼번에 로드한다.
-            var mapAssetManager = AddManager(new MapAssetManager());
-            var heroAssetManager = AddManager(new HeroAssetManager());
-            var enemyAssetManager = AddManager(new EnemyAssetManager());
-            var particleAssetManager = AddManager(new ParticleAssetManager());
-            var equipmentAssetManager = AddManager(new EquipmentAssetManager());
-            var uiAssetManager = AddManager(new UIAssetManager());
-            var profileAssetManager = AddManager(new CharacterProfileAssetManager());
-            var enemyDataAssetManager = AddManager(new EnemyDataAssetManager());
-            var heroDataAssetManager = AddManager(new HeroDataAssetManager());
-            var equipmentPlanAssetManager = AddManager(new EquipmentPlanAssetManager());
-            var itemAssetManager = AddManager(new ItemAssetManager());
+            // 1단계: 메인 로딩 — 게임 내내 쓰는 에셋. 로드를 마친 묶음만 손에 들어오므로 아래 조립은 전부 로드 뒤다.
+            // 전투에서만 쓰는 에셋은 여기서 로드하지 않는다 — 전투 페이즈가 들어가며 스스로 로드한다.
+            var gameAssets = await GameAssets.LoadAsync(loadingScreenManager.SetProgress, destroyCancellationToken);
+            _releases.Add(gameAssets.Release);
 
-            await LoadAllAsync(loadingScreenManager);
+            // 2단계: 게임 내내 사는 것들 — 전투가 끝나도 남는다.
+            // 중단(Pause)은 static 이라 세울 게 없다. 카메라는 static 이지만 씬 카메라를 잡고 놓는 수명은 여기서 쥔다.
+            _releases.Add(GameCamera.Attach().Dispose);
 
-            // 2단계: 게임플레이 매니저 조립. 로드 전에 Get 을 부르면 에셋 매니저가 에러 로그로 알려준다.
-            // 중단이 맨 앞이다 — 창·컷씬·조작·AI 가 전부 이걸 본다.
-            var pauseManager = AddManager(new PauseManager());
-            var mapManager = AddManager(new MapManager(mapAssetManager.MainMap));
-            var equipmentManager = AddManager(new EquipmentManager(equipmentAssetManager, equipmentPlanAssetManager));
-            var enemyManager = AddManager(new EnemyManager(enemyAssetManager, enemyDataAssetManager, equipmentManager));
+            // 화면의 공용 틀
+            var equipmentManager = AddManager(new EquipmentManager(gameAssets.EquipmentVisuals, gameAssets.EquipmentPlans));
+            var screenBlurManager = AddManager(new ScreenBlurManager());
+            var popupManager = AddManager(new PopupManager(screenBlurManager, gameAssets.UI));
+            var tutorialManager = AddManager(new TutorialManager(gameAssets.UI));
+
+            // 플레이 데이터. 성장은 골드를 내고 사는 것이라 재화가 그보다 먼저다.
+            // 전투에서 난 일(경험치·처치·웨이브)은 전투 쪽이 입구(GainExp·AddEnemyKill 등)로 밀어 넣는다.
             var currencyManager = AddManager(new CurrencyManager());
-            // 성장이 히어로보다 먼저다 — 히어로는 태어날 때 성장 레벨이 얹힌 스탯으로 만들어진다.
-            // 성장은 골드를 내고 사는 것이라 재화가 그보다 먼저다.
-            var growthManager = AddManager(new GrowthManager(enemyManager, currencyManager));
-            var heroManager = AddManager(new HeroManager(heroAssetManager, heroDataAssetManager, equipmentManager, growthManager));
-            // 구슬을 뿌리는 쪽과, 무엇을 주울 때 무슨 일이 나는지 정하는 쪽을 나눈다.
-            var dropManager = AddManager(new DropManager(heroManager, itemAssetManager));
-            var dropDirector = AddManager(new DropDirector(enemyManager, dropManager, currencyManager,
-                heroManager, equipmentManager, itemAssetManager));
-            var particleManager = AddManager(new ParticleManager(particleAssetManager, heroManager, enemyManager, dropManager));
-            var stageManager = AddManager(new StageManager(enemyManager));
-            // 기록은 보기만 하는 놈이라 볼 대상이 다 태어난 뒤에 선다. 퀘스트는 이제 기록만 본다.
-            var recordManager = AddManager(new RecordManager(enemyManager, growthManager, currencyManager, stageManager));
+            var growthManager = AddManager(new GrowthManager(currencyManager));
+            var partyManager = AddManager(new PartyManager(equipmentManager));
+            var recordManager = AddManager(new RecordManager(growthManager, currencyManager));
             var questManager = AddManager(new QuestManager(recordManager, currencyManager));
 
-            var cameraManager = AddManager(new CameraManager());
-            var cameraDirector = AddManager(new CameraDirector(cameraManager, heroManager));
+            // 전투 쪽에 한 번에 넘길 묶음.
+            var game = new GameContext(gameAssets, equipmentManager, popupManager, tutorialManager,
+                currencyManager, growthManager, partyManager, recordManager, questManager);
 
-            var screenPerformanceManager = AddManager(new ScreenPerformanceManager(pauseManager, heroManager, stageManager,
-                profileAssetManager, uiAssetManager.UltimateCutscenePanelPrefab, uiAssetManager.WaveStartPanelPrefab,
-                uiAssetManager.LowHealthPanelPrefab));
+            // 메인 로딩 끝 — 시작 탭을 받고 화면을 걷는다. 화면이 옅어지는 사이 전투 페이즈가 제 에셋을 로드하고 판을 세운다.
+            await loadingScreenManager.WaitStartAsync(destroyCancellationToken);
+            loadingScreenManager.Hide();
 
-            // 궁극기 연출은 컷씬(UI 연출)을 부르고, HP바·적 AI·웨이브가 이걸 본다 — 그 사이에 선다.
-            var ultimateDirector = AddManager(new UltimateDirector(enemyManager, cameraManager,
-                screenPerformanceManager));
-
-            var screenBlurManager = AddManager(new ScreenBlurManager());
-            var popupManager = AddManager(new PopupManager(pauseManager, screenBlurManager, uiAssetManager));
-            var screenUIManager = AddManager(new ScreenUIManager(pauseManager, cameraManager,
-                heroManager, enemyManager, stageManager, questManager, currencyManager, growthManager,
-                equipmentManager, ultimateDirector, popupManager, profileAssetManager, heroAssetManager,
-                uiAssetManager));
-
-            var tutorialManager = AddManager(new TutorialManager(pauseManager, cameraManager,
-                uiAssetManager.SpeechBubbleWidgetPrefab, uiAssetManager.OverlaySpeechBubblePrefab));
-
-            var heroControlManager = AddManager(new HeroControlManager(pauseManager, heroManager, enemyManager, ultimateDirector,
-                screenUIManager.BattlePanel));
-            var enemyAIManager = AddManager(new EnemyAIManager(pauseManager, heroManager, enemyManager, ultimateDirector));
-
-            var tutorialDirector = AddManager(new TutorialDirector(tutorialManager, heroManager, enemyManager, stageManager,
-                uiAssetManager.WorldSpeechBubblePrefab, profileAssetManager));
-
-            // 게임을 굴리는 놈이라 맨 마지막에 태어난다 — 역순 해제에서 제일 먼저 멈춰야 한다.
-            // 부품(적·히어로·UI)을 뜯기 전에 엔진이 꺼지는 순서다.
+            // 3단계: 게임을 굴리는 놈이라 맨 마지막에 선다 — 꺼질 때 제일 먼저 멈춰, 전투를 접은 뒤에 나머지가 내려간다.
             var phaseManager = AddManager(new PhaseManager());
-
-            var inGamePhase = new InGamePhase(mapManager, heroManager, enemyManager, stageManager, ultimateDirector);
-            phaseManager.RunAsync(new LoadingPhase(loadingScreenManager, inGamePhase)).Forget();
+            phaseManager.RunAsync(new InGamePhase(game)).Forget();
         }
 
         private void OnDestroy()
         {
-            for (var i = _managers.Count - 1; i >= 0; i--)
+            for (var i = _releases.Count - 1; i >= 0; i--)
             {
-                _managers[i].Release();
+                _releases[i]();
             }
 
-            _managers.Clear();
-            _loadables.Clear();
+            _releases.Clear();
         }
 
         private T AddManager<T>(T manager) where T : ManagerBase
         {
             manager.Init();
-            _managers.Add(manager);
-
-            if (manager is ILoadable loadable)
-            {
-                _loadables.Add(loadable);
-            }
-
+            _releases.Add(manager.Release);
             return manager;
-        }
-
-        /// <summary>
-        /// 전부 한꺼번에 돌리고, 끝날 때까지 매 프레임 각 매니저의 어드레서블 진행도 평균을 로딩 화면 게이지로 보낸다.
-        /// </summary>
-        private async UniTask LoadAllAsync(LoadingScreenManager loadingScreenManager)
-        {
-            var loads = new List<UniTask>(_loadables.Count);
-            foreach (var loadable in _loadables)
-            {
-                loads.Add(loadable.LoadAsync());
-            }
-
-            var loading = UniTask.WhenAll(loads).Preserve();
-
-            while (!loading.Status.IsCompleted())
-            {
-                loadingScreenManager.SetProgress(AverageProgress());
-                await UniTask.Yield();
-            }
-
-            // 어느 로드가 터졌으면 여기서 그대로 올라온다.
-            await loading;
-
-            loadingScreenManager.SetProgress(1f);
-        }
-
-        private float AverageProgress()
-        {
-            var sum = 0f;
-            foreach (var loadable in _loadables)
-            {
-                sum += loadable.Progress;
-            }
-
-            return sum / _loadables.Count;
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using R3;
 using TMPro;
 using UnityEngine;
@@ -6,7 +7,7 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
-    /// 편성창 영웅 명단의 카드 한 장. 초상화·이름·고유색 띠와 "출전 중 / 대기" 를 그리고, 눌리면 자기 영웅 ID 를 흘린다.
+    /// 편성창 영웅 명단의 카드 한 장. 초상화·이름·고유색 띠와 "출전 중 / 대기" 를 그리고, 눌리면 자기 영웅 ID 를 넘긴다.
     /// 누가 누구인지는 빌더가 프로필을 보고 구워 둔다. 고름(금빛 테두리)과 출전 여부(글자)는 따로 창이 넣어 준다 —
     /// 고르고 적용을 눌러야 출전이 바뀐다.
     /// </summary>
@@ -25,8 +26,13 @@ namespace Sayne
 
         public string HeroID => _heroID;
 
-        /// <summary>눌렸다. 이 카드의 영웅 ID 가 흐른다.</summary>
-        public Observable<string> Clicked => _button.onClick.AsObservable().Select(this, (_, self) => self._heroID);
+        /// <summary>눌리면 onClick 에 이 카드의 영웅 ID 를 넘긴다.</summary>
+        public void Init(Action<string> onClick)
+        {
+            _button.onClick.AsObservable()
+                .Subscribe((self: this, onClick), (_, state) => state.onClick(state.self._heroID))
+                .AddTo(this);
+        }
 
         public void Setup(string heroID, CharacterProfile profile)
         {

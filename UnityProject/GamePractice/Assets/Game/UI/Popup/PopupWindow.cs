@@ -6,7 +6,8 @@ using UnityEngine.UI;
 namespace Sayne
 {
     /// <summary>
-    /// 화면을 덮고 뜨는 창의 공통 바탕. 여는 건 PopupManager 가 하고, 창은 자기 모습과 열림 상태만 든다.
+    /// 화면을 덮고 뜨는 창의 공통 바탕. 만들고 열고 파괴하는 건 PopupManager 가 하고, 창은 자기 모습과 열림 상태만 든다.
+    /// 열 때마다 새로 태어나므로 창 안 상태(탭·선택)는 Init 에서 처음 모습으로 잡으면 된다.
     ///
     /// 프리팹 구조가 곧 규칙이다: 이 컴포넌트가 붙은 뿌리는 화면을 꽉 채우는 입력 막이고,
     /// 그 아래로 흐린 화면 → 옅은 암막 → 모달 순으로 깔린다. 뒤판이 모달의 부모라 순서가 뒤집힐 일이 없다.
@@ -29,11 +30,7 @@ namespace Sayne
         /// </summary>
         public void Open()
         {
-            OnShow();
-
             _group.alpha = 0f;
-            gameObject.SetActive(true);
-
             _isOpen.Value = true;
         }
 
@@ -48,16 +45,10 @@ namespace Sayne
                 .SetLink(gameObject);
         }
 
+        /// <summary>닫혔다고 알린다. 매니저가 이걸 듣고 창을 파괴한다.</summary>
         public void Close()
         {
-            gameObject.SetActive(false);
-
             _isOpen.Value = false;
-        }
-
-        /// <summary>열리기 직전. 탭·선택 같은 창 안 상태를 처음으로 돌려놓는 자리.</summary>
-        protected virtual void OnShow()
-        {
         }
 
         protected virtual void OnDestroy()

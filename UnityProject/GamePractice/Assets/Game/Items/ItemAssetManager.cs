@@ -7,7 +7,7 @@ namespace Sayne
     /// 아이템 자산. 지금은 월드에 뿌려지는 구슬 프리팹과 코인 그림 둘뿐이다.
     /// 장비 아이콘은 여기 없다 — 그건 장비 자기 것이라 EquipmentManager 가 안다.
     /// </summary>
-    public class ItemAssetManager : AssetManagerBase<Object>
+    public class ItemAssetManager : AssetManagerBase<Object>, IDropAssets
     {
         /// <summary>월드에 떨어지는 구슬. 무엇이 들었든 껍데기는 이 하나다.</summary>
         public DropItem DropOrbPrefab => ((GameObject)Get(AssetAddresses.DropOrb)).GetComponent<DropItem>();
