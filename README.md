@@ -38,7 +38,14 @@
 
 - `UnityProject/GamePractice/Assets/Game`: 게임 코드와 에셋. 기능별 폴더(`Characters`, `Equipment`, `Battle`, `UI` 등)에 코드, 프리팹, 그림을 함께 둡니다.
 - `UnityProject/GamePractice/Assets/SayneAssets`: 게임과 상관없이 다시 쓰는 부품. 아래 참고.
-- 매니저는 싱글톤 없이 `GameManager`가 만들어 넘겨 줍니다. 전투에서만 쓰는 매니저는 `BattleScope`로 묶어서, 전투 페이즈가 들어갈 때 만들고 나올 때 정리합니다.
+
+## 설계 중점
+
+- 수명 단위로 매니저 묶기 (게임 / 전투)
+- 의존은 한 방향 (전투 → 게임)
+- 에셋은 로드를 마친 묶음으로만 전달
+- 모양은 프리팹, 스크립트는 값만
+- 재사용 부품은 게임 코드를 모르게
 
 ## 재사용 부품 (SayneAssets)
 
